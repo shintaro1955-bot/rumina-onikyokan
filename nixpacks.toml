@@ -1,0 +1,4 @@
+# Railway(Nixpacks)ビルド設定
+# 25MB超の音声分割・録音長取得に ffmpeg/ffprobe を同梱（25MB以下やPlaud取り込みには不要だが本番で安全側）
+[phases.setup]
+nixPkgs = ['...', 'ffmpeg']

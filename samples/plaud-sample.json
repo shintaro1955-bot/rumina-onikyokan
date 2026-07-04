@@ -1,0 +1,30 @@
+{
+  "device": "PLAUD NotePin",
+  "recordingId": "rec_20260703_tanaka",
+  "startedAt": "2026-07-03T09:02:00+09:00",
+  "durationSec": 4000,
+  "language": "ja",
+  "speakers": [
+    { "id": "S1", "label": "話者1" },
+    { "id": "S2", "label": "話者2" },
+    { "id": "S3", "label": "話者3" },
+    { "id": "S5", "label": "話者5" }
+  ],
+  "segments": [
+    { "start": 610, "end": 615, "speaker": "S1", "text": "こんにちは、電気代の無料診断で回っています。", "confidence": 0.95 },
+    { "start": 616, "end": 619, "speaker": "S2", "text": "今忙しいので結構です。", "confidence": 0.90 },
+    { "start": 620, "end": 625, "speaker": "S1", "text": "ちなみに、明細だけ30秒で確認させてもらえますか？", "confidence": 0.92 },
+    { "start": 626, "end": 629, "speaker": "S2", "text": "うーん、今はちょっと。", "confidence": 0.90 },
+    { "start": 630, "end": 634, "speaker": "S1", "text": "では夕方にまた寄りますね、失礼します。", "confidence": 0.93 },
+
+    { "start": 1360, "end": 1366, "speaker": "S1", "text": "こんにちは、電気代の無料診断です。今、電気代上がってませんか？", "confidence": 0.94 },
+    { "start": 1367, "end": 1373, "speaker": "S3", "text": "ああ、上がってるわね。どれくらい安くなるの？", "confidence": 0.90 },
+    { "start": 1374, "end": 1381, "speaker": "S1", "text": "明細を見せてもらえれば試算できます。明日の夕方お伺いしていいですか？", "confidence": 0.92 },
+    { "start": 1382, "end": 1386, "speaker": "S3", "text": "じゃあ明日の6時でお願い。", "confidence": 0.91 },
+
+    { "start": 3800, "end": 3805, "speaker": "S1", "text": "こんにちは、無料診断で回っています。", "confidence": 0.93 },
+    { "start": 3806, "end": 3812, "speaker": "S5", "text": "うちは賃貸だから関係ないよ。", "confidence": 0.90 },
+    { "start": 3813, "end": 3817, "speaker": "S1", "text": "そうなんですね、ありがとうございます。", "confidence": 0.92 }
+  ],
+  "summary": "訪問3件。1件アポ取得（明日18時）、1件は夕方再訪、1件は賃貸で失注。"
+}

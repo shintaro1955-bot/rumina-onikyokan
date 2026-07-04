@@ -1,0 +1,340 @@
+{
+ "device": "PLAUD NotePin",
+ "recordingId": "rec_20260703_fullday",
+ "startedAt": "2026-07-03T09:00:00+09:00",
+ "durationSec": 30000,
+ "language": "ja",
+ "speakers": [
+  {
+   "id": "S1",
+   "label": "S1"
+  },
+  {
+   "id": "S2",
+   "label": "S2"
+  },
+  {
+   "id": "S3",
+   "label": "S3"
+  },
+  {
+   "id": "S4",
+   "label": "S4"
+  },
+  {
+   "id": "S5",
+   "label": "S5"
+  },
+  {
+   "id": "S6",
+   "label": "S6"
+  },
+  {
+   "id": "S7",
+   "label": "S7"
+  },
+  {
+   "id": "S8",
+   "label": "S8"
+  },
+  {
+   "id": "S9",
+   "label": "S9"
+  },
+  {
+   "id": "S10",
+   "label": "S10"
+  },
+  {
+   "id": "S11",
+   "label": "S11"
+  },
+  {
+   "id": "S12",
+   "label": "S12"
+  }
+ ],
+ "segments": [
+  {
+   "start": 610,
+   "end": 616,
+   "speaker": "S1",
+   "text": "こんにちは、電気代の無料診断で回っています。今、電気代上がってませんか？",
+   "confidence": 0.92
+  },
+  {
+   "start": 617,
+   "end": 621,
+   "speaker": "S2",
+   "text": "今忙しいので結構です。",
+   "confidence": 0.92
+  },
+  {
+   "start": 622,
+   "end": 627,
+   "speaker": "S1",
+   "text": "ちなみに明細だけ30秒で確認させてもらえますか？",
+   "confidence": 0.92
+  },
+  {
+   "start": 628,
+   "end": 632,
+   "speaker": "S2",
+   "text": "いや、今はちょっと。",
+   "confidence": 0.92
+  },
+  {
+   "start": 633,
+   "end": 637,
+   "speaker": "S1",
+   "text": "では夕方また寄りますね。",
+   "confidence": 0.92
+  },
+  {
+   "start": 1600,
+   "end": 1605,
+   "speaker": "S1",
+   "text": "電気代の無料診断です。明細って今お手元にありますか？",
+   "confidence": 0.92
+  },
+  {
+   "start": 1606,
+   "end": 1611,
+   "speaker": "S3",
+   "text": "ああ、上がってるのよね。どれくらい安くなるの？",
+   "confidence": 0.92
+  },
+  {
+   "start": 1612,
+   "end": 1618,
+   "speaker": "S1",
+   "text": "見せてもらえれば試算できます。明日の夕方お伺いしていいですか？",
+   "confidence": 0.92
+  },
+  {
+   "start": 1619,
+   "end": 1623,
+   "speaker": "S3",
+   "text": "じゃあ明日の6時でお願い。",
+   "confidence": 0.92
+  },
+  {
+   "start": 3900,
+   "end": 3905,
+   "speaker": "S1",
+   "text": "こんにちは、無料診断で回っています。",
+   "confidence": 0.92
+  },
+  {
+   "start": 3906,
+   "end": 3910,
+   "speaker": "S4",
+   "text": "うちは間に合ってるから。",
+   "confidence": 0.92
+  },
+  {
+   "start": 3911,
+   "end": 3916,
+   "speaker": "S1",
+   "text": "失礼しました、ありがとうございます。",
+   "confidence": 0.92
+  },
+  {
+   "start": 5100,
+   "end": 5105,
+   "speaker": "S1",
+   "text": "電気代の無料診断です。検針票、最近見られました？",
+   "confidence": 0.92
+  },
+  {
+   "start": 5106,
+   "end": 5111,
+   "speaker": "S5",
+   "text": "高くなってる気はするけど、うち賃貸だから。",
+   "confidence": 0.92
+  },
+  {
+   "start": 5112,
+   "end": 5117,
+   "speaker": "S1",
+   "text": "賃貸でも見直せる場合がありますよ。少しだけいいですか？",
+   "confidence": 0.92
+  },
+  {
+   "start": 5118,
+   "end": 5122,
+   "speaker": "S5",
+   "text": "うーん、今度でいいわ。",
+   "confidence": 0.92
+  },
+  {
+   "start": 7400,
+   "end": 7404,
+   "speaker": "S1",
+   "text": "今の電気代、気になりませんか？",
+   "confidence": 0.92
+  },
+  {
+   "start": 7405,
+   "end": 7409,
+   "speaker": "S6",
+   "text": "気になるわね。どういう仕組みなの？",
+   "confidence": 0.92
+  },
+  {
+   "start": 7410,
+   "end": 7415,
+   "speaker": "S1",
+   "text": "明細を見ながらご説明します。来週あたりお時間ありますか？",
+   "confidence": 0.92
+  },
+  {
+   "start": 7416,
+   "end": 7420,
+   "speaker": "S6",
+   "text": "考えておくわ。",
+   "confidence": 0.92
+  },
+  {
+   "start": 8600,
+   "end": 8605,
+   "speaker": "S1",
+   "text": "無料診断です。ちょっと電気代のことで。",
+   "confidence": 0.92
+  },
+  {
+   "start": 8606,
+   "end": 8610,
+   "speaker": "S7",
+   "text": "主人がいないと分からないのよ。",
+   "confidence": 0.92
+  },
+  {
+   "start": 8611,
+   "end": 8615,
+   "speaker": "S1",
+   "text": "では夜に改めて伺います。",
+   "confidence": 0.92
+  },
+  {
+   "start": 11500,
+   "end": 11505,
+   "speaker": "S1",
+   "text": "こんにちは、無料診断です。明細だけいいですか？",
+   "confidence": 0.92
+  },
+  {
+   "start": 11506,
+   "end": 11510,
+   "speaker": "S8",
+   "text": "ああ、いいわよ。これね。",
+   "confidence": 0.92
+  },
+  {
+   "start": 11511,
+   "end": 11516,
+   "speaker": "S1",
+   "text": "ありがとうございます。来週火曜の夕方お伺いします。",
+   "confidence": 0.92
+  },
+  {
+   "start": 11517,
+   "end": 11521,
+   "speaker": "S8",
+   "text": "はい、お願いします。",
+   "confidence": 0.92
+  },
+  {
+   "start": 22200,
+   "end": 22205,
+   "speaker": "S1",
+   "text": "電気代の無料診断です。今、電気代上がってませんか？",
+   "confidence": 0.92
+  },
+  {
+   "start": 22206,
+   "end": 22210,
+   "speaker": "S9",
+   "text": "興味ないです。",
+   "confidence": 0.92
+  },
+  {
+   "start": 22211,
+   "end": 22215,
+   "speaker": "S1",
+   "text": "失礼しました。",
+   "confidence": 0.92
+  },
+  {
+   "start": 23700,
+   "end": 23705,
+   "speaker": "S1",
+   "text": "明細を見せてもらえれば試算できますよ。",
+   "confidence": 0.92
+  },
+  {
+   "start": 23706,
+   "end": 23710,
+   "speaker": "S10",
+   "text": "上がってるわ。検討してみるわ。",
+   "confidence": 0.92
+  },
+  {
+   "start": 23711,
+   "end": 23715,
+   "speaker": "S1",
+   "text": "ぜひ。ご連絡お待ちしています。",
+   "confidence": 0.92
+  },
+  {
+   "start": 26000,
+   "end": 26005,
+   "speaker": "S1",
+   "text": "こんにちは、無料診断です。明細ちょっといいですか？",
+   "confidence": 0.92
+  },
+  {
+   "start": 26006,
+   "end": 26011,
+   "speaker": "S11",
+   "text": "はいはい、ちょうど高くて困ってたの。",
+   "confidence": 0.92
+  },
+  {
+   "start": 26012,
+   "end": 26017,
+   "speaker": "S1",
+   "text": "では明日の夕方、お見積り持ってきます。6時で。",
+   "confidence": 0.92
+  },
+  {
+   "start": 26018,
+   "end": 26021,
+   "speaker": "S11",
+   "text": "お願いね。",
+   "confidence": 0.92
+  },
+  {
+   "start": 29000,
+   "end": 29004,
+   "speaker": "S1",
+   "text": "電気代の無料診断です。",
+   "confidence": 0.92
+  },
+  {
+   "start": 29005,
+   "end": 29009,
+   "speaker": "S12",
+   "text": "今忙しいの、また今度。",
+   "confidence": 0.92
+  },
+  {
+   "start": 29010,
+   "end": 29014,
+   "speaker": "S1",
+   "text": "失礼しました。",
+   "confidence": 0.92
+  }
+ ],
+ "summary": "会話取得11件。アポ複数・見込み・失注。14:20〜15:05に会話なしの停止（GPSで実サボり確定）。"
+}

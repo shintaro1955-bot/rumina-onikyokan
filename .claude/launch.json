@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "rumina-onikyokan",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["serve.mjs"],
+      "port": 4180,
+      "cwd": "/Users/hachigashintarou/Downloads/rumina-onikyokan"
+    }
+  ]
+}
