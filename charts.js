@@ -2,10 +2,11 @@
    Rumina 鬼教官 — 自作SVGチャート（ミニマル・依存なし）
    フラット／単色アクセント／装飾なし。
    ============================================================ */
-const ACCENT = '#34d399';   // emerald-400
-const MUTE = '#3f3f46';     // neutral-700
-const LINE = '#27272a';     // neutral-800
-const TXT = '#71717a';      // neutral-500
+const ACCENT = '#059669';   // emerald-600（白背景で視認性を確保）
+const MUTE = '#a1a1aa';     // neutral-400（棒）
+const LINE = '#e4e4e7';     // neutral-200（グリッド）
+const TXT = '#737373';      // neutral-500（ラベル）
+const DARK = '#171717';     // neutral-900（数値）
 
 /* ---- 100ピンポン ゲージ（半円・フラット） ---- */
 function pingGauge(value, target) {
@@ -22,7 +23,7 @@ function pingGauge(value, target) {
   <svg viewBox="0 0 ${w} ${h}" class="w-full max-w-[300px]">
     ${arc(1, LINE, 10)}
     ${arc(pct, ACCENT, 10)}
-    <text x="${cx}" y="${cy - 36}" text-anchor="middle" fill="#e4e4e7" font-size="46" font-weight="700" style="font-variant-numeric:tabular-nums">${value}</text>
+    <text x="${cx}" y="${cy - 36}" text-anchor="middle" fill="${DARK}" font-size="46" font-weight="700" style="font-variant-numeric:tabular-nums">${value}</text>
     <text x="${cx}" y="${cy - 12}" text-anchor="middle" fill="${TXT}" font-size="12">/ ${target}　達成${Math.round(value / target * 100)}%</text>
   </svg>`;
 }
@@ -45,8 +46,8 @@ function radarChart(axes) {
   return `
   <svg viewBox="0 0 ${w} ${h}" class="w-full max-w-[340px] mx-auto">
     ${grid}
-    ${poly('top', '#52525b', 'none')}
-    ${poly('me', ACCENT, 'rgba(52,211,153,0.12)')}
+    ${poly('top', '#94a3b8', 'none')}
+    ${poly('me', ACCENT, 'rgba(5,150,105,0.12)')}
     ${labels}
   </svg>`;
 }
@@ -73,8 +74,8 @@ function objectionBars(rows) {
   const max = Math.max(...rows.map(r => r.count), 1);
   return rows.map((r, i) => `
     <div>
-      <div class="flex justify-between text-[13px] mb-1"><span class="text-neutral-300">${i + 1}. ${r.label}</span><span class="text-neutral-500 tabular-nums">${r.count}</span></div>
-      <div class="h-1.5 rounded-full bg-neutral-800 overflow-hidden"><div class="h-full rounded-full bg-neutral-500" style="width:${r.count / max * 100}%"></div></div>
+      <div class="flex justify-between text-[13px] mb-1"><span class="text-neutral-700">${i + 1}. ${r.label}</span><span class="text-neutral-500 tabular-nums">${r.count}</span></div>
+      <div class="h-1.5 rounded-full bg-neutral-200 overflow-hidden"><div class="h-full rounded-full bg-neutral-400" style="width:${r.count / max * 100}%"></div></div>
     </div>`).join('');
 }
 

@@ -3,48 +3,53 @@
 <title>Rumina 鬼教官</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  body{background:#0a0a0b;color:#e4e4e7;font-family:-apple-system,'Hiragino Kaku Gothic ProN','Noto Sans JP',system-ui,sans-serif;}
-  ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#27272a;border-radius:4px}
-  .nav-active{color:#34d399 !important}
+  body{background:#ffffff;color:#171717;font-family:-apple-system,'Hiragino Kaku Gothic ProN','Noto Sans JP',system-ui,sans-serif;}
+  ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#d4d4d8;border-radius:5px}
+  .nav-active{color:#059669 !important;background:#ecfdf5}
   #app{animation:fade .25s ease}@keyframes fade{from{opacity:0}to{opacity:1}}
-  .navlink{display:block;width:100%;text-align:left;padding:.5rem .75rem;border-radius:.375rem;color:#a1a1aa;font-size:.875rem;transition:color .15s}
-  .navlink:hover{color:#e4e4e7}
+  .navlink{display:block;width:100%;text-align:left;padding:.5rem .75rem;border-radius:.5rem;color:#525252;font-size:.875rem;transition:background .15s,color .15s}
+  .navlink:hover{color:#171717;background:#f5f5f5}
 </style>
 
 <div class="min-h-screen flex">
-  <!-- サイドバー -->
-  <aside class="hidden md:flex flex-col w-52 border-r border-white/10 p-4 sticky top-0 h-screen">
-    <div class="px-3 py-2 mb-4">
-      <div class="text-sm font-semibold text-neutral-100">Rumina</div>
-      <div class="text-xs text-emerald-400">鬼教官</div>
+  <!-- サイドバー：稼働の流れ順 -->
+  <aside class="hidden md:flex flex-col w-56 border-r border-neutral-200 p-4 sticky top-0 h-screen">
+    <div class="px-3 py-2 mb-3">
+      <div class="text-sm font-semibold text-neutral-900">Rumina</div>
+      <div class="text-xs text-emerald-600">鬼教官</div>
     </div>
+    <div class="px-3 text-[10px] font-semibold text-neutral-400 tracking-wide mb-1">日々の流れ</div>
     <nav class="space-y-0.5">
-      <button data-nav="goal" onclick="nav('goal')" class="navlink">目標設定</button>
+      <button data-nav="goal" onclick="nav('goal')" class="navlink">① 目標設定</button>
       <button data-nav="home" onclick="nav('home')" class="navlink">ホーム</button>
-      <button data-nav="upload" onclick="nav('upload')" class="navlink">録音アップロード</button>
-      <button data-nav="report" onclick="nav('report')" class="navlink">解析レポート</button>
-      <button data-nav="reps" onclick="nav('reps')" class="navlink">営業マン一覧</button>
-      <button data-nav="issues" onclick="nav('issues')" class="navlink">イシュー分析</button>
+      <button data-nav="upload" onclick="nav('upload')" class="navlink">② 稼働終了・録音を出稿</button>
+      <button data-nav="report" onclick="nav('report')" class="navlink">③ 分析レポート</button>
+      <button data-nav="issues" onclick="nav('issues')" class="navlink">④ イシュー・改善提案</button>
     </nav>
-    <div class="mt-auto px-3 text-[11px] text-neutral-600 leading-relaxed">100ピンポン × 22勤務を、<br>感覚ではなくデータで。</div>
+    <div class="px-3 text-[10px] font-semibold text-neutral-400 tracking-wide mb-1 mt-4">管理</div>
+    <nav class="space-y-0.5">
+      <button data-nav="reps" onclick="nav('reps')" class="navlink">営業マン一覧</button>
+      <button data-nav="admin" onclick="nav('admin')" class="navlink">管理者マスタ（名簿編集）</button>
+    </nav>
+    <div class="mt-auto px-3 text-[11px] text-neutral-400 leading-relaxed">100ピンポン × 22勤務を、<br>感覚ではなくデータで。</div>
   </aside>
 
   <div class="flex-1 min-w-0">
-    <header class="md:hidden sticky top-0 z-20 flex items-center gap-2 px-4 py-3 border-b border-white/10 bg-[#0a0a0b]/90 backdrop-blur">
-      <span class="text-sm font-semibold text-neutral-100">Rumina</span><span class="text-xs text-emerald-400">鬼教官</span>
+    <header class="md:hidden sticky top-0 z-20 flex items-center gap-2 px-4 py-3 border-b border-neutral-200 bg-white/90 backdrop-blur">
+      <span class="text-sm font-semibold text-neutral-900">Rumina</span><span class="text-xs text-emerald-600">鬼教官</span>
     </header>
     <main class="max-w-5xl mx-auto px-5 md:px-10 py-8 pb-28 md:pb-12"><div id="app"></div></main>
   </div>
 </div>
 
-<!-- モバイル下部ナビ -->
-<nav class="md:hidden fixed bottom-0 inset-x-0 z-30 grid grid-cols-6 border-t border-white/10 bg-[#0a0a0b]/95 backdrop-blur text-[10px] text-center">
-  <button data-nav="goal" onclick="nav('goal')" class="py-2.5 text-neutral-400">目標</button>
-  <button data-nav="home" onclick="nav('home')" class="py-2.5 text-neutral-400">ホーム</button>
-  <button data-nav="upload" onclick="nav('upload')" class="py-2.5 text-neutral-400">録音</button>
-  <button data-nav="report" onclick="nav('report')" class="py-2.5 text-neutral-400">レポート</button>
-  <button data-nav="reps" onclick="nav('reps')" class="py-2.5 text-neutral-400">一覧</button>
-  <button data-nav="issues" onclick="nav('issues')" class="py-2.5 text-neutral-400">イシュー</button>
+<!-- モバイル下部ナビ（導線順） -->
+<nav class="md:hidden fixed bottom-0 inset-x-0 z-30 grid grid-cols-6 border-t border-neutral-200 bg-white/95 backdrop-blur text-[10px] text-center">
+  <button data-nav="goal" onclick="nav('goal')" class="py-2.5 text-neutral-500">目標</button>
+  <button data-nav="home" onclick="nav('home')" class="py-2.5 text-neutral-500">ホーム</button>
+  <button data-nav="upload" onclick="nav('upload')" class="py-2.5 text-neutral-500">出稿</button>
+  <button data-nav="report" onclick="nav('report')" class="py-2.5 text-neutral-500">分析</button>
+  <button data-nav="issues" onclick="nav('issues')" class="py-2.5 text-neutral-500">イシュー</button>
+  <button data-nav="admin" onclick="nav('admin')" class="py-2.5 text-neutral-500">管理</button>
 </nav>
 
 <script src="data.js"></script>

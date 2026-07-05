@@ -205,8 +205,8 @@ const NEXT_ACTIONS = [
 /* ============================================================
    営業マン一覧
    ============================================================ */
-// 各営業マンのフルKPIプロファイル（トップ/下位比較の材料）
-const SALES_REPS = [
+// 各営業マンのフルKPIプロファイル（トップ/下位比較の材料・管理者マスタで編集可）
+const DEFAULT_REPS = [
   { id: 'r1', name: '佐藤 大輝', team: '第1営業部', role: 'エース', pings: 104, target: 100, achieve: 104, apo: 4, score: 94, idle: 8,  priority: 'low', current: false,
     homeResponseRate: 38, conversationRate: 22, averageConversationSeconds: 58, averageRebuttalCount: 1.9, openingQuestionRate: 82, appointmentRate: 3.8 },
   { id: 'r2', name: '鈴木 健',   team: '第1営業部', role: '中堅',   pings: 92,  target: 100, achieve: 92,  apo: 3, score: 81, idle: 18, priority: 'mid', current: false,
@@ -220,6 +220,14 @@ const SALES_REPS = [
   { id: 'r6', name: '渡辺 陸',   team: '第2営業部', role: '新人',   pings: 55,  target: 100, achieve: 55,  apo: 0, score: 41, idle: 96, priority: 'high', current: false,
     homeResponseRate: 19, conversationRate: 12, averageConversationSeconds: 26, averageRebuttalCount: 0.2, openingQuestionRate: 24, appointmentRate: 1.0 },
 ];
+
+// 営業名簿：管理者マスタの編集をlocalStorageに永続化
+function loadReps() {
+  try { const s = JSON.parse(localStorage.getItem('rumina_reps_v1')); return Array.isArray(s) && s.length ? s : DEFAULT_REPS.map(r => ({ ...r })); }
+  catch { return DEFAULT_REPS.map(r => ({ ...r })); }
+}
+function saveReps(list) { try { localStorage.setItem('rumina_reps_v1', JSON.stringify(list)); } catch {} if (window.RUMINA) window.RUMINA.SALES_REPS = list; }
+function resetReps() { try { localStorage.removeItem('rumina_reps_v1'); } catch {} const d = DEFAULT_REPS.map(r => ({ ...r })); if (window.RUMINA) window.RUMINA.SALES_REPS = d; return d; }
 
 /* ---- レーダー比較（本人 vs トップ）を任意のanalysisから生成（0-100正規化） ---- */
 function buildRadar(a, b) {
@@ -279,6 +287,7 @@ function applyCrmConfirm(a) {
 
 window.RUMINA = {
   TOP_BENCHMARK, TODAY_ANALYSIS, NEXT_ACTIONS,
-  SALES_REPS, SAMPLE_TRANSCRIPT, PING_EVENTS, ANALYZE_STAGES,
+  SALES_REPS: loadReps(), DEFAULT_REPS, SAMPLE_TRANSCRIPT, PING_EVENTS, ANALYZE_STAGES,
   computeGap, generateCoachComment, buildRadar, computeScore, saveCrm, applyCrmConfirm,
+  saveReps, resetReps,
 };
