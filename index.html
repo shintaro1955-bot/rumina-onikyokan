@@ -9,47 +9,49 @@
   #app{animation:fade .25s ease}@keyframes fade{from{opacity:0}to{opacity:1}}
   .navlink{display:block;width:100%;text-align:left;padding:.5rem .75rem;border-radius:.5rem;color:#525252;font-size:.875rem;transition:background .15s,color .15s}
   .navlink:hover{color:#171717;background:#f5f5f5}
+  body.logged-out .app-chrome{display:none !important}
 </style>
 
 <div class="min-h-screen flex">
   <!-- サイドバー：稼働の流れ順 -->
-  <aside class="hidden md:flex flex-col w-56 border-r border-neutral-200 p-4 sticky top-0 h-screen">
+  <aside class="app-chrome hidden md:flex flex-col w-56 border-r border-neutral-200 p-4 sticky top-0 h-screen">
     <div class="px-3 py-2 mb-3">
       <div class="text-sm font-semibold text-neutral-900">Rumina</div>
       <div class="text-xs text-emerald-600">鬼教官</div>
     </div>
     <div class="px-3 text-[10px] font-semibold text-neutral-400 tracking-wide mb-1">日々の流れ</div>
     <nav class="space-y-0.5">
+      <button data-nav="my" onclick="nav('my')" class="navlink">マイページ</button>
       <button data-nav="goal" onclick="nav('goal')" class="navlink">① 目標設定</button>
-      <button data-nav="home" onclick="nav('home')" class="navlink">ホーム</button>
       <button data-nav="upload" onclick="nav('upload')" class="navlink">② 稼働終了・録音を出稿</button>
       <button data-nav="report" onclick="nav('report')" class="navlink">③ 分析レポート</button>
-      <button data-nav="issues" onclick="nav('issues')" class="navlink">④ イシュー・改善提案</button>
     </nav>
-    <div class="px-3 text-[10px] font-semibold text-neutral-400 tracking-wide mb-1 mt-4">管理</div>
+    <div data-owner class="px-3 text-[10px] font-semibold text-neutral-400 tracking-wide mb-1 mt-4">管理（管理者のみ）</div>
     <nav class="space-y-0.5">
-      <button data-nav="reps" onclick="nav('reps')" class="navlink">営業マン一覧</button>
-      <button data-nav="admin" onclick="nav('admin')" class="navlink">管理者マスタ（名簿編集）</button>
+      <button data-owner data-nav="home" onclick="nav('home')" class="navlink">チームホーム</button>
+      <button data-owner data-nav="issues" onclick="nav('issues')" class="navlink">イシュー・改善提案</button>
+      <button data-owner data-nav="reps" onclick="nav('reps')" class="navlink">営業マン一覧</button>
+      <button data-owner data-nav="admin" onclick="nav('admin')" class="navlink">管理者マスタ（名簿編集）</button>
     </nav>
-    <div class="mt-auto px-3 text-[11px] text-neutral-400 leading-relaxed">100ピンポン × 22勤務を、<br>感覚ではなくデータで。</div>
+    <div id="userBadge" class="mt-auto px-3 pt-4 space-y-0.5"></div>
   </aside>
 
   <div class="flex-1 min-w-0">
-    <header class="md:hidden sticky top-0 z-20 flex items-center gap-2 px-4 py-3 border-b border-neutral-200 bg-white/90 backdrop-blur">
-      <span class="text-sm font-semibold text-neutral-900">Rumina</span><span class="text-xs text-emerald-600">鬼教官</span>
+    <header class="app-chrome md:hidden sticky top-0 z-20 flex items-center justify-between gap-2 px-4 py-3 border-b border-neutral-200 bg-white/90 backdrop-blur">
+      <div><span class="text-sm font-semibold text-neutral-900">Rumina</span> <span class="text-xs text-emerald-600">鬼教官</span></div>
+      <button onclick="doLogout()" class="text-[11px] text-neutral-500 underline">ログアウト</button>
     </header>
     <main class="max-w-5xl mx-auto px-5 md:px-10 py-8 pb-28 md:pb-12"><div id="app"></div></main>
   </div>
 </div>
 
-<!-- モバイル下部ナビ（導線順） -->
-<nav class="md:hidden fixed bottom-0 inset-x-0 z-30 grid grid-cols-6 border-t border-neutral-200 bg-white/95 backdrop-blur text-[10px] text-center">
+<!-- モバイル下部ナビ -->
+<nav class="app-chrome md:hidden fixed bottom-0 inset-x-0 z-30 grid grid-cols-5 border-t border-neutral-200 bg-white/95 backdrop-blur text-[10px] text-center">
+  <button data-nav="my" onclick="nav('my')" class="py-2.5 text-neutral-500">マイ</button>
   <button data-nav="goal" onclick="nav('goal')" class="py-2.5 text-neutral-500">目標</button>
-  <button data-nav="home" onclick="nav('home')" class="py-2.5 text-neutral-500">ホーム</button>
   <button data-nav="upload" onclick="nav('upload')" class="py-2.5 text-neutral-500">出稿</button>
   <button data-nav="report" onclick="nav('report')" class="py-2.5 text-neutral-500">分析</button>
-  <button data-nav="issues" onclick="nav('issues')" class="py-2.5 text-neutral-500">イシュー</button>
-  <button data-nav="admin" onclick="nav('admin')" class="py-2.5 text-neutral-500">管理</button>
+  <button data-owner data-nav="admin" onclick="nav('admin')" class="py-2.5 text-neutral-500">管理</button>
 </nav>
 
 <script src="data.js"></script>

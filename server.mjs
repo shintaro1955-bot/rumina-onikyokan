@@ -15,6 +15,8 @@ import { toChunks, probeDuration } from './lib/audio.mjs';
 import { analyze, DOMAIN_PROMPT } from './lib/pipeline.mjs';
 import { parsePlaud } from './lib/import-plaud.mjs';
 import { fetchAppointments } from './lib/crm.mjs';
+import { getDb, save } from './lib/store.mjs';
+import { hashPassword, verifyPassword, signSession, verifySession, randomPassword } from './lib/auth.mjs';
 
 const ROOT = new URL('.', import.meta.url).pathname;
 const PORT = process.env.PORT || 4180;
@@ -31,6 +33,36 @@ const SESSIONS = new Map();
 const json = (res, code, obj) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(obj)); };
 const readBody = req => new Promise((r, j) => { let b = ''; req.on('data', c => (b += c)); req.on('end', () => r(b ? JSON.parse(b) : {})); req.on('error', j); });
 
+/* ---------- 認証ヘルパー ---------- */
+const COOKIE = 'rk_session';
+function parseCookies(req) {
+  const out = {}; (req.headers.cookie || '').split(';').forEach(c => { const i = c.indexOf('='); if (i > 0) out[c.slice(0, i).trim()] = decodeURIComponent(c.slice(i + 1).trim()); });
+  return out;
+}
+function setSessionCookie(req, res, token) {
+  const secure = req.headers['x-forwarded-proto'] === 'https' ? ' Secure;' : '';
+  res.setHeader('Set-Cookie', `${COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/;${secure} Max-Age=${7 * 86400}`);
+}
+function clearSessionCookie(res) { res.setHeader('Set-Cookie', `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`); }
+function currentUser(req) {
+  const s = verifySession(parseCookies(req)[COOKIE]);
+  if (!s) return null;
+  const u = getDb().users[s.username];
+  return u ? { username: u.username, name: u.name, role: u.role, repId: u.repId } : null;
+}
+
+// 起動時：ownerが居なければ社長アカウントを1つseed（＝モデル営業マン）
+(function seedOwner() {
+  const db = getDb();
+  if (Object.keys(db.users).length) return;
+  const username = process.env.OWNER_USER || '社長';
+  const pw = process.env.OWNER_PASSWORD || 'rumina2026';
+  const { salt, hash } = hashPassword(pw);
+  db.users[username] = { username, name: username, role: 'owner', repId: 'owner', salt, hash, isModel: true };
+  save();
+  console.log(`✓ 初期オーナー作成：ユーザー名「${username}」／初期パスワード「${pw}」（本番はOWNER_PASSWORDで指定・変更を）`);
+})();
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const path = decodeURIComponent(url.pathname);
@@ -40,6 +72,41 @@ const server = createServer(async (req, res) => {
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
       if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL });
+
+      /* ---------- 認証 ---------- */
+      if (path === '/api/me') return json(res, 200, { user: currentUser(req) });
+
+      if (path === '/api/login' && req.method === 'POST') {
+        const { username, password } = await readBody(req);
+        const u = getDb().users[String(username || '').trim()];
+        if (!u || !verifyPassword(password, u.salt, u.hash)) return json(res, 401, { error: 'ユーザー名またはパスワードが違います' });
+        setSessionCookie(req, res, signSession({ username: u.username, role: u.role }));
+        return json(res, 200, { user: { username: u.username, name: u.name, role: u.role, repId: u.repId } });
+      }
+
+      if (path === '/api/logout' && req.method === 'POST') { clearSessionCookie(res); return json(res, 200, { ok: true }); }
+
+      // 管理者：名簿からアカウント発行（owner専用）
+      if (path === '/api/admin/issue' && req.method === 'POST') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const { name, repId } = await readBody(req);
+        const uname = String(name || '').trim();
+        if (!uname) return json(res, 400, { error: '名前が必要です' });
+        const pw = randomPassword();
+        const { salt, hash } = hashPassword(pw);
+        const db = getDb();
+        db.users[uname] = { username: uname, name: uname, role: 'rep', repId: repId || null, salt, hash };
+        save();
+        return json(res, 200, { username: uname, password: pw });   // 初期パスワードは一度だけ返す
+      }
+
+      // 自分の最新レポート
+      if (path === '/api/my/latest' && req.method === 'GET') {
+        const me = currentUser(req);
+        if (!me) return json(res, 401, { error: '未ログイン' });
+        return json(res, 200, { submission: getDb().submissions[me.username] || null });
+      }
 
       // ① アップロード：ファイル本文を raw で受けて保存（multipart不要）
       if (path === '/api/audio/upload' && req.method === 'POST') {
@@ -80,6 +147,9 @@ const server = createServer(async (req, res) => {
         });
         const result = { sessionId: id, source: 'plaud', device: meta.device, benchmark: BENCHMARK, analysis, pings, transcript };
         SESSIONS.set(id, { id, status: 'done', result });
+        // ログイン中なら本人の最新レポートとして保存（マイページ用）
+        const me = currentUser(req);
+        if (me) { getDb().submissions[me.username] = { at: new Date().toISOString(), name: me.name, analysis }; save(); }
         return json(res, 200, result);
       }
 

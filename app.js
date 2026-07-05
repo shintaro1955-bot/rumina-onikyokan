@@ -475,7 +475,7 @@ function viewAdmin() {
   };
   const rows = reps.map((r, i) => `<tr class="border-t border-neutral-200">
     ${REP_FIELDS.map(f => `<td class="px-1.5 py-1">${cell(r, i, f)}</td>`).join('')}
-    <td class="px-1.5 py-1 text-right"><button onclick="adminDelete(${i})" class="text-xs text-rose-600 hover:underline">削除</button></td>
+    <td class="px-1.5 py-1 text-right whitespace-nowrap"><button onclick="issueRep(${i})" class="text-xs text-emerald-600 hover:underline mr-2">ログイン発行</button><button onclick="adminDelete(${i})" class="text-xs text-rose-600 hover:underline">削除</button></td>
   </tr>`).join('');
   return `
   ${h1('管理者マスタ（営業名簿）', '営業マンの追加・編集・削除。ここが「営業マン一覧」と「イシュー分析」の元データ。変更は自動保存。')}
@@ -484,6 +484,7 @@ function viewAdmin() {
     <button onclick="adminReset()" class="px-3 py-1.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100 transition">初期名簿に戻す</button>
     <span id="adminSaved" class="text-xs text-emerald-600 self-center"></span>
   </div>
+  <div id="issueResult" class="mb-3"></div>
   ${card(`<div class="overflow-x-auto"><table class="text-sm min-w-[1040px]">
     <thead><tr class="text-xs text-neutral-500 bg-neutral-50">${REP_FIELDS.map(f => `<th class="px-1.5 py-2 text-left font-normal whitespace-nowrap">${f.label}</th>`).join('')}<th class="px-1.5"></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`)}
@@ -511,7 +512,7 @@ function adminReset() { R.resetReps(); render(); }
 window.adminSave = adminSave; window.adminAdd = adminAdd; window.adminDelete = adminDelete; window.adminReset = adminReset;
 
 /* ---------- ルーター ---------- */
-const VIEWS = { goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, reps: viewReps, issues: viewIssues, admin: viewAdmin };
+const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, reps: viewReps, issues: viewIssues, admin: viewAdmin };
 function nav(v) { currentView = v; render(); if (v === 'upload') bindUpload(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function render() {
   app.innerHTML = VIEWS[currentView]();
@@ -551,6 +552,7 @@ async function bindUpload() {
       let payload = text; try { payload = JSON.parse(text); } catch {} // JSONならオブジェクトで、それ以外はテキストで送る
       const rep = await API.importTranscript(payload, { name: f.name.replace(/\.[^.]+$/, ''), gps: selectedGps });
       R.loadAnalysis(rep.analysis);
+      window.__mySubmission = { at: new Date().toISOString(), analysis: rep.analysis };
       info.innerHTML = '<span class="text-emerald-600">取り込み完了</span> — レポートを表示します';
       setTimeout(() => nav('report'), 400);
     } catch (err) {
@@ -612,6 +614,7 @@ async function realAnalyze(file) {
   }
   const rep = await API.report(sessionId);
   R.loadAnalysis(rep.analysis);
+  window.__mySubmission = { at: new Date().toISOString(), analysis: rep.analysis };
   R.ANALYZE_STAGES.forEach(s => setStageDone(s.key));
   await sleep(400); nav('report');
 }
@@ -641,6 +644,7 @@ async function trySample() {
     ]);
     const rep = await API.importTranscript(sample, { name: '田中 翔（サンプル）', gps });
     R.loadAnalysis(rep.analysis);
+    window.__mySubmission = { at: new Date().toISOString(), analysis: rep.analysis };
     if (info) info.innerHTML = '<span class="text-emerald-600">取り込み完了</span>';
     setTimeout(() => nav('report'), 300);
   } catch (e) {
@@ -649,5 +653,120 @@ async function trySample() {
 }
 window.trySample = trySample;
 
+/* ============================================================
+   ログイン / マイページ / モデル乖離
+   ============================================================ */
+function viewLogin() {
+  return `<div class="min-h-[72vh] flex items-center justify-center">
+    <div class="w-full max-w-sm">
+      <div class="text-center mb-6"><div class="text-lg font-semibold text-neutral-900">Rumina 鬼教官</div><div class="text-xs text-emerald-600">マイページにログイン</div></div>
+      ${card(`<div class="p-6 space-y-3">
+        <label class="block"><div class="text-xs text-neutral-500 mb-1">ユーザー名（名前）</div><input id="loginUser" class="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm" placeholder="例：田中 翔"></label>
+        <label class="block"><div class="text-xs text-neutral-500 mb-1">パスワード</div><input id="loginPw" type="password" class="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm" onkeydown="if(event.key==='Enter')doLogin()"></label>
+        <button onclick="doLogin()" class="w-full py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">ログイン</button>
+        <div id="loginErr" class="text-xs text-rose-600"></div>
+      </div>`)}
+      <p class="text-[11px] text-neutral-400 text-center mt-3">アカウントは管理者が発行します。</p>
+    </div></div>`;
+}
+async function doLogin() {
+  const u = document.getElementById('loginUser').value, p = document.getElementById('loginPw').value;
+  const err = document.getElementById('loginErr'); if (err) err.textContent = '';
+  try { await API.login(u, p); await boot(); } catch (e) { if (err) err.textContent = e.message; }
+}
+async function doLogout() { await API.logout(); window.__user = null; window.__mySubmission = null; await boot(); }
+
+// モデル（社長）との乖離を算出
+function modelDeviation(a) {
+  const b = R.TOP_BENCHMARK, g = R.computeGap(a, b);
+  const items = [
+    { k: '冒頭質問率', me: a.openingQuestionRate, top: b.openingQuestionRate, d: g.openingQuestionRate, u: '%' },
+    { k: '切り返し', me: a.averageRebuttalCount, top: b.averageRebuttalCount, d: g.averageRebuttalCount, u: '回' },
+    { k: '会話時間', me: a.averageConversationSeconds, top: b.averageConversationSeconds, d: g.averageConversationSeconds, u: '秒' },
+    { k: '在宅反応率', me: a.homeResponseRate, top: b.homeResponseRate, d: g.homeResponseRate, u: '%' },
+    { k: '行動量', me: a.totalPings, top: b.targetPings, d: g.pings, u: '件' },
+    { k: 'アポ率', me: a.appointmentRate, top: b.appointmentRate, d: g.appointmentRate, u: '%' },
+  ];
+  const behind = items.filter(x => x.d < 0).sort((x, y) => (x.d / Math.max(1, x.top)) - (y.d / Math.max(1, y.top)));
+  return { items, behind };
+}
+function deviateNarrate(a) {
+  const { behind } = modelDeviation(a), out = [];
+  if (!behind.length) { out.push({ tone: 'good', title: '結論', text: 'モデル（社長）とほぼ同じ型で動けている。この水準を維持しろ。' }); return out; }
+  const t = behind[0], s = behind[1];
+  out.push({ tone: 'harsh', title: '結論', text: `君はモデル（社長）と${behind.length}項目で乖離している。最大は「${t.k}」——君${t.me}${t.u}に対し社長は${t.top}${t.u}。ここが全ての起点だ。` });
+  if (s) out.push({ tone: 'warn', title: '次の乖離', text: `次が「${s.k}」（君${s.me}${s.u} / 社長${s.top}${s.u}）。ここも社長との差が大きい。` });
+  out.push({ tone: 'close', title: 'やること', text: `全部を一度に真似るな。まず「${t.k}」だけを社長の水準に寄せろ。1項目でいい。それが最短で差を詰める。` });
+  return out;
+}
+function deviationSection(a) {
+  const { items } = modelDeviation(a);
+  const rows = items.map(x => {
+    const neg = x.d < 0, w = Math.min(Math.abs(x.d) / (Math.abs(x.d) + Math.abs(x.top) * 0.5) * 100, 100);
+    return `<div class="flex items-center gap-3 py-1.5">
+      <div class="w-20 text-xs text-neutral-600 shrink-0">${x.k}</div>
+      <div class="flex-1 text-xs text-neutral-500 tabular-nums">君 ${x.me}${x.u} / 社長 ${x.top}${x.u}</div>
+      <div class="flex-1 h-1.5 rounded-full bg-neutral-200 overflow-hidden"><div class="h-full ${neg ? 'bg-rose-500/70' : 'bg-emerald-500/70'}" style="width:${w}%"></div></div>
+      <div class="w-16 text-right text-xs tabular-nums ${neg ? 'text-rose-600' : 'text-emerald-600'}">${neg ? '' : '+'}${x.d}${x.u}</div>
+    </div>`;
+  }).join('');
+  const border = { harsh: 'border-rose-400/60', good: 'border-emerald-400/60', warn: 'border-amber-400/60', close: 'border-neutral-400' };
+  const blocks = deviateNarrate(a).map(x => `<div class="border-l-2 ${border[x.tone]} pl-3"><div class="text-xs text-neutral-500 mb-0.5">${x.title}</div><p class="text-[14px] leading-relaxed text-neutral-800">${x.text}</p></div>`).join('');
+  return section('モデル（社長）との乖離', card(`<div class="p-5 space-y-1 border-b border-neutral-200">${rows}</div><div class="p-5 space-y-3">${blocks}</div>`), 'モデル営業マン＝社長のKPIを基準に、どこがどれだけ離れているかをAIが言語化。');
+}
+
+function viewMy() {
+  const u = window.__user || { name: '' };
+  const sub = window.__mySubmission;
+  if (!sub || !sub.analysis) {
+    return `${h1('マイページ', `${u.name} さん`)}
+      ${card(`<div class="p-8 text-center"><div class="text-sm text-neutral-700 mb-3">まだ今日の録音がありません。</div>
+        <button onclick="nav('upload')" class="px-5 py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">稼働終了・録音を出稿する</button></div>`)}`;
+  }
+  const a = sub.analysis; R.loadAnalysis(a);
+  return `
+  <div class="flex items-end justify-between mb-6">
+    <div><div class="text-xs text-neutral-500">マイページ ・ 直近の稼働（${(sub.at || '').slice(0, 10)}）</div><h1 class="text-xl font-semibold text-neutral-900 mt-0.5">${u.name} さん</h1></div>
+    <div class="text-right"><div class="text-xs text-neutral-500">鬼教官スコア</div><div class="text-2xl font-semibold text-emerald-600 tabular-nums">${a.coachScore}<span class="text-sm text-neutral-500">/100</span></div></div>
+  </div>
+  ${card(`<div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-neutral-200">
+    ${statCell('総ピンポン', a.totalPings, '件', `達成 ${a.targetAchievementRate}%`)}
+    ${statCell('在宅反応', a.homeResponseCount, '件', `${a.homeResponseRate}%`)}
+    ${statCell('アポ', a.appointmentCount, '件', `${a.appointmentRate}%`)}
+    ${statCell('サボり', a.suspiciousIdleTimeMinutes, '分', a.gps?.connected ? 'GPS確定' : '')}
+  </div>`)}
+  ${deviationSection(a)}
+  ${coachPanel()}
+  <div class="mt-8 flex flex-wrap gap-3">
+    <button onclick="nav('upload')" class="px-5 py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">新しい録音を出稿</button>
+    <button onclick="nav('report')" class="px-5 py-2.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100 transition">詳しい分析レポート</button>
+  </div>`;
+}
+
+async function issueRep(i) {
+  const r = R.SALES_REPS[i], box = document.getElementById('issueResult');
+  try {
+    const res = await API.issueAccount(r.name, r.id);
+    if (box) box.innerHTML = `<div class="border border-emerald-400/50 bg-emerald-50 rounded-md px-4 py-3 text-sm text-neutral-800">「${res.username}」のログインを発行しました ―― ユーザー名：<b>${res.username}</b>／初期パスワード：<b class="tabular-nums">${res.password}</b><div class="text-xs text-neutral-500 mt-1">この初期パスワードは一度だけ表示。本人に伝えてください。</div></div>`;
+  } catch (e) { if (box) box.innerHTML = `<div class="text-sm text-rose-600">発行失敗：${e.message}</div>`; }
+}
+
+/* ---------- 認証ゲート / ロール ---------- */
+function applyRole(user) {
+  const owner = !!(user && user.role === 'owner');
+  document.querySelectorAll('[data-owner]').forEach(el => { el.style.display = owner ? '' : 'none'; });
+  const badge = document.getElementById('userBadge');
+  if (badge) badge.innerHTML = user ? `<div class="text-xs text-neutral-700 font-medium">${user.name}</div><div class="text-[10px] text-neutral-400 mb-1">${owner ? '管理者（モデル）' : '営業'}</div><button onclick="doLogout()" class="text-[11px] text-neutral-500 hover:text-neutral-800 underline">ログアウト</button>` : '';
+}
+async function boot() {
+  const { user } = await API.me(); window.__user = user;
+  document.body.classList.toggle('logged-out', !user);
+  applyRole(user);
+  if (!user) { currentView = 'login'; render(); return; }
+  if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
+  if (!['home', 'my', 'goal', 'upload', 'report', 'issues', 'reps', 'admin'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
+  render();
+}
+window.doLogin = doLogin; window.doLogout = doLogout; window.issueRep = issueRep;
 window.nav = nav; window.startAnalyze = startAnalyze;
-render();
+boot();

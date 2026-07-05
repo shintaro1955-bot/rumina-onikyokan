@@ -53,5 +53,18 @@ window.API = (function () {
     return r.json();
   }
 
-  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready };
+  /* ---------- 認証・マイページ ---------- */
+  async function me() { try { return await (await fetch('/api/me')).json(); } catch { return { user: null }; } }
+  async function login(username, password) {
+    const r = await fetch('/api/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, password }) });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'ログインに失敗しました'); return j;
+  }
+  async function logout() { await fetch('/api/logout', { method: 'POST' }); }
+  async function issueAccount(name, repId) {
+    const r = await fetch('/api/admin/issue', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, repId }) });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '発行に失敗しました'); return j;
+  }
+  async function myLatest() { try { const r = await fetch('/api/my/latest'); return r.ok ? r.json() : { submission: null }; } catch { return { submission: null }; } }
+
+  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest };
 })();
