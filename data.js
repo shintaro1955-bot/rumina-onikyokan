@@ -205,20 +205,18 @@ const NEXT_ACTIONS = [
 /* ============================================================
    営業マン一覧
    ============================================================ */
-// 各営業マンのフルKPIプロファイル（トップ/下位比較の材料・管理者マスタで編集可）
-const DEFAULT_REPS = [
-  { id: 'r1', name: '佐藤 大輝', team: '第1営業部', role: 'エース', pings: 104, target: 100, achieve: 104, apo: 4, score: 94, idle: 8,  priority: 'low', current: false,
-    homeResponseRate: 38, conversationRate: 22, averageConversationSeconds: 58, averageRebuttalCount: 1.9, openingQuestionRate: 82, appointmentRate: 3.8 },
-  { id: 'r2', name: '鈴木 健',   team: '第1営業部', role: '中堅',   pings: 92,  target: 100, achieve: 92,  apo: 3, score: 81, idle: 18, priority: 'mid', current: false,
-    homeResponseRate: 34, conversationRate: 19, averageConversationSeconds: 50, averageRebuttalCount: 1.5, openingQuestionRate: 74, appointmentRate: 3.3 },
-  { id: 'r5', name: '伊藤 美咲', team: '第1営業部', role: '中堅',   pings: 88,  target: 100, achieve: 88,  apo: 3, score: 77, idle: 22, priority: 'mid', current: false,
-    homeResponseRate: 32, conversationRate: 18, averageConversationSeconds: 47, averageRebuttalCount: 1.3, openingQuestionRate: 68, appointmentRate: 3.4 },
-  { id: 'r3', name: '田中 翔',   team: '第2営業部', role: '新人',   pings: 78,  target: 100, achieve: 78,  apo: 2, score: 62, idle: 45, priority: 'high', current: true,
-    homeResponseRate: 26.8, conversationRate: 17.9, averageConversationSeconds: 34, averageRebuttalCount: 0.4, openingQuestionRate: 37, appointmentRate: 2.6 },
-  { id: 'r4', name: '高橋 蓮',   team: '第2営業部', role: '新人',   pings: 61,  target: 100, achieve: 61,  apo: 1, score: 48, idle: 72, priority: 'high', current: false,
-    homeResponseRate: 22, conversationRate: 14, averageConversationSeconds: 30, averageRebuttalCount: 0.3, openingQuestionRate: 31, appointmentRate: 1.6 },
-  { id: 'r6', name: '渡辺 陸',   team: '第2営業部', role: '新人',   pings: 55,  target: 100, achieve: 55,  apo: 0, score: 41, idle: 96, priority: 'high', current: false,
-    homeResponseRate: 19, conversationRate: 12, averageConversationSeconds: 26, averageRebuttalCount: 0.2, openingQuestionRate: 24, appointmentRate: 1.0 },
+// 営業名簿：初期は空。管理者マスタ（名簿編集）で本部長が自チームを登録する。
+// ※デモ用のサンプル名簿が要る場合は管理者マスタの「サンプルを入れる」から復元できる。
+const DEFAULT_REPS = [];
+
+// デモ用サンプル名簿（初期表示には出さない。管理者マスタから任意で投入）
+const SAMPLE_REPS = [
+  { id: 's1', name: '佐藤 大輝', team: '第1営業部', role: 'エース', pings: 104, target: 100, achieve: 104, apo: 4, score: 94, idle: 8,  priority: 'low', current: false, homeResponseRate: 38, conversationRate: 22, averageConversationSeconds: 58, averageRebuttalCount: 1.9, openingQuestionRate: 82, appointmentRate: 3.8 },
+  { id: 's2', name: '鈴木 健',   team: '第1営業部', role: '中堅',   pings: 92,  target: 100, achieve: 92,  apo: 3, score: 81, idle: 18, priority: 'mid', current: false, homeResponseRate: 34, conversationRate: 19, averageConversationSeconds: 50, averageRebuttalCount: 1.5, openingQuestionRate: 74, appointmentRate: 3.3 },
+  { id: 's3', name: '伊藤 美咲', team: '第1営業部', role: '中堅',   pings: 88,  target: 100, achieve: 88,  apo: 3, score: 77, idle: 22, priority: 'mid', current: false, homeResponseRate: 32, conversationRate: 18, averageConversationSeconds: 47, averageRebuttalCount: 1.3, openingQuestionRate: 68, appointmentRate: 3.4 },
+  { id: 's4', name: '田中 翔',   team: '第2営業部', role: '新人',   pings: 78,  target: 100, achieve: 78,  apo: 2, score: 62, idle: 45, priority: 'high', current: false, homeResponseRate: 26.8, conversationRate: 17.9, averageConversationSeconds: 34, averageRebuttalCount: 0.4, openingQuestionRate: 37, appointmentRate: 2.6 },
+  { id: 's5', name: '高橋 蓮',   team: '第2営業部', role: '新人',   pings: 61,  target: 100, achieve: 61,  apo: 1, score: 48, idle: 72, priority: 'high', current: false, homeResponseRate: 22, conversationRate: 14, averageConversationSeconds: 30, averageRebuttalCount: 0.3, openingQuestionRate: 31, appointmentRate: 1.6 },
+  { id: 's6', name: '渡辺 陸',   team: '第2営業部', role: '新人',   pings: 55,  target: 100, achieve: 55,  apo: 0, score: 41, idle: 96, priority: 'high', current: false, homeResponseRate: 19, conversationRate: 12, averageConversationSeconds: 26, averageRebuttalCount: 0.2, openingQuestionRate: 24, appointmentRate: 1.0 },
 ];
 
 // 営業名簿：管理者マスタの編集をlocalStorageに永続化
@@ -287,7 +285,7 @@ function applyCrmConfirm(a) {
 
 window.RUMINA = {
   TOP_BENCHMARK, TODAY_ANALYSIS, NEXT_ACTIONS,
-  SALES_REPS: loadReps(), DEFAULT_REPS, SAMPLE_TRANSCRIPT, PING_EVENTS, ANALYZE_STAGES,
+  SALES_REPS: loadReps(), DEFAULT_REPS, SAMPLE_REPS, SAMPLE_TRANSCRIPT, PING_EVENTS, ANALYZE_STAGES,
   computeGap, generateCoachComment, buildRadar, computeScore, saveCrm, applyCrmConfirm,
   saveReps, resetReps,
 };

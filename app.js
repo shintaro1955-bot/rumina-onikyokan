@@ -375,6 +375,10 @@ function viewReps() {
       <td class="py-3 text-right text-xs ${prTxt[r.priority][1]}">${prTxt[r.priority][0]}</td>
     </tr>`;
   }).join('');
+  if (!R.SALES_REPS.length) {
+    return `${h1('営業マン一覧', '鬼教官スコア順 ・ 改善優先度でサボり・失速を可視化')}
+      ${card(`<div class="p-8 text-center text-sm text-neutral-700">まだ営業マンが登録されていません。<div class="mt-3"><button onclick="nav('admin')" class="px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">管理者マスタで登録する</button></div></div>`)}`;
+  }
   return `
   ${h1('営業マン一覧', '鬼教官スコア順 ・ 改善優先度でサボり・失速を可視化')}
   ${card(`<div class="overflow-x-auto"><table class="w-full text-sm min-w-[680px]">
@@ -386,6 +390,13 @@ function viewReps() {
 /* ---------- ⑥ イシュー分析（トップ vs 下位） ---------- */
 function viewIssues() {
   const c = ISSUES.compare(R.SALES_REPS);
+  if (c.empty) {
+    const msg = c.reason === 'no-reps'
+      ? '営業名簿が空です。まず「管理者マスタ（名簿編集）」で営業マンを登録してください。'
+      : 'トップ群（スコア80以上）と下位群（65未満）の両方が揃うと、比較・イシュー分析が出ます。名簿を追加してください。';
+    return `${h1('イシュー分析', 'トップ営業 vs 下位営業を比較し、組織のどこで負けているかを炙り出す。')}
+      ${card(`<div class="p-8 text-center text-sm text-neutral-700">${msg}<div class="mt-3"><button onclick="nav('admin')" class="px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">管理者マスタを開く</button></div></div>`)}`;
+  }
   const sev = { critical: 'text-rose-600', warn: 'text-amber-600', watch: 'text-neutral-600' };
 
   const groupCard = (title, p, apo, accent) => card(`<div class="p-5">
@@ -481,7 +492,8 @@ function viewAdmin() {
   ${h1('管理者マスタ（営業名簿）', '営業マンの追加・編集・削除。ここが「営業マン一覧」と「イシュー分析」の元データ。変更は自動保存。')}
   <div class="flex flex-wrap gap-2 mb-3">
     <button onclick="adminAdd()" class="px-3 py-1.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">＋ 営業マンを追加</button>
-    <button onclick="adminReset()" class="px-3 py-1.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100 transition">初期名簿に戻す</button>
+    <button onclick="adminReset()" class="px-3 py-1.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100 transition">名簿を空にする</button>
+    <button onclick="adminSample()" class="px-3 py-1.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100 transition">サンプルを入れる</button>
     <span id="adminSaved" class="text-xs text-emerald-600 self-center"></span>
   </div>
   <div id="issueResult" class="mb-3"></div>
@@ -509,7 +521,8 @@ function adminAdd() {
 }
 function adminDelete(i) { const list = adminRead(); list.splice(i, 1); R.saveReps(list); render(); }
 function adminReset() { R.resetReps(); render(); }
-window.adminSave = adminSave; window.adminAdd = adminAdd; window.adminDelete = adminDelete; window.adminReset = adminReset;
+function adminSample() { R.saveReps(R.SAMPLE_REPS.map(r => ({ ...r }))); render(); }
+window.adminSave = adminSave; window.adminAdd = adminAdd; window.adminDelete = adminDelete; window.adminReset = adminReset; window.adminSample = adminSample;
 
 /* ---------- ルーター ---------- */
 const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, reps: viewReps, issues: viewIssues, admin: viewAdmin };
@@ -563,8 +576,8 @@ async function bindUpload() {
   const badge = document.getElementById('apiBadge');
   const info = await API.health(); window.__whisperReady = info.whisperReady;
   if (badge) badge.innerHTML = info.whisperReady
-    ? '<span class="text-emerald-600">Whisper接続済</span> — アップロードで実解析します'
-    : '<span class="text-neutral-600">デモモード</span> — サーバー未接続/APIキー未設定のためモック解析';
+    ? '<span class="text-emerald-600">● Whisper接続済</span> — 音声アップロードで実解析します'
+    : '<span class="text-amber-600">● デモモード</span> — OPENAI_API_KEY 未設定のため、音声アップロードはモック解析（サンプル/Plaud取り込みは動きます）';
 }
 
 /* ---------- 解析中ステージ制御 ---------- */

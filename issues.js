@@ -38,6 +38,11 @@
     const sorted = reps.slice().sort((a, b) => b.score - a.score);
     const topMembers = sorted.filter(r => r.score >= topMin);
     const bottomMembers = sorted.filter(r => r.score < bottomMax);
+
+    // 名簿が空／トップ・下位が揃わない場合は比較不能（空状態）
+    if (!topMembers.length || !bottomMembers.length) {
+      return { empty: true, reason: !reps.length ? 'no-reps' : 'no-groups', totalReps: reps.length };
+    }
     const top = profileOf(topMembers);
     const bottom = profileOf(bottomMembers);
 
