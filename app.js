@@ -33,7 +33,12 @@ function coachPanel() {
       <div class="text-xs text-neutral-500 mb-1">${b.title}</div>
       <p class="text-[15px] leading-relaxed text-neutral-800">${b.text}</p>
     </div>`).join('');
-  return section('鬼教官の講評', card(`<div class="p-5 space-y-5">${blocks}</div>`), '甘やかさない。だが必ず勝たせる。');
+  return section('鬼教官の講評', card(`
+    <div class="flex items-center gap-3 px-5 pt-5">
+      <img src="/assets/rumina.png" alt="Rumina" class="w-12 h-12 rounded-full object-cover border border-emerald-200 shadow-sm">
+      <div><div class="text-sm font-semibold text-neutral-900">Rumina 鬼教官</div><div class="text-xs text-neutral-500">甘やかさない。だが必ず勝たせる。</div></div>
+    </div>
+    <div class="p-5 space-y-5">${blocks}</div>`));
 }
 
 /* 自動診断 */
@@ -672,7 +677,9 @@ window.trySample = trySample;
 function viewLogin() {
   return `<div class="min-h-[72vh] flex items-center justify-center">
     <div class="w-full max-w-sm">
-      <div class="text-center mb-6"><div class="text-lg font-semibold text-neutral-900">Rumina 鬼教官</div><div class="text-xs text-emerald-600">マイページにログイン</div></div>
+      <div class="text-center mb-6">
+        <img src="/assets/rumina.png" alt="Rumina" class="w-24 h-24 rounded-full object-cover mx-auto mb-3 border border-emerald-200 shadow-sm">
+        <div class="text-lg font-semibold text-neutral-900">Rumina 鬼教官</div><div class="text-xs text-emerald-600">マイページにログイン</div></div>
       ${card(`<div class="p-6 space-y-3">
         <label class="block"><div class="text-xs text-neutral-500 mb-1">ユーザー名（名前）</div><input id="loginUser" class="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm" placeholder="例：田中 翔"></label>
         <label class="block"><div class="text-xs text-neutral-500 mb-1">パスワード</div><input id="loginPw" type="password" class="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm" onkeydown="if(event.key==='Enter')doLogin()"></label>

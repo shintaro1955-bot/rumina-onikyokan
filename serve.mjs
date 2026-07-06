@@ -4,7 +4,7 @@ import { join, extname } from 'node:path';
 
 const ROOT = new URL('.', import.meta.url).pathname;
 const PORT = process.env.PORT || 4180;
-const TYPES = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.svg':'image/svg+xml', '.json':'application/json' };
+const TYPES = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.svg':'image/svg+xml', '.json':'application/json', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.webp':'image/webp', '.ico':'image/x-icon' };
 
 createServer(async (req, res) => {
   let path = decodeURIComponent(req.url.split('?')[0]);

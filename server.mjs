@@ -22,7 +22,7 @@ const ROOT = new URL('.', import.meta.url).pathname;
 const PORT = process.env.PORT || 4180;
 const API_KEY = process.env.OPENAI_API_KEY || '';
 const MODEL = process.env.WHISPER_MODEL || 'whisper-1';
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml' };
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon' };
 
 // トップ営業ベンチマーク（本番はチームのトップN平均を日次更新。SPEC §7）
 const BENCHMARK = { targetPings: 100, homeResponseRate: 35, conversationRate: 20, averageConversationSeconds: 55, averageRebuttalCount: 1.8, appointmentRate: 3.5, openingQuestionRate: 80 };
