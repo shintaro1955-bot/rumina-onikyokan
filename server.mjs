@@ -51,11 +51,11 @@ function currentUser(req) {
   return u ? { username: u.username, name: u.name, role: u.role, repId: u.repId } : null;
 }
 
-// 起動時：ownerが居なければ社長アカウントを1つseed（＝モデル営業マン）
+// 起動時：ownerが居なければ管理者アカウントを1つseed（＝モデル営業マン。既定は営業部長 川上）
 (function seedOwner() {
   const db = getDb();
   if (Object.keys(db.users).length) return;
-  const username = process.env.OWNER_USER || '社長';
+  const username = process.env.OWNER_USER || '川上';
   const pw = process.env.OWNER_PASSWORD || 'rumina2026';
   const { salt, hash } = hashPassword(pw);
   db.users[username] = { username, name: username, role: 'owner', repId: 'owner', salt, hash, isModel: true };

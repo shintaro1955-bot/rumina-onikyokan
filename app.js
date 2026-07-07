@@ -696,7 +696,7 @@ async function doLogin() {
 }
 async function doLogout() { await API.logout(); window.__user = null; window.__mySubmission = null; await boot(); }
 
-// モデル（社長）との乖離を算出
+// モデル（川上）との乖離を算出
 function modelDeviation(a) {
   const b = R.TOP_BENCHMARK, g = R.computeGap(a, b);
   const items = [
@@ -712,11 +712,11 @@ function modelDeviation(a) {
 }
 function deviateNarrate(a) {
   const { behind } = modelDeviation(a), out = [];
-  if (!behind.length) { out.push({ tone: 'good', title: '結論', text: 'モデル（社長）とほぼ同じ型で動けている。この水準を維持しろ。' }); return out; }
+  if (!behind.length) { out.push({ tone: 'good', title: '結論', text: 'モデル（川上）とほぼ同じ型で動けている。この水準を維持しろ。' }); return out; }
   const t = behind[0], s = behind[1];
-  out.push({ tone: 'harsh', title: '結論', text: `君はモデル（社長）と${behind.length}項目で乖離している。最大は「${t.k}」——君${t.me}${t.u}に対し社長は${t.top}${t.u}。ここが全ての起点だ。` });
-  if (s) out.push({ tone: 'warn', title: '次の乖離', text: `次が「${s.k}」（君${s.me}${s.u} / 社長${s.top}${s.u}）。ここも社長との差が大きい。` });
-  out.push({ tone: 'close', title: 'やること', text: `全部を一度に真似るな。まず「${t.k}」だけを社長の水準に寄せろ。1項目でいい。それが最短で差を詰める。` });
+  out.push({ tone: 'harsh', title: '結論', text: `君はモデル（川上）と${behind.length}項目で乖離している。最大は「${t.k}」——君${t.me}${t.u}に対し川上は${t.top}${t.u}。ここが全ての起点だ。` });
+  if (s) out.push({ tone: 'warn', title: '次の乖離', text: `次が「${s.k}」（君${s.me}${s.u} / 川上${s.top}${s.u}）。ここも川上との差が大きい。` });
+  out.push({ tone: 'close', title: 'やること', text: `全部を一度に真似るな。まず「${t.k}」だけを川上の水準に寄せろ。1項目でいい。それが最短で差を詰める。` });
   return out;
 }
 function deviationSection(a) {
@@ -725,14 +725,14 @@ function deviationSection(a) {
     const neg = x.d < 0, w = Math.min(Math.abs(x.d) / (Math.abs(x.d) + Math.abs(x.top) * 0.5) * 100, 100);
     return `<div class="flex items-center gap-3 py-1.5">
       <div class="w-20 text-xs text-neutral-600 shrink-0">${x.k}</div>
-      <div class="flex-1 text-xs text-neutral-500 tabular-nums">君 ${x.me}${x.u} / 社長 ${x.top}${x.u}</div>
+      <div class="flex-1 text-xs text-neutral-500 tabular-nums">君 ${x.me}${x.u} / 川上 ${x.top}${x.u}</div>
       <div class="flex-1 h-1.5 rounded-full bg-neutral-200 overflow-hidden"><div class="h-full ${neg ? 'bg-rose-500/70' : 'bg-emerald-500/70'}" style="width:${w}%"></div></div>
       <div class="w-16 text-right text-xs tabular-nums ${neg ? 'text-rose-600' : 'text-emerald-600'}">${neg ? '' : '+'}${x.d}${x.u}</div>
     </div>`;
   }).join('');
   const border = { harsh: 'border-rose-400/60', good: 'border-emerald-400/60', warn: 'border-amber-400/60', close: 'border-neutral-400' };
   const blocks = deviateNarrate(a).map(x => `<div class="border-l-2 ${border[x.tone]} pl-3"><div class="text-xs text-neutral-500 mb-0.5">${x.title}</div><p class="text-[14px] leading-relaxed text-neutral-800">${x.text}</p></div>`).join('');
-  return section('モデル（社長）との乖離', card(`<div class="p-5 space-y-1 border-b border-neutral-200">${rows}</div><div class="p-5 space-y-3">${blocks}</div>`), 'モデル営業マン＝社長のKPIを基準に、どこがどれだけ離れているかをAIが言語化。');
+  return section('モデル（川上）との乖離', card(`<div class="p-5 space-y-1 border-b border-neutral-200">${rows}</div><div class="p-5 space-y-3">${blocks}</div>`), 'モデル営業マン＝川上のKPIを基準に、どこがどれだけ離れているかをAIが言語化。');
 }
 
 function viewMy() {
