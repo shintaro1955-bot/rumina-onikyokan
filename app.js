@@ -35,7 +35,7 @@ function coachPanel() {
     </div>`).join('');
   return section('鬼教官の講評', card(`
     <div class="flex items-center gap-3 px-5 pt-5">
-      <img src="/assets/rumina.png" alt="Rumina" class="w-12 h-12 rounded-full object-cover border border-emerald-200 shadow-sm">
+      <img src="/assets/rumina.png" alt="Dr.Rumina" class="w-12 h-12 rounded-full object-cover object-top border border-emerald-200 shadow-sm">
       <div><div class="text-sm font-semibold text-neutral-900">Rumina 鬼教官</div><div class="text-xs text-neutral-500">甘やかさない。だが必ず勝たせる。</div></div>
     </div>
     <div class="p-5 space-y-5">${blocks}</div>`));
@@ -286,6 +286,30 @@ function confirmResults() {
 }
 window.confirmResults = confirmResults;
 
+/* 勝ちトーク分析（なぜアポが取れたか） */
+function winTalkSection(a) {
+  const w = a.winTalk; if (!w || !w.wins || !w.wins.length) return '';
+  const chip = k => `<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 mr-1 mb-1 inline-block">${k}</span>`;
+  const wins = w.wins.map(x => `
+    <div class="border border-neutral-200 rounded-lg p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-[11px] px-2 py-0.5 rounded-full ${x.result === 'apo' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}">${x.result === 'apo' ? 'アポ獲得' : '見込み'}</span>
+        <span class="text-xs text-neutral-500">この訪問で効いた型</span>
+      </div>
+      <div class="mb-2">${x.moves.map(chip).join('') || '<span class="text-xs text-neutral-500">—</span>'}</div>
+      <div class="text-[13px] text-neutral-800 leading-relaxed">${x.why}</div>
+      ${x.excerpt ? `<div class="text-[11px] text-neutral-500 mt-1.5">「${x.excerpt}…」</div>` : ''}
+    </div>`).join('');
+  const top = w.topMoves.slice(0, 6).map(m => `<div class="flex justify-between text-sm py-1"><span class="text-neutral-700">${m.move}</span><span class="text-neutral-500 tabular-nums">${m.count}回</span></div>`).join('');
+  return section('勝ちトーク分析 — なぜアポが取れたか',
+    `<div class="border border-emerald-200 rounded-lg p-4 mb-4 text-[13px] text-neutral-800" style="background:#f2f9f4">${w.summary}</div>
+     <div class="grid lg:grid-cols-2 gap-4 items-start">
+       <div class="space-y-3">${wins}</div>
+       ${card(`<div class="p-5"><div class="text-sm font-semibold text-neutral-700 mb-2">効いた勝ち筋（頻度）</div>${top || '<div class="text-sm text-neutral-500">—</div>'}<div class="text-[11px] text-neutral-500 mt-3">この型を「モデルの必勝パターン」として全員に展開できます。</div></div>`)}
+     </div>`,
+    'アポ・見込みになった訪問だけを取り出し、決め手をAIが言語化（太陽光蓄電池ドメイン）。');
+}
+
 /* ---------- ④ レポート ---------- */
 function viewReport() {
   const a = SESSION.analysis, g = SESSION.gap, b = R.TOP_BENCHMARK;
@@ -340,6 +364,7 @@ function viewReport() {
   </div>`)}
 
   ${gpsBlock}
+  ${winTalkSection(a)}
   ${diagnosisSection()}
 
   ${section('時間帯別 活動密度', card(`<div class="p-5">${C.hourlyDensity(a.hourly || [], idleHours)}<div class="text-[11px] text-neutral-500 mt-1">赤 = 活動が薄い時間帯</div></div>`))}
@@ -678,7 +703,7 @@ function viewLogin() {
   return `<div class="min-h-[72vh] flex items-center justify-center">
     <div class="w-full max-w-sm">
       <div class="text-center mb-6">
-        <img src="/assets/rumina.png" alt="Rumina" class="w-24 h-24 rounded-full object-cover mx-auto mb-3 border border-emerald-200 shadow-sm">
+        <img src="/assets/rumina.png" alt="Dr.Rumina" class="w-24 h-24 rounded-full object-cover object-top mx-auto mb-3 border border-emerald-200 shadow-sm">
         <div class="text-lg font-semibold text-neutral-900">Rumina 鬼教官</div><div class="text-xs text-emerald-600">マイページにログイン</div></div>
       ${card(`<div class="p-6 space-y-3">
         <label class="block"><div class="text-xs text-neutral-500 mb-1">ユーザー名（名前）</div><input id="loginUser" class="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm" placeholder="例：田中 翔"></label>
