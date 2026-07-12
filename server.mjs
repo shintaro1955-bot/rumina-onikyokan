@@ -113,7 +113,7 @@ const server = createServer(async (req, res) => {
         const cb = lineCallback(req);
         // CSRF：stateを短命Cookieに置き、コールバックで突合
         res.setHeader('Set-Cookie', `rk_lstate=${state}; HttpOnly; SameSite=Lax; Path=/; Max-Age=600`);
-        const q = new URLSearchParams({ response_type: 'code', client_id: LINE_ID, redirect_uri: cb, state, scope: 'profile openid', bot_prompt: 'normal' });
+        const q = new URLSearchParams({ response_type: 'code', client_id: LINE_ID, redirect_uri: cb, state, scope: 'profile openid', bot_prompt: 'aggressive' });
         res.writeHead(302, { Location: 'https://access.line.me/oauth2/v2.1/authorize?' + q });
         return res.end();
       }
