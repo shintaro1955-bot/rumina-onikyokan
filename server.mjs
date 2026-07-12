@@ -22,6 +22,13 @@ const ROOT = new URL('.', import.meta.url).pathname;
 const PORT = process.env.PORT || 4180;
 const API_KEY = process.env.OPENAI_API_KEY || '';
 const MODEL = process.env.WHISPER_MODEL || 'whisper-1';
+
+// LINEログイン（LINE Developers の「LINEログイン」チャネル）
+const LINE_ID = process.env.LINE_LOGIN_CHANNEL_ID || '';
+const LINE_SECRET = process.env.LINE_LOGIN_CHANNEL_SECRET || '';
+const LINE_CALLBACK = process.env.LINE_CALLBACK_URL || '';   // 未設定ならリクエストのホストから自動生成
+const OWNER_LINE_ID = process.env.OWNER_LINE_ID || '';       // このLINEユーザーIDは管理者(owner)にする
+const LINE_READY = !!(LINE_ID && LINE_SECRET);
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon' };
 
 // トップ営業ベンチマーク（本番はチームのトップN平均を日次更新。SPEC §7）
@@ -50,6 +57,19 @@ function currentUser(req) {
   const u = getDb().users[s.username];
   return u ? { username: u.username, name: u.name, role: u.role, repId: u.repId } : null;
 }
+// LINEコールバックURL（未設定ならリクエストのホストから組み立て）
+function lineCallback(req) {
+  if (LINE_CALLBACK) return LINE_CALLBACK;
+  const proto = req.headers['x-forwarded-proto'] || 'http';
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  return `${proto}://${host}/api/line/callback`;
+}
+// 重複しないユーザー名を作る（LINE表示名ベース）
+function uniqueUsername(db, base) {
+  let u = base || 'LINEユーザー', n = 1;
+  while (db.users[u]) u = `${base}_${++n}`;
+  return u;
+}
 
 // 起動時：ownerが居なければ管理者アカウントを1つseed（＝モデル営業マン。既定は営業部長 川上）
 (function seedOwner() {
@@ -71,7 +91,7 @@ const server = createServer(async (req, res) => {
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL });
+      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY });
 
       /* ---------- 認証 ---------- */
       if (path === '/api/me') return json(res, 200, { user: currentUser(req) });
@@ -85,6 +105,50 @@ const server = createServer(async (req, res) => {
       }
 
       if (path === '/api/logout' && req.method === 'POST') { clearSessionCookie(res); return json(res, 200, { ok: true }); }
+
+      /* ---------- LINEログイン（全スタッフ・初回自動作成） ---------- */
+      if (path === '/api/line/login' && req.method === 'GET') {
+        if (!LINE_READY) return json(res, 400, { error: 'LINEログインが未設定です' });
+        const state = randomUUID();
+        const cb = lineCallback(req);
+        // CSRF：stateを短命Cookieに置き、コールバックで突合
+        res.setHeader('Set-Cookie', `rk_lstate=${state}; HttpOnly; SameSite=Lax; Path=/; Max-Age=600`);
+        const q = new URLSearchParams({ response_type: 'code', client_id: LINE_ID, redirect_uri: cb, state, scope: 'profile openid', bot_prompt: 'normal' });
+        res.writeHead(302, { Location: 'https://access.line.me/oauth2/v2.1/authorize?' + q });
+        return res.end();
+      }
+
+      if (path === '/api/line/callback' && req.method === 'GET') {
+        const code = url.searchParams.get('code'), state = url.searchParams.get('state');
+        const saved = parseCookies(req).rk_lstate;
+        res.setHeader('Set-Cookie', 'rk_lstate=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
+        if (!code || !state || !saved || state !== saved) { res.writeHead(302, { Location: '/?lineerror=state' }); return res.end(); }
+        try {
+          const cb = lineCallback(req);
+          const tr = await fetch('https://api.line.me/oauth2/v2.1/token', {
+            method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: cb, client_id: LINE_ID, client_secret: LINE_SECRET }),
+          });
+          const tj = await tr.json();
+          if (!tr.ok || !tj.access_token) throw new Error('token');
+          const pr = await fetch('https://api.line.me/v2/profile', { headers: { Authorization: `Bearer ${tj.access_token}` } });
+          const pj = await pr.json();
+          if (!pr.ok || !pj.userId) throw new Error('profile');
+
+          const db = getDb();
+          let user = Object.values(db.users).find(u => u.lineId === pj.userId);
+          if (!user) {
+            const isOwner = !!OWNER_LINE_ID && OWNER_LINE_ID === pj.userId;
+            const uname = uniqueUsername(db, (pj.displayName || 'LINEユーザー').trim());
+            user = { username: uname, name: (pj.displayName || uname).trim(), role: isOwner ? 'owner' : 'rep', repId: null, lineId: pj.userId, isModel: isOwner || false, pending: !isOwner };
+            db.users[uname] = user; save();
+          }
+          setSessionCookie(req, res, signSession({ username: user.username, role: user.role }));
+          res.writeHead(302, { Location: '/' }); return res.end();
+        } catch (e) {
+          res.writeHead(302, { Location: '/?lineerror=auth' }); return res.end();
+        }
+      }
 
       // 管理者：名簿からアカウント発行（owner専用）
       if (path === '/api/admin/issue' && req.method === 'POST') {

@@ -706,12 +706,19 @@ function viewLogin() {
         <img src="/assets/rumina.png" alt="Dr.Rumina" class="w-24 h-24 rounded-full object-cover object-top mx-auto mb-3 border border-emerald-200 shadow-sm">
         <div class="text-lg font-semibold text-neutral-900">Rumina 鬼教官</div><div class="text-xs text-emerald-600">マイページにログイン</div></div>
       ${card(`<div class="p-6 space-y-3">
+        ${window.__lineReady ? `
+        <a href="/api/line/login" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-md text-white text-sm font-semibold transition" style="background:#06C755">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.5 2 2 5.7 2 10.2c0 4 3.6 7.4 8.5 8 .3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.6 1.1-.5 6-3.5 8.2-6C21.6 13.9 22 12.1 22 10.2 22 5.7 17.5 2 12 2z"/></svg>
+          LINEでログイン
+        </a>
+        <div class="flex items-center gap-3 py-1"><div class="flex-1 h-px bg-neutral-200"></div><span class="text-[11px] text-neutral-400">または</span><div class="flex-1 h-px bg-neutral-200"></div></div>` : ''}
         <label class="block"><div class="text-xs text-neutral-500 mb-1">ユーザー名（名前）</div><input id="loginUser" class="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm" placeholder="例：田中 翔"></label>
         <label class="block"><div class="text-xs text-neutral-500 mb-1">パスワード</div><input id="loginPw" type="password" class="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm" onkeydown="if(event.key==='Enter')doLogin()"></label>
         <button onclick="doLogin()" class="w-full py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">ログイン</button>
         <div id="loginErr" class="text-xs text-rose-600"></div>
       </div>`)}
-      <p class="text-[11px] text-neutral-400 text-center mt-3">アカウントは管理者が発行します。</p>
+      <p class="text-[11px] text-neutral-400 text-center mt-3">${window.__lineReady ? 'LINEでログインすると自動でアカウントが作成されます。' : 'アカウントは管理者が発行します。'}</p>
+      ${new URLSearchParams(location.search).has('lineerror') ? '<p class="text-[11px] text-rose-600 text-center mt-1">LINEログインに失敗しました。もう一度お試しください。</p>' : ''}
     </div></div>`;
 }
 async function doLogin() {
@@ -805,6 +812,7 @@ function applyRole(user) {
 }
 async function boot() {
   const { user } = await API.me(); window.__user = user;
+  try { window.__lineReady = !!(await API.health()).lineLoginReady; } catch { window.__lineReady = false; }
   document.body.classList.toggle('logged-out', !user);
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
