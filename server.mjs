@@ -29,6 +29,27 @@ const LINE_SECRET = process.env.LINE_LOGIN_CHANNEL_SECRET || '';
 const LINE_CALLBACK = process.env.LINE_CALLBACK_URL || '';   // 未設定ならリクエストのホストから自動生成
 const OWNER_LINE_ID = process.env.OWNER_LINE_ID || '';       // このLINEユーザーIDは管理者(owner)にする
 const LINE_READY = !!(LINE_ID && LINE_SECRET);
+
+// Rumina Coach 連携（任意）。Coachの測定依頼リンク（?staff=&iv=）経由でアクセスした
+// セッションのみ、測定完了時に解析結果をCoachのwebhookへ送る。未設定なら何も送らない。
+const COACH_WEBHOOK_URL = (process.env.COACH_WEBHOOK_URL || '').replace(/\/$/, '');
+const COACH_WEBHOOK_SECRET = process.env.COACH_WEBHOOK_SECRET || '';
+
+/** 測定完了をCoachへ通知する（fire-and-forget。失敗しても鬼教官側の処理は止めない）。 */
+async function notifyCoach(interventionId, analysis) {
+  if (!COACH_WEBHOOK_URL || !interventionId) return;
+  try {
+    const url = `${COACH_WEBHOOK_URL}/webhook/oni?secret=${encodeURIComponent(COACH_WEBHOOK_SECRET)}&iv=${encodeURIComponent(interventionId)}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ analysis }),
+    });
+    if (!res.ok) console.error(`[coach] webhook failed ${res.status}: ${await res.text().catch(() => '')}`);
+  } catch (e) {
+    console.error(`[coach] webhook error: ${e.message}`);
+  }
+}
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon' };
 
 // トップ営業ベンチマーク（本番はチームのトップN平均を日次更新。SPEC §7）
@@ -185,6 +206,9 @@ const server = createServer(async (req, res) => {
           id, fileName, path: dest, status: 'queued', stage: null, progress: { done: 0, total: 0 },
           salesRepId: req.headers['x-sales-rep-id'] || null, uploadedAt: new Date().toISOString(),
           startHour: +(req.headers['x-start-hour'] || 9), result: null, error: null,
+          // Rumina Coach 連携：測定依頼リンク（?staff=&iv=）から来た場合のみ設定される
+          interventionId: req.headers['x-intervention-id'] || null,
+          staffCode: req.headers['x-staff-code'] || null,
         });
         return json(res, 200, { sessionId: id, fileName });
       }
@@ -214,6 +238,8 @@ const server = createServer(async (req, res) => {
         // ログイン中なら本人の最新レポートとして保存（マイページ用）
         const me = currentUser(req);
         if (me) { getDb().submissions[me.username] = { at: new Date().toISOString(), name: me.name, analysis }; save(); }
+        // Rumina Coach 連携：測定依頼リンク（?staff=&iv=）経由でインポートした場合のみ送信
+        if (body.interventionId) notifyCoach(body.interventionId, analysis);
         return json(res, 200, result);
       }
 
@@ -291,6 +317,7 @@ async function runPipeline(s) {
   s.stage = 'analyze';
   s.result = { sessionId: s.id, benchmark: BENCHMARK, analysis, pings, transcript };
   s.status = 'done'; s.stage = 'coach';
+  notifyCoach(s.interventionId, analysis); // fire-and-forget（Coach連携時のみ・未設定なら何もしない）
 }
 
 server.listen(PORT, () => {
