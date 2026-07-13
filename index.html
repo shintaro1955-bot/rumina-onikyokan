@@ -17,6 +17,12 @@
   .navlink{display:block;width:100%;text-align:left;padding:.5rem .75rem;border-radius:.5rem;color:#525252;font-size:.875rem;transition:background .15s,color .15s}
   .navlink:hover{color:#171717;background:#f5f5f5}
   body.logged-out .app-chrome{display:none !important}
+  @media print {
+    .app-chrome{display:none !important}
+    .no-print{display:none !important}
+    main{max-width:none !important;padding:0 !important}
+    #submitSheet{border:none !important}
+  }
 </style>
 
 <div class="min-h-screen flex">
@@ -32,6 +38,7 @@
       <button data-nav="goal" onclick="nav('goal')" class="navlink">① 目標設定</button>
       <button data-nav="upload" onclick="nav('upload')" class="navlink">② 稼働終了・録音を出稿</button>
       <button data-nav="report" onclick="nav('report')" class="navlink">③ 分析レポート</button>
+      <button data-nav="submit" onclick="nav('submit')" class="navlink">④ 上長へ提出書</button>
     </nav>
     <div data-owner class="px-3 text-[10px] font-semibold text-neutral-400 tracking-wide mb-1 mt-4">管理（管理者のみ）</div>
     <nav class="space-y-0.5">

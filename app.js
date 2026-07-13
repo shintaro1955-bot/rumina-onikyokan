@@ -310,6 +310,146 @@ function winTalkSection(a) {
     'アポ・見込みになった訪問だけを取り出し、決め手をAIが言語化（太陽光蓄電池ドメイン）。');
 }
 
+/* ---------- 八賀トークロジックとの乖離 ---------- */
+function downloadText(filename, text) {
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const el = document.createElement('a');
+  el.href = url; el.download = filename; document.body.appendChild(el); el.click();
+  document.body.removeChild(el); setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function downloadHagaLogic() { downloadText('八賀トークロジック_基準.txt', R.hagaLogicText()); }
+
+function devBadge(status) {
+  if (status === 'ok') return '<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-600 text-white">◎ 再現</span>';
+  if (status === 'weak') return '<span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">△ あと一歩</span>';
+  return '<span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">× 型が出ていない</span>';
+}
+
+function hagaLogicSection(a) {
+  const dev = R.buildTalkDeviation(a);
+  const L = R.HAGA_TALK_LOGIC;
+  const rows = dev.rows.map(r => `
+    <div class="border border-neutral-200 rounded-lg p-4">
+      <div class="flex items-center gap-2 mb-1.5">
+        <span class="text-xs text-neutral-400 tabular-nums">${r.no}</span>
+        <span class="text-sm font-semibold text-neutral-800">${r.name}</span>
+        <span class="ml-auto">${devBadge(r.status)}</span>
+      </div>
+      <div class="text-[13px] text-neutral-700 leading-relaxed">${r.idea}</div>
+      ${r.status !== 'ok' ? `<div class="mt-2 text-[12px] text-neutral-600 bg-neutral-50 border border-neutral-200 rounded p-2">
+        <span class="text-emerald-700 font-semibold">八賀のお手本：</span>「${r.phrases[0]}」
+        ${r.ratio != null ? `<span class="text-neutral-400 ml-2 tabular-nums">基準比 ${Math.round(r.ratio * 100)}%</span>` : ''}
+      </div>` : ''}
+    </div>`).join('');
+  const barColor = dev.coveragePct >= 70 ? 'bg-emerald-500' : dev.coveragePct >= 40 ? 'bg-amber-400' : 'bg-rose-500';
+  return section('八賀トークロジックとの乖離',
+    `<div class="border border-emerald-200 rounded-lg p-4 mb-4" style="background:#f2f9f4">
+       <div class="flex items-center justify-between mb-2 gap-3">
+         <div class="text-[13px] text-neutral-800"><span class="font-semibold">${L.title}</span>と、あなたのトーク特徴を照合しました。</div>
+         <div class="text-right shrink-0"><div class="text-xs text-neutral-500">再現度</div><div class="text-xl font-semibold text-emerald-600 tabular-nums">${dev.coverage}/${dev.total}<span class="text-sm text-neutral-500 ml-1">フェーズ</span></div></div>
+       </div>
+       <div class="h-2 rounded-full bg-neutral-200 overflow-hidden"><div class="h-full ${barColor}" style="width:${dev.coveragePct}%"></div></div>
+       <div class="text-[12px] text-neutral-600 mt-2">${L.principle}</div>
+     </div>
+     <div class="grid lg:grid-cols-2 gap-3">${rows}</div>
+     <div class="mt-4 flex flex-wrap gap-3">
+       <button onclick="downloadHagaLogic()" class="px-4 py-2 rounded-md border border-emerald-300 text-emerald-700 text-sm font-semibold hover:bg-emerald-50 transition">八賀のトークロジックをダウンロード</button>
+       <button onclick="nav('submit')" class="px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">上長へ提出書を作成 →</button>
+     </div>`,
+    'トップ営業の“数値”に加え、代表・八賀の“型”とどこがズレているかを可視化。欠けたフェーズはお手本トークで補える。');
+}
+
+/* ---------- 上長への提出書 ---------- */
+function submitKey(a) { return 'submit:' + (a.date || 'd') + '|' + (a.salesRepName || '田中 翔'); }
+function loadSubmit(a) { try { return JSON.parse(localStorage.getItem(submitKey(a))) || {}; } catch { return {}; } }
+function saveSubmit(a, obj) { try { localStorage.setItem(submitKey(a), JSON.stringify(obj)); } catch {} }
+function submitSaveField() {
+  const a = SESSION.analysis, o = loadSubmit(a);
+  o.self = (document.getElementById('subSelf') || {}).value || '';
+  o.ask = (document.getElementById('subAsk') || {}).value || '';
+  o.topics = Array.from(document.querySelectorAll('input[data-topic]:checked')).map(el => el.getAttribute('data-topic'));
+  saveSubmit(a, o);
+}
+function downloadSubmitText() {
+  const a = SESSION.analysis, d = SESSION.diagnosis, dev = R.buildTalkDeviation(a), s = loadSubmit(a);
+  let t = `日報・改善提出書（上長宛）\nFit Founder / Rumina 鬼教官\n\n提出日：${a.date || '2026-07-03'}\n営業：${a.salesRepName || '田中 翔'}\n鬼教官スコア：${a.coachScore}/100（判定 ${d.grade}）\n\n`;
+  t += `■ トップ営業との主要乖離\n`;
+  (d.weaknesses || []).slice(0, 3).forEach(w => { t += `・${w.metric}：${w.finding}\n  → ${w.fix}\n`; });
+  if (!(d.weaknesses || []).length) t += `（大きな弱点なし）\n`;
+  t += `\n■ 八賀トークロジックとの乖離（再現 ${dev.coverage}/${dev.total}フェーズ）\n`;
+  dev.gaps.forEach(r => { t += `・${r.name}：${r.idea}\n  お手本「${r.phrases[0]}」\n`; });
+  if (!dev.gaps.length) t += `（おおむね再現できています）\n`;
+  t += `\n■ 自己所見\n${s.self || '（未記入）'}\n\n■ 上長へ相談したいこと\n`;
+  (s.topics || []).forEach(x => { t += `・${x}\n`; });
+  if (s.ask) t += `${s.ask}\n`;
+  if (!(s.topics || []).length && !s.ask) t += `（未記入）\n`;
+  t += `\n■ 上長アドバイス欄\n\n\n\n（承認：　　　　　　　　印）\n\n— Rumina 鬼教官 / Fit Founder\n`;
+  downloadText(`提出書_${a.salesRepName || '田中翔'}_${(a.date || '2026-07-03').replace(/-/g, '')}.txt`, t);
+}
+
+function viewSubmit() {
+  const a = SESSION.analysis, b = R.TOP_BENCHMARK, d = SESSION.diagnosis;
+  const dev = R.buildTalkDeviation(a), saved = loadSubmit(a);
+  const kpi = [
+    ['総ピンポン', a.totalPings + '件', b.targetPings + '件'],
+    ['在宅反応率', a.homeResponseRate + '%', b.homeResponseRate + '%'],
+    ['会話発生率', a.conversationRate + '%', b.conversationRate + '%'],
+    ['アポ率', a.appointmentRate + '%', b.appointmentRate + '%'],
+    ['切り返し平均', a.averageRebuttalCount + '回', b.averageRebuttalCount + '回'],
+    ['冒頭質問率', a.openingQuestionRate + '%', b.openingQuestionRate + '%'],
+  ].map(r => `<tr class="border-t border-neutral-200"><td class="py-1.5 text-neutral-600">${r[0]}</td><td class="py-1.5 text-right tabular-nums text-neutral-900">${r[1]}</td><td class="py-1.5 text-right tabular-nums text-neutral-500">${r[2]}</td></tr>`).join('');
+  const topWeak = (d.weaknesses || []).slice(0, 3).map(w => `<li class="text-[13px] text-neutral-700 leading-relaxed py-0.5"><span class="text-rose-600 font-semibold">${w.metric}</span>：${w.finding}<div class="text-[12px] text-neutral-500">→ ${w.fix}</div></li>`).join('') || '<li class="text-sm text-neutral-500">大きな弱点はありません。</li>';
+  const gapList = dev.gaps.map(r => `<li class="text-[13px] text-neutral-700 leading-relaxed py-0.5"><span class="${r.status === 'missing' ? 'text-rose-600' : 'text-amber-600'} font-semibold">${r.name}</span>：${r.idea}<div class="text-[12px] text-emerald-700">お手本「${r.phrases[0]}」</div></li>`).join('') || '<li class="text-sm text-neutral-500">八賀ロジックはおおむね再現できています。</li>';
+  const topicOpts = dev.gaps.map(r => { const v = r.name + ' の型づくり'; return `<label class="flex items-start gap-2 text-[13px] text-neutral-700 py-1"><input type="checkbox" data-topic="${v}" ${(saved.topics || []).includes(v) ? 'checked' : ''} onchange="submitSaveField()" class="mt-1 accent-emerald-600"> ${r.name} をどう埋めればいいか</label>`; }).join('') || '<div class="text-sm text-neutral-500">特に指摘なし</div>';
+
+  return `
+  <div class="flex items-center justify-between mb-4 no-print">
+    <button onclick="nav('report')" class="text-sm text-neutral-500 hover:text-neutral-800">← レポートに戻る</button>
+    <div class="flex flex-wrap gap-2">
+      <button onclick="downloadHagaLogic()" class="px-3 py-1.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100">八賀ロジックDL</button>
+      <button onclick="downloadSubmitText()" class="px-3 py-1.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100">提出書をテキストDL</button>
+      <button onclick="window.print()" class="px-4 py-1.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold">印刷 / PDFで保存</button>
+    </div>
+  </div>
+
+  <div id="submitSheet" class="border border-neutral-300 rounded-lg p-6 md:p-8 bg-white">
+    <div class="flex items-start justify-between border-b-2 border-emerald-600 pb-3 mb-5 gap-3">
+      <div>
+        <div class="text-[11px] font-semibold tracking-wide text-emerald-700">FIT FOUNDER ・ RUMINA 鬼教官</div>
+        <h1 class="text-xl font-bold text-neutral-900 mt-0.5">日報・改善提出書（上長宛）</h1>
+      </div>
+      <div class="text-right text-[12px] text-neutral-600 shrink-0">
+        <div>提出日：${a.date || '2026-07-03'}</div>
+        <div>営業：${a.salesRepName || '田中 翔'}</div>
+        <div class="mt-1">鬼教官スコア <span class="text-lg font-bold text-emerald-600 tabular-nums">${a.coachScore}</span>/100 ・ 判定 <span class="font-bold">${d.grade}</span></div>
+      </div>
+    </div>
+
+    <div class="text-sm font-semibold text-neutral-700 mb-1">① 本日の実績サマリー</div>
+    <table class="w-full text-sm mb-5"><thead><tr class="text-xs text-neutral-500"><th class="text-left font-normal pb-1">項目</th><th class="text-right font-normal">本人</th><th class="text-right font-normal">トップ営業</th></tr></thead><tbody>${kpi}</tbody></table>
+
+    <div class="text-sm font-semibold text-neutral-700 mb-1">② トップ営業との主要乖離</div>
+    <ul class="mb-5 space-y-0.5 list-disc list-inside">${topWeak}</ul>
+
+    <div class="text-sm font-semibold text-neutral-700 mb-1">③ 八賀トークロジックとの乖離（再現 ${dev.coverage}/${dev.total} フェーズ）</div>
+    <ul class="mb-5 space-y-0.5 list-disc list-inside">${gapList}</ul>
+
+    <div class="text-sm font-semibold text-neutral-700 mb-1">④ 自己所見（本人記入）</div>
+    <textarea id="subSelf" rows="3" oninput="submitSaveField()" placeholder="今日うまくいった点・課題・明日どう変えるかを自分の言葉で。" class="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm text-neutral-900 focus:border-emerald-400/60 focus:outline-none mb-5">${saved.self || ''}</textarea>
+
+    <div class="text-sm font-semibold text-neutral-700 mb-1">⑤ 上長へ相談したいこと（アドバイスをもらいたい点）</div>
+    <div class="border border-neutral-200 rounded-md p-3 mb-2">${topicOpts}</div>
+    <textarea id="subAsk" rows="2" oninput="submitSaveField()" placeholder="上記以外に相談したいこと（例：14時台の空白の潰し方、断り『間に合ってます』の切り返し）" class="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm text-neutral-900 focus:border-emerald-400/60 focus:outline-none mb-5">${saved.ask || ''}</textarea>
+
+    <div class="text-sm font-semibold text-neutral-700 mb-1">⑥ 上長アドバイス・承認欄</div>
+    <div class="border border-neutral-300 rounded-md h-28 mb-2"></div>
+    <div class="text-right text-[12px] text-neutral-500">承認：＿＿＿＿＿＿＿＿　印</div>
+
+    <div class="text-[11px] text-neutral-400 mt-4 pt-3 border-t border-neutral-200">※ 数値・判定は解析上の目安です。ダウンロード / 印刷（PDF保存）して上長へ提出してください。— Rumina 鬼教官 / Fit Founder</div>
+  </div>`;
+}
+
 /* ---------- ④ レポート ---------- */
 function viewReport() {
   const a = SESSION.analysis, g = SESSION.gap, b = R.TOP_BENCHMARK;
@@ -365,6 +505,7 @@ function viewReport() {
 
   ${gpsBlock}
   ${winTalkSection(a)}
+  ${hagaLogicSection(a)}
   ${diagnosisSection()}
 
   ${section('時間帯別 活動密度', card(`<div class="p-5">${C.hourlyDensity(a.hourly || [], idleHours)}<div class="text-[11px] text-neutral-500 mt-1">赤 = 活動が薄い時間帯</div></div>`))}
@@ -382,7 +523,8 @@ function viewReport() {
   ${section('明日の改善アクション', card(`<div class="px-5 py-2">${actions}</div>`))}
 
   <div class="mt-8 flex flex-wrap gap-3">
-    <button onclick="nav('issues')" class="px-5 py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">チームのイシュー・改善提案を見る →</button>
+    <button onclick="nav('submit')" class="px-5 py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">上長へ提出書を作成 →</button>
+    <button onclick="nav('issues')" class="px-5 py-2.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100 transition">チームのイシュー・改善提案を見る</button>
     <button onclick="nav('upload')" class="px-5 py-2.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100 transition">別の録音を出稿</button>
   </div>`;
 }
@@ -555,7 +697,7 @@ function adminSample() { R.saveReps(R.SAMPLE_REPS.map(r => ({ ...r }))); render(
 window.adminSave = adminSave; window.adminAdd = adminAdd; window.adminDelete = adminDelete; window.adminReset = adminReset; window.adminSample = adminSample;
 
 /* ---------- ルーター ---------- */
-const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, reps: viewReps, issues: viewIssues, admin: viewAdmin };
+const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin };
 function nav(v) { currentView = v; render(); if (v === 'upload') bindUpload(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function render() {
   app.innerHTML = VIEWS[currentView]();
@@ -817,7 +959,7 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  if (!['home', 'my', 'goal', 'upload', 'report', 'issues', 'reps', 'admin'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
+  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
   render();
 }
 window.doLogin = doLogin; window.doLogout = doLogout; window.issueRep = issueRep;
