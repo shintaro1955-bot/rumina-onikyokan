@@ -186,6 +186,46 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { username: uname, password: pw });   // 初期パスワードは一度だけ返す
       }
 
+      // 管理者：LINEログインで自動作成された保留中(repId未設定)のユーザー一覧（owner専用）
+      // Rumina Coach 連携のため、氏名(表示名)を見てkintoneの営業コード(staff_code)を
+      // 割り当てる下準備の一覧を返す。
+      if (path === '/api/admin/pending-line-users' && req.method === 'GET') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const db = getDb();
+        const pending = Object.values(db.users)
+          .filter(u => u.lineId && !u.repId)
+          .map(u => ({ username: u.username, name: u.name, lineId: u.lineId }));
+        return json(res, 200, { pending });
+      }
+
+      // 管理者：LINEログイン済みユーザーに kintoneの営業コード(repId)を割り当てる（owner専用）
+      if (path === '/api/admin/link-rep' && req.method === 'POST') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const { username, repId } = await readBody(req);
+        const db = getDb();
+        const u = db.users[String(username || '')];
+        if (!u) return json(res, 404, { error: 'ユーザーが見つかりません' });
+        if (!repId) return json(res, 400, { error: 'repId(営業コード)が必要です' });
+        u.repId = String(repId).trim();
+        u.pending = false;
+        save();
+        return json(res, 200, { ok: true, username: u.username, repId: u.repId });
+      }
+
+      // Rumina Coach 連携：営業コード(repId) → LINE userId の対応表を返す（共有シークレット認証）。
+      // repIdが割り当て済み(=/api/admin/link-rep 済み)のユーザーのみ含む。
+      if (path === '/api/rep-line-map' && req.method === 'GET') {
+        const secret = url.searchParams.get('secret') || '';
+        if (!COACH_WEBHOOK_SECRET || secret !== COACH_WEBHOOK_SECRET) return json(res, 401, { error: 'Unauthorized' });
+        const db = getDb();
+        const map = Object.values(db.users)
+          .filter(u => u.repId && u.lineId)
+          .map(u => ({ repId: u.repId, name: u.name, lineId: u.lineId }));
+        return json(res, 200, { map });
+      }
+
       // 自分の最新レポート
       if (path === '/api/my/latest' && req.method === 'GET') {
         const me = currentUser(req);
