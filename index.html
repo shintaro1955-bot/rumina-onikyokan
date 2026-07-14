@@ -10,9 +10,13 @@
   } } } } };
 </script>
 <style>
-  body{background:#ffffff;color:#171717;font-family:-apple-system,'Hiragino Kaku Gothic ProN','Noto Sans JP',system-ui,sans-serif;}
-  ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#d4d4d8;border-radius:5px}
+  body{background:#F7FBF9;color:#171717;font-family:-apple-system,'Hiragino Kaku Gothic ProN','Noto Sans JP',system-ui,sans-serif;}
+  ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#cfe3d6;border-radius:5px}
   .nav-active{color:#159947 !important;background:#eaf6ee}
+  /* 太陽光アプリに寄せた質感：主要ボタンは緑グラデ、サイドバー/ヘッダーは白 */
+  .bg-emerald-500{background-image:linear-gradient(90deg,#16A34A,#0F7A45) !important}
+  .bg-emerald-500:hover,.hover\:bg-emerald-400:hover{background-image:linear-gradient(90deg,#12833d,#0c633a) !important}
+  aside.app-chrome,header.app-chrome{background:#ffffff}
   #app{animation:fade .25s ease}@keyframes fade{from{opacity:0}to{opacity:1}}
   .navlink{display:block;width:100%;text-align:left;padding:.5rem .75rem;border-radius:.5rem;color:#525252;font-size:.875rem;transition:background .15s,color .15s}
   .navlink:hover{color:#171717;background:#f5f5f5}

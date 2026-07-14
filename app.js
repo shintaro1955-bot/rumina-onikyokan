@@ -12,7 +12,7 @@ function h1(title, sub) {
     <h1 class="text-xl font-semibold text-neutral-900">${title}</h1>
     ${sub ? `<p class="text-sm text-neutral-500 mt-1">${sub}</p>` : ''}</div>`;
 }
-function card(inner, cls = '') { return `<div class="border border-neutral-200 rounded-lg ${cls}">${inner}</div>`; }
+function card(inner, cls = '') { return `<div class="bg-white border border-[#E8EFEA] rounded-2xl shadow-[0_1px_3px_rgba(16,40,30,0.05)] ${cls}">${inner}</div>`; }
 function statCell(label, value, unit, sub, accent) {
   return `<div class="p-4">
     <div class="text-xs text-neutral-500 mb-1">${label}</div>
