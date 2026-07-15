@@ -87,5 +87,14 @@ window.API = (function () {
   async function getLog() { const r = await fetch('/api/log'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'ログの取得に失敗しました'); return j.reports || []; }
   async function getLogItem(id) { const r = await fetch('/api/log/' + encodeURIComponent(id)); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'ログ詳細の取得に失敗しました'); return j.report; }
 
-  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem };
+  /* ---------- 録音・解析への同意 ---------- */
+  async function getConsent() { try { const r = await fetch('/api/consent'); return r.ok ? r.json() : { ok: false }; } catch { return { ok: false }; } }
+  async function postConsent() { const r = await fetch('/api/consent', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ agree: true }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '同意の記録に失敗しました'); return j; }
+  async function getConsents() { const r = await fetch('/api/consents'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '同意状況の取得に失敗しました'); return j; }
+
+  /* ---------- B-6：LINE名寄せ ---------- */
+  async function getLineUsers() { const r = await fetch('/api/admin/line-users'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'LINEユーザー一覧の取得に失敗しました'); return j.users || []; }
+  async function linkRep(username, repId) { const r = await fetch('/api/admin/link-rep', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, repId }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '紐付けに失敗しました'); return j; }
+
+  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep };
 })();

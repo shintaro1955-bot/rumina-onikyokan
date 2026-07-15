@@ -4,7 +4,7 @@
    環境変数：OPENAI_API_KEY（必須）, PORT, WHISPER_MODEL, VISIT_GAP_SEC ...
    ============================================================ */
 import { createServer } from 'node:http';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import { join, extname } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -22,6 +22,13 @@ const ROOT = new URL('.', import.meta.url).pathname;
 const PORT = process.env.PORT || 4180;
 const API_KEY = process.env.OPENAI_API_KEY || '';
 const MODEL = process.env.WHISPER_MODEL || 'whisper-1';
+
+// 録音・解析への同意（版）。文言を更新したら版を上げると全員に再同意を求められる。
+const CONSENT_VERSION = process.env.CONSENT_VERSION || '2026-07-15';
+// 文字起こし後に音声ファイルを自動削除するか（既定=保持）。個人情報を残さない運用に。
+const PURGE_AUDIO = /^(1|true|yes|on)$/i.test(process.env.PURGE_AUDIO_AFTER_ANALYZE || '');
+// LINE bot 個別コーチング連携：この共有シークレット付きでのみ /api/coach-context を許可
+const BOT_API_SECRET = process.env.BOT_API_SECRET || '';
 
 // LINEログイン（LINE Developers の「LINEログイン」チャネル）
 const LINE_ID = process.env.LINE_LOGIN_CHANNEL_ID || '';
@@ -96,6 +103,31 @@ function modelTalk() {
   const m = getDb().model;
   return (m && Array.isArray(m.profile) && m.profile.length) ? m.profile : undefined;
 }
+// 録音・解析への同意が最新版で取得済みか
+function hasConsent(me) {
+  if (!me) return false;
+  const c = getDb().consents[me.username];
+  return !!(c && c.version === CONSENT_VERSION && c.agree !== false);
+}
+// LINE bot 個別コーチング用の要約（最新測定から伸びしろと一言処方を作る）
+function coachContext(user, sub) {
+  const a = (sub && sub.analysis) || {};
+  const tf = a.talkFidelity || {};
+  const w = tf.weakest || null;
+  const grade = tf.overall != null ? (tf.overall >= 90 ? 'A' : tf.overall >= 70 ? 'B' : tf.overall >= 50 ? 'C' : 'D') : null;
+  const message = w
+    ? `${user.name}さんの直近の診断：総合再現率${tf.overall}%（判定${grade}）。いちばんの伸びしろは「${w.key}」（あなた${w.repRate}% / モデル${w.modelRate}%）。今日はここだけ意識：${w.tip}`
+    : `${user.name}さんの直近スコアは${a.coachScore != null ? a.coachScore + '点' : '未測定'}。まずは会話が成立した訪問を増やしていきましょう。`;
+  return {
+    found: true, name: user.name, repId: user.repId || null, at: sub ? sub.at : null,
+    latest: sub ? {
+      date: a.date || null, coachScore: a.coachScore ?? null, overall: tf.overall ?? null, grade,
+      weakest: w ? { key: w.key, repRate: w.repRate, modelRate: w.modelRate, tip: w.tip } : null,
+      appointmentRate: a.appointmentRate ?? null, totalPings: a.totalPings ?? null,
+    } : null,
+    message,
+  };
+}
 // 診断ログを永続化（1録音=1レコード。文字起こし全文・訪問明細・KPIを保存）
 function persistReport(id, result, userName) {
   const a = result.analysis || {};
@@ -106,6 +138,7 @@ function persistReport(id, result, userName) {
     coachScore: a.coachScore ?? null,
     overall: a.talkFidelity ? a.talkFidelity.overall : null,
     pingCount: Array.isArray(result.pings) ? result.pings.length : null,
+    audio: result.source === 'plaud' ? 'none' : (result.audioRetained === false ? 'purged' : 'kept'),
     user: userName || null,
     analysis: a, pings: result.pings || [], transcript: result.transcript || [],
   });
@@ -131,10 +164,41 @@ const server = createServer(async (req, res) => {
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY });
+      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET });
 
       /* ---------- 認証 ---------- */
       if (path === '/api/me') return json(res, 200, { user: currentUser(req) });
+
+      /* ---------- 録音・解析への同意 ---------- */
+      // 自分の同意状況（最新版を満たしているか）
+      if (path === '/api/consent' && req.method === 'GET') {
+        const me = currentUser(req);
+        if (!me) return json(res, 401, { error: '未ログイン' });
+        const c = getDb().consents[me.username] || null;
+        return json(res, 200, { version: CONSENT_VERSION, consent: c, ok: hasConsent(me) });
+      }
+      // 同意を記録（版・日時・端末を保存）
+      if (path === '/api/consent' && req.method === 'POST') {
+        const me = currentUser(req);
+        if (!me) return json(res, 401, { error: '未ログイン' });
+        const body = await readBody(req);
+        if (body.agree === false) return json(res, 400, { error: '同意が必要です' });
+        const rec = { version: CONSENT_VERSION, at: new Date().toISOString(), name: me.name, ua: String(req.headers['user-agent'] || '').slice(0, 200), agree: true };
+        getDb().consents[me.username] = rec; save();
+        return json(res, 200, { ok: true, consent: rec });
+      }
+      // 同意の取得状況一覧（owner専用・監査用）
+      if (path === '/api/consents' && req.method === 'GET') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const db = getDb();
+        const consents = Object.values(db.users).map(u => ({
+          username: u.username, name: u.name, role: u.role,
+          consent: db.consents[u.username] || null,
+          current: !!(db.consents[u.username] && db.consents[u.username].version === CONSENT_VERSION),
+        }));
+        return json(res, 200, { version: CONSENT_VERSION, consents });
+      }
 
       if (path === '/api/login' && req.method === 'POST') {
         const { username, password } = await readBody(req);
@@ -296,9 +360,36 @@ const server = createServer(async (req, res) => {
         return rec ? json(res, 200, { report: rec }) : json(res, 404, { error: 'ログが見つかりません' });
       }
 
+      /* ---------- B-6：LINE↔kintone↔鬼教官 名寄せ・個別コーチング ---------- */
+      // LINEログイン済みユーザー一覧（owner専用）：名寄せUIの元データ
+      if (path === '/api/admin/line-users' && req.method === 'GET') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const db = getDb();
+        const users = Object.values(db.users).filter(u => u.lineId).map(u => ({
+          username: u.username, name: u.name, role: u.role, lineId: u.lineId,
+          repId: u.repId || null, pending: !!u.pending, hasLatest: !!db.submissions[u.username],
+        }));
+        return json(res, 200, { users });
+      }
+
+      // LINE bot 個別コーチング連携：lineId or repId から本人の最新診断＋一言処方を返す。
+      // 共有シークレット(BOT_API_SECRET)必須。botが「あなたについて教えて？」等で叩く想定。
+      if (path === '/api/coach-context' && req.method === 'GET') {
+        if (!BOT_API_SECRET || (url.searchParams.get('secret') || '') !== BOT_API_SECRET) return json(res, 401, { error: 'Unauthorized' });
+        const lineId = url.searchParams.get('lineId') || '', repId = url.searchParams.get('repId') || '';
+        if (!lineId && !repId) return json(res, 400, { error: 'lineId か repId が必要です' });
+        const db = getDb();
+        const user = Object.values(db.users).find(u => (lineId && u.lineId === lineId) || (repId && u.repId === repId));
+        if (!user) return json(res, 404, { found: false, error: 'このLINE/営業コードに紐づくユーザーが未登録です' });
+        return json(res, 200, coachContext(user, db.submissions[user.username] || null));
+      }
+
       // ① アップロード：ファイル本文を raw で受けて保存（multipart不要）
       if (path === '/api/audio/upload' && req.method === 'POST') {
         if (!API_KEY) return json(res, 400, { error: 'OPENAI_API_KEY が未設定です。.env を確認してください。' });
+        const meUp = currentUser(req);
+        if (meUp && !hasConsent(meUp)) return json(res, 403, { error: '録音・解析への同意が必要です。', needConsent: true });
         const id = randomUUID();
         const fileName = decodeURIComponent(req.headers['x-file-name'] || 'recording.m4a');
         const dir = join(UPLOAD_DIR, id);
@@ -319,6 +410,8 @@ const server = createServer(async (req, res) => {
 
       // Plaud NotePin 文字起こし取り込み（Whisper不要・即時解析）
       if (path === '/api/audio/import' && req.method === 'POST') {
+        const meImp = currentUser(req);
+        if (meImp && !hasConsent(meImp)) return json(res, 403, { error: '録音・解析への同意が必要です。', needConsent: true });
         const body = await readBody(req);
         if (!body.export) return json(res, 400, { error: 'export（Plaud書き出し）がありません' });
         let parsed;
@@ -422,8 +515,15 @@ async function runPipeline(s) {
     modelTalk: modelTalk(),
   });
 
+  // 文字起こし済み → 音声の自動削除（PURGE_AUDIO_AFTER_ANALYZE=on のとき）
+  let audioRetained = true;
+  if (PURGE_AUDIO) {
+    try { await rm(join(UPLOAD_DIR, s.id), { recursive: true, force: true }); audioRetained = false; }
+    catch (e) { console.error('[purge] 音声削除に失敗:', e.message); }
+  }
+
   s.stage = 'analyze';
-  s.result = { sessionId: s.id, source: 'whisper', benchmark: BENCHMARK, analysis, pings, transcript };
+  s.result = { sessionId: s.id, source: 'whisper', audioRetained, benchmark: BENCHMARK, analysis, pings, transcript };
   s.status = 'done'; s.stage = 'coach';
   // 本人の最新レポート＋診断ログを永続化（文字起こし全文つき）
   if (s.userName) { const u = getDb().users[s.userName]; if (u) { getDb().submissions[u.username] = { at: new Date().toISOString(), name: u.name, analysis }; save(); } }

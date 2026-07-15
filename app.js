@@ -185,7 +185,50 @@ function viewHome() {
 }
 
 /* ---------- ② 録音アップロード ---------- */
+/* 録音・解析への同意ゲート（未同意なら出稿画面の代わりに表示） */
+function consentGate() {
+  return `
+  ${h1('録音・解析への同意', '出稿の前に一度だけ。装着録音（Plaud NotePin 等）の内容をコーチング目的で解析・保存します。')}
+  <div class="max-w-xl">
+    ${card(`<div class="p-6 space-y-4">
+      <div class="text-sm text-neutral-800 leading-relaxed">
+        私は、自分の営業活動の録音（音声・文字起こし）が、<b>営業教育・コーチングを目的</b>に、Rumina 鬼教官で
+        <b>文字起こし・解析され、会社の管理下で保存される</b>ことに同意します。
+      </div>
+      <ul class="text-[13px] text-neutral-600 leading-relaxed list-disc pl-5 space-y-1">
+        <li>保存されるもの：文字起こし全文・訪問ごとの結果・KPI／カルテ（診断ログ）。</li>
+        <li>お客様への録音の告知は、会社の方針に従い自分が適切に行います。</li>
+        <li>音声ファイルは会社の運用設定に従って保持／自動削除されます。</li>
+        <li>目的外の利用はしません。同意状況は管理者が記録・監査します。</li>
+      </ul>
+      <label class="flex items-start gap-2 text-sm text-neutral-800">
+        <input id="consentChk" type="checkbox" onchange="document.getElementById('consentBtn').disabled=!this.checked" class="mt-1 accent-emerald-600">
+        上記に同意します（同意日時と版が記録されます）
+      </label>
+      <div class="flex items-center gap-3">
+        <button id="consentBtn" onclick="acceptConsent()" disabled class="px-5 py-2.5 rounded-md bg-emerald-500 disabled:bg-neutral-200 disabled:text-neutral-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">同意して続ける</button>
+        <span id="consentMsg" class="text-xs text-neutral-500">版：${window.__consentVersion || '—'}</span>
+      </div>
+    </div>`)}
+  </div>`;
+}
+async function acceptConsent() {
+  const msg = document.getElementById('consentMsg');
+  if (msg) { msg.textContent = '記録中…'; msg.className = 'text-xs text-neutral-500'; }
+  try {
+    const j = await API.postConsent();
+    window.__consent = { ok: true, consent: j.consent, version: j.consent.version };
+    nav('upload');
+  } catch (e) { if (msg) { msg.textContent = e.message; msg.className = 'text-xs text-rose-600'; } }
+}
+window.acceptConsent = acceptConsent;
+
 function viewUpload() {
+  // 未同意（ログイン中）なら同意ゲートを先に出す
+  if (window.__user && !(window.__consent && window.__consent.ok)) return consentGate();
+  const audioNote = window.__audioPurge
+    ? '音声は解析後に自動削除される運用です（文字起こしのみ保存）。'
+    : '音声は解析後も保存されます（不要なら管理者が自動削除に設定できます）。';
   return `
   ${h1('稼働終了・録音を出稿', '日報の代わりに、その日の録音を出すだけ。AIが分析 → イシュー → 改善提案まで自動。録音機は Plaud NotePin を標準。')}
   <div class="max-w-xl space-y-8">
@@ -226,6 +269,8 @@ function viewUpload() {
       <button id="startBtn" onclick="startAnalyze()" disabled class="w-full py-3 rounded-md bg-emerald-500 disabled:bg-neutral-200 disabled:text-neutral-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">解析を開始する</button>
       <p class="text-xs text-neutral-500">※ Whisper接続時は実解析、未接続時はモックが走ります。</p>
     </div>
+
+    <div class="text-[11px] text-neutral-400 border-t border-neutral-200 pt-3">🔒 録音・解析に同意済み（版 ${window.__consentVersion || '—'}）。${audioNote}</div>
   </div>`;
 }
 
@@ -790,8 +835,29 @@ function viewLog() {
     <span class="font-semibold text-neutral-700 ml-1">保存先</span>：サーバーの永続領域（本番は Railway Volume の <code>/data</code>）。再デプロイでも消えません。
     <span class="font-semibold text-neutral-700 ml-1">音声ファイル</span>：文字起こし後も同領域に保持（不要なら運用で削除可）。
   </div>`)}
+  <div id="consentWrap" class="mt-4"></div>
   <div id="logWrap" class="mt-4 text-sm text-neutral-500">読み込み中…</div>
   <div id="logDetail" class="mt-4"></div>`;
+}
+async function loadConsents() {
+  const box = document.getElementById('consentWrap'); if (!box) return;
+  let data; try { data = await API.getConsents(); } catch { box.innerHTML = ''; return; }
+  const list = data.consents || [];
+  const done = list.filter(c => c.current).length;
+  const rows = list.map(c => `<tr class="border-t border-neutral-200">
+    <td class="px-3 py-1.5 text-neutral-800">${c.name}</td>
+    <td class="px-3 py-1.5 text-neutral-500">${c.role === 'owner' ? '管理者' : '営業'}</td>
+    <td class="px-3 py-1.5">${c.current
+      ? '<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">同意済</span>'
+      : (c.consent ? '<span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">要再同意（版が古い）</span>' : '<span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">未同意</span>')}</td>
+    <td class="px-3 py-1.5 text-[11px] text-neutral-400">${c.consent ? (c.consent.at || '').replace('T', ' ').slice(0, 16) + ' ・ 版' + c.consent.version : '—'}</td>
+  </tr>`).join('');
+  box.innerHTML = card(`<div class="p-4">
+    <div class="flex items-center justify-between mb-2"><div class="text-sm font-semibold text-neutral-700">録音・解析への同意状況（監査）</div><div class="text-[12px] text-neutral-500">${done}/${list.length} 名 同意済 ・ 現行版 ${data.version}</div></div>
+    <div class="overflow-x-auto"><table class="w-full text-sm min-w-[520px]"><thead><tr class="text-xs text-neutral-500 bg-neutral-50">
+      <th class="px-3 py-1.5 text-left font-normal">氏名</th><th class="px-3 py-1.5 text-left font-normal">役割</th><th class="px-3 py-1.5 text-left font-normal">同意</th><th class="px-3 py-1.5 text-left font-normal">取得日時・版</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>
+  </div>`);
 }
 async function loadLog() {
   const wrap = document.getElementById('logWrap'); if (!wrap) return;
@@ -806,14 +872,15 @@ async function loadLog() {
     <td class="px-3 py-2 text-right tabular-nums text-neutral-700">${r.pings ?? '—'}</td>
     <td class="px-3 py-2 text-right tabular-nums text-neutral-700">${r.score ?? '—'}</td>
     <td class="px-3 py-2 text-right">${badge(r.overall)}</td>
+    <td class="px-3 py-2 text-[11px]">${r.audio === 'purged' ? '<span class="text-neutral-400">削除済</span>' : r.audio === 'kept' ? '<span class="text-neutral-600">保持</span>' : '<span class="text-neutral-300">音声なし</span>'}</td>
     <td class="px-3 py-2 text-[11px] text-neutral-400 whitespace-nowrap">${(r.at || '').replace('T', ' ').slice(0, 16)}</td>
     <td class="px-3 py-2 text-right text-[12px] text-emerald-600 whitespace-nowrap">文字起こし →</td>
   </tr>`).join('');
-  wrap.innerHTML = `${card(`<div class="overflow-x-auto"><table class="w-full text-sm min-w-[720px]">
+  wrap.innerHTML = `${card(`<div class="overflow-x-auto"><table class="w-full text-sm min-w-[760px]">
     <thead><tr class="text-xs text-neutral-500 bg-neutral-50">
       <th class="px-3 py-2 text-left font-normal">受診者</th><th class="px-3 py-2 text-left font-normal">稼働日</th><th class="px-3 py-2 text-left font-normal">出所</th>
       <th class="px-3 py-2 text-right font-normal">ピンポン</th><th class="px-3 py-2 text-right font-normal">スコア</th><th class="px-3 py-2 text-right font-normal">再現率</th>
-      <th class="px-3 py-2 text-left font-normal">記録時刻</th><th class="px-3"></th></tr></thead>
+      <th class="px-3 py-2 text-left font-normal">音声</th><th class="px-3 py-2 text-left font-normal">記録時刻</th><th class="px-3"></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`)}
     <div class="text-[11px] text-neutral-400 mt-2">${reports.length}件（新しい順）。行をクリックすると文字起こし全文が開きます。</div>`;
 }
@@ -846,8 +913,59 @@ async function openLogItem(id) {
 }
 window.openLogItem = openLogItem;
 
-const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog };
-function nav(v) { currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') loadLog(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+/* ---------- LINE名寄せ（LINE↔kintone↔鬼教官・owner専用） ---------- */
+function viewLinkRep() {
+  return `
+  ${h1('LINE名寄せ（個別コーチング連携）', 'LINEログインした営業を kintone の営業コードに紐付けると、Rumina bot が本人の最新診断を使って個別にコーチングできます。')}
+  ${card(`<div class="p-4 text-[12px] text-neutral-600 leading-relaxed">
+    <span class="font-semibold text-neutral-700">仕組み</span>：LINE userId ↔ 営業コード(repId) ↔ 鬼教官の測定データ を1本の線でつなぎます。
+    紐付けると、botが「あなたについて教えて？」に対して本人のカルテ（総合再現率・最弱の型・処方）で答えられます。
+    <span id="botReadyNote" class="ml-1"></span>
+  </div>`)}
+  <div id="linkWrap" class="mt-4 text-sm text-neutral-500">読み込み中…</div>`;
+}
+async function loadLinkRep() {
+  const note = document.getElementById('botReadyNote');
+  if (note) note.innerHTML = window.__botReady
+    ? '<span class="text-emerald-600">bot連携：有効</span>'
+    : '<span class="text-amber-600">bot連携：未設定（環境変数 BOT_API_SECRET を設定すると有効）</span>';
+  const wrap = document.getElementById('linkWrap'); if (!wrap) return;
+  let users = [];
+  try { users = await API.getLineUsers(); } catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
+  if (!users.length) { wrap.innerHTML = `<div class="text-sm text-neutral-500 p-6 text-center border border-neutral-200 rounded-xl bg-white">まだLINEでログインした人がいません。スタッフが「LINEでログイン」すると、ここに表示されます。</div>`; return; }
+  const mask = id => id ? id.slice(0, 6) + '…' + id.slice(-4) : '—';
+  const rows = users.map(u => `<tr class="border-t border-neutral-200">
+    <td class="px-3 py-2 text-neutral-800">${u.name}</td>
+    <td class="px-3 py-2 text-[11px] text-neutral-400 font-mono">${mask(u.lineId)}</td>
+    <td class="px-3 py-2">${u.repId
+      ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">紐付け済 ${u.repId}</span>`
+      : `<span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">未紐付け</span>`}</td>
+    <td class="px-3 py-2 text-[11px] ${u.hasLatest ? 'text-emerald-600' : 'text-neutral-400'}">${u.hasLatest ? '測定あり' : '測定なし'}</td>
+    <td class="px-3 py-2 whitespace-nowrap">
+      <input id="rep-${u.username}" value="${u.repId || ''}" placeholder="営業コード" class="w-28 border border-neutral-300 rounded px-2 py-1 text-sm">
+      <button onclick="saveLink('${u.username.replace(/'/g, "\\'")}')" class="ml-1 px-3 py-1 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-xs font-semibold transition">保存</button>
+      <span id="linkmsg-${u.username}" class="ml-2 text-[11px]"></span>
+    </td>
+  </tr>`).join('');
+  wrap.innerHTML = card(`<div class="overflow-x-auto"><table class="w-full text-sm min-w-[720px]">
+    <thead><tr class="text-xs text-neutral-500 bg-neutral-50">
+      <th class="px-3 py-2 text-left font-normal">氏名（LINE表示名）</th><th class="px-3 py-2 text-left font-normal">LINE ID</th>
+      <th class="px-3 py-2 text-left font-normal">紐付け状態</th><th class="px-3 py-2 text-left font-normal">測定</th>
+      <th class="px-3 py-2 text-left font-normal">kintone 営業コード</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`);
+}
+async function saveLink(username) {
+  const el = document.getElementById('rep-' + username), msg = document.getElementById('linkmsg-' + username);
+  const repId = (el && el.value || '').trim();
+  if (!repId) { if (msg) { msg.textContent = 'コードを入力'; msg.className = 'ml-2 text-[11px] text-rose-600'; } return; }
+  if (msg) { msg.textContent = '保存中…'; msg.className = 'ml-2 text-[11px] text-neutral-500'; }
+  try { await API.linkRep(username, repId); if (msg) { msg.textContent = '✓ 紐付けました'; msg.className = 'ml-2 text-[11px] text-emerald-600'; } setTimeout(loadLinkRep, 600); }
+  catch (e) { if (msg) { msg.textContent = e.message; msg.className = 'ml-2 text-[11px] text-rose-600'; } }
+}
+window.saveLink = saveLink;
+
+const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep };
+function nav(v) { currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function render() {
   app.innerHTML = VIEWS[currentView]();
   document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('nav-active', el.dataset.nav === currentView));
@@ -932,7 +1050,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function startAnalyze() {
   nav('analyzing');
   if (window.__whisperReady && selectedFile) {
-    try { await realAnalyze(selectedFile); } catch (e) { analyzeError(e.message); }
+    try { await realAnalyze(selectedFile); }
+    catch (e) { if (/同意/.test(e.message)) { window.__consent = { ok: false }; nav('upload'); return; } analyzeError(e.message); }
   } else { mockAnalyze(); }
 }
 async function realAnalyze(file) {
@@ -984,6 +1103,7 @@ async function trySample() {
     if (info) info.innerHTML = '<span class="text-emerald-600">取り込み完了</span>';
     setTimeout(() => nav('report'), 300);
   } catch (e) {
+    if (/同意/.test(e.message)) { window.__consent = { ok: false }; nav('upload'); return; }
     if (info) info.innerHTML = `<span class="text-rose-600">失敗：${e.message}</span>`;
   }
 }
@@ -1105,13 +1225,15 @@ function applyRole(user) {
 }
 async function boot() {
   const { user } = await API.me(); window.__user = user;
-  try { window.__lineReady = !!(await API.health()).lineLoginReady; } catch { window.__lineReady = false; }
+  try { const h = await API.health(); window.__lineReady = !!h.lineLoginReady; window.__audioPurge = !!h.audioPurge; window.__consentVersion = h.consentVersion || ''; window.__botReady = !!h.botApiReady; }
+  catch { window.__lineReady = false; window.__audioPurge = false; window.__botReady = false; }
   try { window.__model = await API.getModel(); } catch { window.__model = null; }
+  try { window.__consent = user ? await API.getConsent() : { ok: false }; } catch { window.__consent = { ok: false }; }
   document.body.classList.toggle('logged-out', !user);
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
+  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
   render();
 }
 window.doLogin = doLogin; window.doLogout = doLogout; window.issueRep = issueRep;
