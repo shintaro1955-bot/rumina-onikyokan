@@ -12,7 +12,7 @@ import { pipeline as streamPipeline } from 'node:stream/promises';
 
 import * as whisper from './lib/whisper.mjs';
 import { toChunks, probeDuration } from './lib/audio.mjs';
-import { analyze, DOMAIN_PROMPT } from './lib/pipeline.mjs';
+import { analyze, computeModelProfile, DOMAIN_PROMPT } from './lib/pipeline.mjs';
 import { parsePlaud } from './lib/import-plaud.mjs';
 import { fetchAppointments } from './lib/crm.mjs';
 import { getDb, save } from './lib/store.mjs';
@@ -90,6 +90,11 @@ function uniqueUsername(db, base) {
   let u = base || 'LINEユーザー', n = 1;
   while (db.users[u]) u = `${base}_${++n}`;
   return u;
+}
+// 登録済みの「成功モデル」基準（未登録なら undefined → pipeline側の初期MODEL_TALK）
+function modelTalk() {
+  const m = getDb().model;
+  return (m && Array.isArray(m.profile) && m.profile.length) ? m.profile : undefined;
 }
 
 // 起動時：ownerが居なければ管理者アカウントを1つseed（＝モデル営業マン。既定は営業部長 川上）
@@ -233,6 +238,34 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { submission: getDb().submissions[me.username] || null });
       }
 
+      /* ---------- 成功モデル（カルテの“基準値”） ---------- */
+      // 現在登録されている成功モデルを返す（未登録なら null＝初期値運用）
+      if (path === '/api/model' && req.method === 'GET') {
+        return json(res, 200, { model: getDb().model || null });
+      }
+
+      // 成功モデル登録（owner専用）：解析済みセッションの録音を“基準”に採用
+      if (path === '/api/model/register' && req.method === 'POST') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const { sessionId } = await readBody(req);
+        const s = SESSIONS.get(sessionId);
+        if (!s || !s.result || !Array.isArray(s.result.pings)) return json(res, 404, { error: 'この録音の解析結果が見つかりません（解析直後に登録してください）' });
+        const { profile, denom } = computeModelProfile(s.result.pings);
+        if (denom < 3) return json(res, 400, { error: `会話が成立した訪問が${denom}件しかありません（3件以上の録音で登録してください）` });
+        const model = { profile, denom, by: me.name, at: new Date().toISOString(), source: s.result.source || 'whisper' };
+        getDb().model = model; save();
+        return json(res, 200, { model });
+      }
+
+      // 成功モデルを初期値へ戻す（owner専用）
+      if (path === '/api/model/reset' && req.method === 'POST') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        getDb().model = null; save();
+        return json(res, 200, { model: null });
+      }
+
       // ① アップロード：ファイル本文を raw で受けて保存（multipart不要）
       if (path === '/api/audio/upload' && req.method === 'POST') {
         if (!API_KEY) return json(res, 400, { error: 'OPENAI_API_KEY が未設定です。.env を確認してください。' });
@@ -272,6 +305,7 @@ const server = createServer(async (req, res) => {
           gps: Array.isArray(body.gps) ? body.gps : null,
           diarize: meta.hasSpeakers ? 'acoustic' : 'heuristic',
           crmAppointmentCount: crm ? crm.count : undefined,
+          modelTalk: modelTalk(),
         });
         const result = { sessionId: id, source: 'plaud', device: meta.device, benchmark: BENCHMARK, analysis, pings, transcript };
         SESSIONS.set(id, { id, status: 'done', result });
@@ -352,6 +386,7 @@ async function runPipeline(s) {
     durationSec: duration, startHour: s.startHour, salesRep: rep, benchmark: BENCHMARK,
     date: new Date().toISOString().slice(0, 10), gps: s.gps || null,
     diarize: process.env.DIARIZE,   // 未設定なら既定=heuristic、'none'で無効化
+    modelTalk: modelTalk(),
   });
 
   s.stage = 'analyze';

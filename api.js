@@ -72,5 +72,16 @@ window.API = (function () {
   }
   async function myLatest() { try { const r = await fetch('/api/my/latest'); return r.ok ? r.json() : { submission: null }; } catch { return { submission: null }; } }
 
-  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest };
+  /* ---------- 成功モデル（カルテの基準値） ---------- */
+  async function getModel() { try { const r = await fetch('/api/model'); return r.ok ? (await r.json()).model : null; } catch { return null; } }
+  async function registerModel(sessionId) {
+    const r = await fetch('/api/model/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sessionId }) });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'モデル登録に失敗しました'); return j.model;
+  }
+  async function resetModel() {
+    const r = await fetch('/api/model/reset', { method: 'POST' });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '初期化に失敗しました'); return j.model;
+  }
+
+  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel };
 })();

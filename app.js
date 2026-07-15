@@ -421,6 +421,11 @@ function talkFidelitySection(a) {
   const t = a.talkFidelity; if (!t || !t.moves || !t.moves.length) return '';
   const oj = karteJudge(t.overall);
   const w = t.weakest;
+  const model = window.__model || null;
+  const isOwner = !!(window.__user && window.__user.role === 'owner');
+  const baseline = model
+    ? `基準値：<span class="text-emerald-700 font-medium">${model.by} さんの録音</span>（${(model.at || '').slice(0, 10)} ・ 会話${model.denom}訪問から算出）`
+    : `基準値：<span class="text-neutral-600 font-medium">初期値</span>（成功モデル未登録 — 川上さんの録音を登録すると実データ基準に）`;
 
   // 検査表の行（型 = 検査項目、あなた = 測定値、モデル = 基準値）
   const rows = t.moves.map(m => {
@@ -449,6 +454,7 @@ function talkFidelitySection(a) {
             <div class="text-[11px] font-semibold tracking-wide text-emerald-700">RUMINA 鬼教官 ・ 成功モデル乖離ドック</div>
             <h3 class="text-lg font-bold text-neutral-900 mt-0.5">トーク型 健康診断カルテ</h3>
             <div class="text-[12px] text-neutral-500 mt-1">受診者：<span class="text-neutral-700 font-medium">${a.salesRepName || '田中 翔'}</span>　診断日：${a.date || '2026-07-03'}　検体：会話が成立した ${t.denom} 訪問</div>
+            <div class="text-[11px] text-neutral-500 mt-1">${baseline}</div>
           </div>
           <div class="text-center shrink-0">
             <div class="text-[11px] text-neutral-500 mb-0.5">総合判定</div>
@@ -484,12 +490,49 @@ function talkFidelitySection(a) {
           <div class="text-[13px] text-neutral-800 leading-relaxed">最も乖離が大きいのは <b class="text-rose-600">${w.key}</b>（あなた ${w.repRate}% / 成功モデル ${w.modelRate}%）。ここが総合判定 ${oj.g} の主因です。まずは「${w.tip}」を明日の全訪問で意識。1項目でも B 以上に上げれば、アポ率は必ず動きます。</div>
         </div>
       </div>` : ''}
+
+      ${isOwner ? `<div class="mx-5 sm:mx-6 mb-5 -mt-1 flex flex-wrap items-center gap-2 border-t border-[#E8EFEA] pt-4">
+        <span class="text-[12px] text-neutral-600 mr-1">この録音をモデル基準にする：</span>
+        <button onclick="registerModelFromReport()" class="px-3.5 py-1.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-[13px] font-semibold transition">この録音を成功モデルに登録</button>
+        ${model ? `<button onclick="resetModelBaseline()" class="px-3 py-1.5 rounded-md border border-neutral-300 text-[13px] text-neutral-600 hover:bg-neutral-100 transition">初期値に戻す</button>` : ''}
+        <span id="modelActionMsg" class="text-[12px] text-neutral-500"></span>
+      </div>` : ''}
     </div>`;
 
   return section('成功モデルとの乖離カルテ',
     inner,
     '成功モデル（川上）の勝ちの型を"基準値"に、あなたのトークを健康診断。どの型がどれだけ足りていないかをカルテで可視化。');
 }
+
+/* 成功モデル登録（owner）：いま開いている録音の型を"基準値"に採用 */
+async function registerModelFromReport() {
+  const msg = document.getElementById('modelActionMsg');
+  const sid = window.__lastSessionId;
+  if (!sid) { if (msg) { msg.textContent = 'この画面の録音IDが取得できません。録音を解析し直してから登録してください。'; msg.className = 'text-[12px] text-rose-600'; } return; }
+  if (msg) { msg.textContent = '登録中…'; msg.className = 'text-[12px] text-neutral-500'; }
+  try {
+    const model = await API.registerModel(sid);
+    window.__model = model;
+    if (msg) { msg.textContent = `成功モデルを更新しました（会話${model.denom}訪問から基準を算出）。次回以降の解析はこの基準で診断されます。`; msg.className = 'text-[12px] text-emerald-600'; }
+  } catch (e) {
+    if (msg) { msg.textContent = '登録に失敗しました：' + e.message; msg.className = 'text-[12px] text-rose-600'; }
+  }
+}
+window.registerModelFromReport = registerModelFromReport;
+
+/* 成功モデルを初期値へ戻す（owner） */
+async function resetModelBaseline() {
+  const msg = document.getElementById('modelActionMsg');
+  if (msg) { msg.textContent = '初期化中…'; msg.className = 'text-[12px] text-neutral-500'; }
+  try {
+    await API.resetModel();
+    window.__model = null;
+    if (msg) { msg.textContent = '基準値を初期値に戻しました。'; msg.className = 'text-[12px] text-emerald-600'; }
+  } catch (e) {
+    if (msg) { msg.textContent = '初期化に失敗しました：' + e.message; msg.className = 'text-[12px] text-rose-600'; }
+  }
+}
+window.resetModelBaseline = resetModelBaseline;
 
 /* ---------- ④ レポート ---------- */
 function viewReport() {
@@ -840,6 +883,7 @@ async function realAnalyze(file) {
   }
   const rep = await API.report(sessionId);
   R.loadAnalysis(rep.analysis);
+  window.__lastSessionId = rep.sessionId || sessionId;
   window.__mySubmission = { at: new Date().toISOString(), analysis: rep.analysis };
   R.ANALYZE_STAGES.forEach(s => setStageDone(s.key));
   await sleep(400); nav('report');
@@ -870,6 +914,7 @@ async function trySample() {
     ]);
     const rep = await API.importTranscript(sample, { name: '田中 翔（サンプル）', gps });
     R.loadAnalysis(rep.analysis);
+    window.__lastSessionId = rep.sessionId || null;
     window.__mySubmission = { at: new Date().toISOString(), analysis: rep.analysis };
     if (info) info.innerHTML = '<span class="text-emerald-600">取り込み完了</span>';
     setTimeout(() => nav('report'), 300);
@@ -996,6 +1041,7 @@ function applyRole(user) {
 async function boot() {
   const { user } = await API.me(); window.__user = user;
   try { window.__lineReady = !!(await API.health()).lineLoginReady; } catch { window.__lineReady = false; }
+  try { window.__model = await API.getModel(); } catch { window.__model = null; }
   document.body.classList.toggle('logged-out', !user);
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
