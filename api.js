@@ -83,5 +83,9 @@ window.API = (function () {
     const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '初期化に失敗しました'); return j.model;
   }
 
-  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel };
+  /* ---------- 診断ログ（録音の記録） ---------- */
+  async function getLog() { const r = await fetch('/api/log'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'ログの取得に失敗しました'); return j.reports || []; }
+  async function getLogItem(id) { const r = await fetch('/api/log/' + encodeURIComponent(id)); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'ログ詳細の取得に失敗しました'); return j.report; }
+
+  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem };
 })();

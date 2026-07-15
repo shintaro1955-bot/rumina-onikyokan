@@ -15,7 +15,7 @@ import { toChunks, probeDuration } from './lib/audio.mjs';
 import { analyze, computeModelProfile, DOMAIN_PROMPT } from './lib/pipeline.mjs';
 import { parsePlaud } from './lib/import-plaud.mjs';
 import { fetchAppointments } from './lib/crm.mjs';
-import { getDb, save } from './lib/store.mjs';
+import { getDb, save, saveReport, getReport, UPLOAD_DIR } from './lib/store.mjs';
 import { hashPassword, verifyPassword, signSession, verifySession, randomPassword } from './lib/auth.mjs';
 
 const ROOT = new URL('.', import.meta.url).pathname;
@@ -95,6 +95,20 @@ function uniqueUsername(db, base) {
 function modelTalk() {
   const m = getDb().model;
   return (m && Array.isArray(m.profile) && m.profile.length) ? m.profile : undefined;
+}
+// 診断ログを永続化（1録音=1レコード。文字起こし全文・訪問明細・KPIを保存）
+function persistReport(id, result, userName) {
+  const a = result.analysis || {};
+  saveReport({
+    id, at: new Date().toISOString(),
+    salesRepName: a.salesRepName || null, date: a.date || null,
+    source: result.source || 'whisper',
+    coachScore: a.coachScore ?? null,
+    overall: a.talkFidelity ? a.talkFidelity.overall : null,
+    pingCount: Array.isArray(result.pings) ? result.pings.length : null,
+    user: userName || null,
+    analysis: a, pings: result.pings || [], transcript: result.transcript || [],
+  });
 }
 
 // 起動時：ownerが居なければ管理者アカウントを1つseed（＝モデル営業マン。既定は営業部長 川上）
@@ -266,17 +280,34 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { model: null });
       }
 
+      /* ---------- 診断ログ（録音の記録） ---------- */
+      // 一覧（owner専用）：軽量メタのみ。新しい順。
+      if (path === '/api/log' && req.method === 'GET') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        return json(res, 200, { reports: getDb().reports || [] });
+      }
+      // 詳細（owner専用）：文字起こし全文・訪問明細・KPIまで
+      const mLog = path.match(/^\/api\/log\/(.+)$/);
+      if (mLog && req.method === 'GET') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const rec = getReport(decodeURIComponent(mLog[1]));
+        return rec ? json(res, 200, { report: rec }) : json(res, 404, { error: 'ログが見つかりません' });
+      }
+
       // ① アップロード：ファイル本文を raw で受けて保存（multipart不要）
       if (path === '/api/audio/upload' && req.method === 'POST') {
         if (!API_KEY) return json(res, 400, { error: 'OPENAI_API_KEY が未設定です。.env を確認してください。' });
         const id = randomUUID();
         const fileName = decodeURIComponent(req.headers['x-file-name'] || 'recording.m4a');
-        const dir = join(ROOT, 'uploads', id);
+        const dir = join(UPLOAD_DIR, id);
         await mkdir(dir, { recursive: true });
         const dest = join(dir, fileName.replace(/[^\w.\-]/g, '_'));
         await streamPipeline(req, createWriteStream(dest));
         SESSIONS.set(id, {
           id, fileName, path: dest, status: 'queued', stage: null, progress: { done: 0, total: 0 },
+          userName: (currentUser(req) || {}).username || null,
           salesRepId: req.headers['x-sales-rep-id'] || null, uploadedAt: new Date().toISOString(),
           startHour: +(req.headers['x-start-hour'] || 9), result: null, error: null,
           // Rumina Coach 連携：測定依頼リンク（?staff=&iv=）から来た場合のみ設定される
@@ -312,6 +343,8 @@ const server = createServer(async (req, res) => {
         // ログイン中なら本人の最新レポートとして保存（マイページ用）
         const me = currentUser(req);
         if (me) { getDb().submissions[me.username] = { at: new Date().toISOString(), name: me.name, analysis }; save(); }
+        // 診断ログを永続化（文字起こし全文つき）
+        persistReport(id, result, me ? me.username : null);
         // Rumina Coach 連携：測定依頼リンク（?staff=&iv=）経由でインポートした場合のみ送信
         if (body.interventionId) notifyCoach(body.interventionId, analysis);
         return json(res, 200, result);
@@ -390,8 +423,11 @@ async function runPipeline(s) {
   });
 
   s.stage = 'analyze';
-  s.result = { sessionId: s.id, benchmark: BENCHMARK, analysis, pings, transcript };
+  s.result = { sessionId: s.id, source: 'whisper', benchmark: BENCHMARK, analysis, pings, transcript };
   s.status = 'done'; s.stage = 'coach';
+  // 本人の最新レポート＋診断ログを永続化（文字起こし全文つき）
+  if (s.userName) { const u = getDb().users[s.userName]; if (u) { getDb().submissions[u.username] = { at: new Date().toISOString(), name: u.name, analysis }; save(); } }
+  persistReport(s.id, s.result, s.userName || null);
   notifyCoach(s.interventionId, analysis); // fire-and-forget（Coach連携時のみ・未設定なら何もしない）
 }
 

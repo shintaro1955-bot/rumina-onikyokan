@@ -781,8 +781,73 @@ function adminSample() { R.saveReps(R.SAMPLE_REPS.map(r => ({ ...r }))); render(
 window.adminSave = adminSave; window.adminAdd = adminAdd; window.adminDelete = adminDelete; window.adminReset = adminReset; window.adminSample = adminSample;
 
 /* ---------- ルーター ---------- */
-const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin };
-function nav(v) { currentView = v; render(); if (v === 'upload') bindUpload(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+/* ---------- 診断ログ（録音の記録・owner専用） ---------- */
+function viewLog() {
+  return `
+  ${h1('診断ログ（録音の記録）', '出稿・解析した録音を1件ずつ保存。文字起こし全文・訪問ごとの判定・KPI／カルテまで残ります。')}
+  ${card(`<div class="p-4 text-[12px] text-neutral-600 leading-relaxed">
+    <span class="font-semibold text-neutral-700">保存されるもの</span>：① 文字起こし全文（実際に話した会話）／② 訪問ごとの結果（アポ・見込み・断り文句・切り返し）／③ KPIと成功モデル乖離カルテ。
+    <span class="font-semibold text-neutral-700 ml-1">保存先</span>：サーバーの永続領域（本番は Railway Volume の <code>/data</code>）。再デプロイでも消えません。
+    <span class="font-semibold text-neutral-700 ml-1">音声ファイル</span>：文字起こし後も同領域に保持（不要なら運用で削除可）。
+  </div>`)}
+  <div id="logWrap" class="mt-4 text-sm text-neutral-500">読み込み中…</div>
+  <div id="logDetail" class="mt-4"></div>`;
+}
+async function loadLog() {
+  const wrap = document.getElementById('logWrap'); if (!wrap) return;
+  let reports = [];
+  try { reports = await API.getLog(); } catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
+  if (!reports.length) { wrap.innerHTML = `<div class="text-sm text-neutral-500 p-6 text-center border border-neutral-200 rounded-xl bg-white">まだ録音の記録がありません。「② 稼働終了・録音を出稿」から解析すると、ここに残ります。</div>`; return; }
+  const badge = o => o == null ? '—' : `<span class="tabular-nums ${o >= 70 ? 'text-emerald-600' : o >= 45 ? 'text-amber-600' : 'text-rose-600'}">${o}%</span>`;
+  const rows = reports.map(r => `<tr class="border-t border-neutral-200 hover:bg-emerald-50/40 cursor-pointer" onclick="openLogItem('${r.id}')">
+    <td class="px-3 py-2 text-neutral-800">${r.name || '—'}</td>
+    <td class="px-3 py-2 text-neutral-500">${r.date || '—'}</td>
+    <td class="px-3 py-2 text-neutral-500">${r.source === 'plaud' ? 'NotePin' : r.source === 'whisper' ? '音声解析' : (r.source || '—')}</td>
+    <td class="px-3 py-2 text-right tabular-nums text-neutral-700">${r.pings ?? '—'}</td>
+    <td class="px-3 py-2 text-right tabular-nums text-neutral-700">${r.score ?? '—'}</td>
+    <td class="px-3 py-2 text-right">${badge(r.overall)}</td>
+    <td class="px-3 py-2 text-[11px] text-neutral-400 whitespace-nowrap">${(r.at || '').replace('T', ' ').slice(0, 16)}</td>
+    <td class="px-3 py-2 text-right text-[12px] text-emerald-600 whitespace-nowrap">文字起こし →</td>
+  </tr>`).join('');
+  wrap.innerHTML = `${card(`<div class="overflow-x-auto"><table class="w-full text-sm min-w-[720px]">
+    <thead><tr class="text-xs text-neutral-500 bg-neutral-50">
+      <th class="px-3 py-2 text-left font-normal">受診者</th><th class="px-3 py-2 text-left font-normal">稼働日</th><th class="px-3 py-2 text-left font-normal">出所</th>
+      <th class="px-3 py-2 text-right font-normal">ピンポン</th><th class="px-3 py-2 text-right font-normal">スコア</th><th class="px-3 py-2 text-right font-normal">再現率</th>
+      <th class="px-3 py-2 text-left font-normal">記録時刻</th><th class="px-3"></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`)}
+    <div class="text-[11px] text-neutral-400 mt-2">${reports.length}件（新しい順）。行をクリックすると文字起こし全文が開きます。</div>`;
+}
+async function openLogItem(id) {
+  const box = document.getElementById('logDetail'); if (!box) return;
+  box.innerHTML = `<div class="text-sm text-neutral-500 p-4">読み込み中…</div>`;
+  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  let rec; try { rec = await API.getLogItem(id); } catch (e) { box.innerHTML = `<div class="text-sm text-rose-600 p-4">${e.message}</div>`; return; }
+  const segs = rec.transcript || [];
+  const clock = s => { const t = Math.max(0, Math.round(s)); return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
+  const spkClass = sp => sp === 'sales' ? 'text-emerald-700' : sp === 'customer' ? 'text-neutral-800' : 'text-neutral-500';
+  const spkLabel = sp => sp === 'sales' ? '営業' : sp === 'customer' ? 'お客様' : '—';
+  const lines = segs.map(s => `<div class="flex gap-2 py-1 border-b border-neutral-100 last:border-0">
+    <span class="text-[11px] text-neutral-400 tabular-nums shrink-0 w-10">${clock(s.startSec)}</span>
+    <span class="text-[11px] shrink-0 w-12 ${spkClass(s.speaker)}">${spkLabel(s.speaker)}</span>
+    <span class="text-[13px] text-neutral-800 leading-relaxed">${(s.text || '').replace(/</g, '&lt;')}</span>
+  </div>`).join('') || '<div class="text-sm text-neutral-500">文字起こしがありません。</div>';
+  const pv = (rec.pings || []).map(p => `<span class="text-[11px] px-2 py-0.5 rounded-full border mr-1 mb-1 inline-block ${p.result === 'apo' ? 'bg-emerald-600 text-white border-emerald-600' : p.result === 'prospect' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : p.result === 'talk' ? 'bg-neutral-100 text-neutral-600 border-neutral-200' : 'bg-neutral-50 text-neutral-400 border-neutral-200'}">${clock(p.startSec)} ${p.result === 'apo' ? 'アポ' : p.result === 'prospect' ? '見込み' : p.result === 'talk' ? '会話' : '不在/断り'}${p.objectionType ? '・' + p.objectionType : ''}</span>`).join('') || '<span class="text-sm text-neutral-500">—</span>';
+  box.innerHTML = card(`<div class="p-5">
+    <div class="flex items-center justify-between mb-1 gap-3 flex-wrap">
+      <div class="text-sm font-semibold text-neutral-800">${rec.salesRepName || '—'} ・ ${rec.date || ''} の文字起こし</div>
+      <button onclick="document.getElementById('logDetail').innerHTML=''" class="text-xs text-neutral-500 hover:text-neutral-800">閉じる ✕</button>
+    </div>
+    <div class="text-[11px] text-neutral-400 mb-3">出所 ${rec.source === 'plaud' ? 'NotePin' : '音声解析'} ・ 記録 ${(rec.at || '').replace('T', ' ').slice(0, 16)} ・ ${segs.length}発話</div>
+    <div class="text-[12px] font-semibold text-neutral-600 mb-1">訪問ごとの判定</div>
+    <div class="mb-4">${pv}</div>
+    <div class="text-[12px] font-semibold text-neutral-600 mb-1">会話ログ（文字起こし全文）</div>
+    <div class="max-h-[420px] overflow-y-auto border border-neutral-200 rounded-lg p-3 bg-white">${lines}</div>
+  </div>`);
+}
+window.openLogItem = openLogItem;
+
+const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog };
+function nav(v) { currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') loadLog(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function render() {
   app.innerHTML = VIEWS[currentView]();
   document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('nav-active', el.dataset.nav === currentView));
@@ -1046,7 +1111,7 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
+  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
   render();
 }
 window.doLogin = doLogin; window.doLogout = doLogout; window.issueRep = issueRep;

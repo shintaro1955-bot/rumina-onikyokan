@@ -49,6 +49,12 @@ SPEC-audio-api.md   音声処理API接続仕様書 v1.0
    - 任意：`DIARIZE`(既定heuristic/`none`可)、`VISIT_GAP_SEC`、`IDLE_GAP_SEC`
 4. Nixpacksが自動ビルド→`node server.mjs`起動。**Settings → Networking → Generate Domain** で公開URL
 
+**データ永続化（Volume・重要）**
+ユーザー／登録した成功モデル／診断ログ（文字起こし全文）は `DATA_DIR` 配下に保存する。RailwayはVolumeを付けないと再デプロイで全部消えるので、本番は必ず：
+1. サービスの **Settings → Volumes → New Volume**、Mount path を `/data` に
+2. **Variables** に `DATA_DIR=/data` を追加
+3. 再デプロイ後、`/data/db.json`（ユーザー/モデル/索引）・`/data/reports/<id>.json`（1録音=1診断ログ）・`/data/uploads/`（音声）に永続化される
+
 **Railway CLI**
 ```bash
 npm i -g @railway/cli && railway login
@@ -58,7 +64,7 @@ railway domain
 ```
 
 **本番前の注意（重要）**
-- ファイルシステムはエフェメラル：`uploads/`は再デプロイで消える（音声は処理後不要なのでMVPは可）。`SESSIONS`はメモリ保持＝**単一インスタンス前提**。
+- 永続化はVolume（上記）が前提。未設定だと `./data` に落ちて再デプロイで消える。`SESSIONS`（解析中の一時状態）はメモリ保持＝**単一インスタンス前提**（確定した診断ログはディスクに保存済み）。
 - スケール（複数インスタンス）時は、セッション/確定/同意を **Postgres（Neon/Supabase）**、音声を **Cloudflare R2 / S3** に移す。
 - `PORT` はRailwayが注入（`server.mjs`は`process.env.PORT`対応済み）。`OPENAI_API_KEY`はサーバのみ・クライアントに出さない。
 - ログイン/マルチテナント・**録音同意の保存**・Whisperのコスト上限は本番ローンチ前に。
