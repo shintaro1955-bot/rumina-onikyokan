@@ -310,54 +310,13 @@ function winTalkSection(a) {
     'アポ・見込みになった訪問だけを取り出し、決め手をAIが言語化（太陽光蓄電池ドメイン）。');
 }
 
-/* ---------- 八賀トークロジックとの乖離 ---------- */
+/* ---------- ダウンロードユーティリティ ---------- */
 function downloadText(filename, text) {
   const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const el = document.createElement('a');
   el.href = url; el.download = filename; document.body.appendChild(el); el.click();
   document.body.removeChild(el); setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-function downloadHagaLogic() { downloadText('八賀トークロジック_基準.txt', R.hagaLogicText()); }
-
-function devBadge(status) {
-  if (status === 'ok') return '<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-600 text-white">◎ 再現</span>';
-  if (status === 'weak') return '<span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">△ あと一歩</span>';
-  return '<span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">× 型が出ていない</span>';
-}
-
-function hagaLogicSection(a) {
-  const dev = R.buildTalkDeviation(a);
-  const L = R.HAGA_TALK_LOGIC;
-  const rows = dev.rows.map(r => `
-    <div class="border border-neutral-200 rounded-lg p-4">
-      <div class="flex items-center gap-2 mb-1.5">
-        <span class="text-xs text-neutral-400 tabular-nums">${r.no}</span>
-        <span class="text-sm font-semibold text-neutral-800">${r.name}</span>
-        <span class="ml-auto">${devBadge(r.status)}</span>
-      </div>
-      <div class="text-[13px] text-neutral-700 leading-relaxed">${r.idea}</div>
-      ${r.status !== 'ok' ? `<div class="mt-2 text-[12px] text-neutral-600 bg-neutral-50 border border-neutral-200 rounded p-2">
-        <span class="text-emerald-700 font-semibold">八賀のお手本：</span>「${r.phrases[0]}」
-        ${r.ratio != null ? `<span class="text-neutral-400 ml-2 tabular-nums">基準比 ${Math.round(r.ratio * 100)}%</span>` : ''}
-      </div>` : ''}
-    </div>`).join('');
-  const barColor = dev.coveragePct >= 70 ? 'bg-emerald-500' : dev.coveragePct >= 40 ? 'bg-amber-400' : 'bg-rose-500';
-  return section('八賀トークロジックとの乖離',
-    `<div class="border border-emerald-200 rounded-lg p-4 mb-4" style="background:#f2f9f4">
-       <div class="flex items-center justify-between mb-2 gap-3">
-         <div class="text-[13px] text-neutral-800"><span class="font-semibold">${L.title}</span>と、あなたのトーク特徴を照合しました。</div>
-         <div class="text-right shrink-0"><div class="text-xs text-neutral-500">再現度</div><div class="text-xl font-semibold text-emerald-600 tabular-nums">${dev.coverage}/${dev.total}<span class="text-sm text-neutral-500 ml-1">フェーズ</span></div></div>
-       </div>
-       <div class="h-2 rounded-full bg-neutral-200 overflow-hidden"><div class="h-full ${barColor}" style="width:${dev.coveragePct}%"></div></div>
-       <div class="text-[12px] text-neutral-600 mt-2">${L.principle}</div>
-     </div>
-     <div class="grid lg:grid-cols-2 gap-3">${rows}</div>
-     <div class="mt-4 flex flex-wrap gap-3">
-       <button onclick="downloadHagaLogic()" class="px-4 py-2 rounded-md border border-emerald-300 text-emerald-700 text-sm font-semibold hover:bg-emerald-50 transition">八賀のトークロジックをダウンロード</button>
-       <button onclick="nav('submit')" class="px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">上長へ提出書を作成 →</button>
-     </div>`,
-    'トップ営業の“数値”に加え、代表・八賀の“型”とどこがズレているかを可視化。欠けたフェーズはお手本トークで補える。');
 }
 
 /* ---------- 上長への提出書 ---------- */
@@ -372,14 +331,15 @@ function submitSaveField() {
   saveSubmit(a, o);
 }
 function downloadSubmitText() {
-  const a = SESSION.analysis, d = SESSION.diagnosis, dev = R.buildTalkDeviation(a), s = loadSubmit(a);
+  const a = SESSION.analysis, d = SESSION.diagnosis, gaps = R.modelGaps(a), s = loadSubmit(a);
+  const fid = a.talkFidelity || {};
   let t = `日報・改善提出書（上長宛）\nFit Founder / Rumina 鬼教官\n\n提出日：${a.date || '2026-07-03'}\n営業：${a.salesRepName || '田中 翔'}\n鬼教官スコア：${a.coachScore}/100（判定 ${d.grade}）\n\n`;
   t += `■ トップ営業との主要乖離\n`;
   (d.weaknesses || []).slice(0, 3).forEach(w => { t += `・${w.metric}：${w.finding}\n  → ${w.fix}\n`; });
   if (!(d.weaknesses || []).length) t += `（大きな弱点なし）\n`;
-  t += `\n■ 八賀トークロジックとの乖離（再現 ${dev.coverage}/${dev.total}フェーズ）\n`;
-  dev.gaps.forEach(r => { t += `・${r.name}：${r.idea}\n  お手本「${r.phrases[0]}」\n`; });
-  if (!dev.gaps.length) t += `（おおむね再現できています）\n`;
+  t += `\n■ 成功モデル乖離カルテ（総合再現率 ${fid.overall != null ? fid.overall + '%' : '—'}）\n`;
+  gaps.forEach(r => { t += `・${r.name}：あなた${r.repRate}% / モデル${r.modelRate}%（${r.gap}pt）\n  → ${r.tip}\n`; });
+  if (!gaps.length) t += `（すべての型が基準値以上）\n`;
   t += `\n■ 自己所見\n${s.self || '（未記入）'}\n\n■ 上長へ相談したいこと\n`;
   (s.topics || []).forEach(x => { t += `・${x}\n`; });
   if (s.ask) t += `${s.ask}\n`;
@@ -390,7 +350,7 @@ function downloadSubmitText() {
 
 function viewSubmit() {
   const a = SESSION.analysis, b = R.TOP_BENCHMARK, d = SESSION.diagnosis;
-  const dev = R.buildTalkDeviation(a), saved = loadSubmit(a);
+  const gaps = R.modelGaps(a), fid = a.talkFidelity || {}, saved = loadSubmit(a);
   const kpi = [
     ['総ピンポン', a.totalPings + '件', b.targetPings + '件'],
     ['在宅反応率', a.homeResponseRate + '%', b.homeResponseRate + '%'],
@@ -400,14 +360,13 @@ function viewSubmit() {
     ['冒頭質問率', a.openingQuestionRate + '%', b.openingQuestionRate + '%'],
   ].map(r => `<tr class="border-t border-neutral-200"><td class="py-1.5 text-neutral-600">${r[0]}</td><td class="py-1.5 text-right tabular-nums text-neutral-900">${r[1]}</td><td class="py-1.5 text-right tabular-nums text-neutral-500">${r[2]}</td></tr>`).join('');
   const topWeak = (d.weaknesses || []).slice(0, 3).map(w => `<li class="text-[13px] text-neutral-700 leading-relaxed py-0.5"><span class="text-rose-600 font-semibold">${w.metric}</span>：${w.finding}<div class="text-[12px] text-neutral-500">→ ${w.fix}</div></li>`).join('') || '<li class="text-sm text-neutral-500">大きな弱点はありません。</li>';
-  const gapList = dev.gaps.map(r => `<li class="text-[13px] text-neutral-700 leading-relaxed py-0.5"><span class="${r.status === 'missing' ? 'text-rose-600' : 'text-amber-600'} font-semibold">${r.name}</span>：${r.idea}<div class="text-[12px] text-emerald-700">お手本「${r.phrases[0]}」</div></li>`).join('') || '<li class="text-sm text-neutral-500">八賀ロジックはおおむね再現できています。</li>';
-  const topicOpts = dev.gaps.map(r => { const v = r.name + ' の型づくり'; return `<label class="flex items-start gap-2 text-[13px] text-neutral-700 py-1"><input type="checkbox" data-topic="${v}" ${(saved.topics || []).includes(v) ? 'checked' : ''} onchange="submitSaveField()" class="mt-1 accent-emerald-600"> ${r.name} をどう埋めればいいか</label>`; }).join('') || '<div class="text-sm text-neutral-500">特に指摘なし</div>';
+  const gapList = gaps.map(r => `<li class="text-[13px] text-neutral-700 leading-relaxed py-0.5"><span class="${r.gap <= -30 ? 'text-rose-600' : 'text-amber-600'} font-semibold">${r.name}</span>：あなた${r.repRate}% / モデル${r.modelRate}%（${r.gap}pt）<div class="text-[12px] text-emerald-700">→ ${r.tip}</div></li>`).join('') || '<li class="text-sm text-neutral-500">すべての型が基準値以上です。</li>';
+  const topicOpts = gaps.map(r => { const v = r.name + ' の型づくり'; return `<label class="flex items-start gap-2 text-[13px] text-neutral-700 py-1"><input type="checkbox" data-topic="${v}" ${(saved.topics || []).includes(v) ? 'checked' : ''} onchange="submitSaveField()" class="mt-1 accent-emerald-600"> ${r.name} をどう埋めればいいか</label>`; }).join('') || '<div class="text-sm text-neutral-500">特に指摘なし</div>';
 
   return `
   <div class="flex items-center justify-between mb-4 no-print">
     <button onclick="nav('report')" class="text-sm text-neutral-500 hover:text-neutral-800">← レポートに戻る</button>
     <div class="flex flex-wrap gap-2">
-      <button onclick="downloadHagaLogic()" class="px-3 py-1.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100">八賀ロジックDL</button>
       <button onclick="downloadSubmitText()" class="px-3 py-1.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100">提出書をテキストDL</button>
       <button onclick="window.print()" class="px-4 py-1.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold">印刷 / PDFで保存</button>
     </div>
@@ -432,7 +391,7 @@ function viewSubmit() {
     <div class="text-sm font-semibold text-neutral-700 mb-1">② トップ営業との主要乖離</div>
     <ul class="mb-5 space-y-0.5 list-disc list-inside">${topWeak}</ul>
 
-    <div class="text-sm font-semibold text-neutral-700 mb-1">③ 八賀トークロジックとの乖離（再現 ${dev.coverage}/${dev.total} フェーズ）</div>
+    <div class="text-sm font-semibold text-neutral-700 mb-1">③ 成功モデル乖離カルテ（総合再現率 ${fid.overall != null ? fid.overall + '%' : '—'}）</div>
     <ul class="mb-5 space-y-0.5 list-disc list-inside">${gapList}</ul>
 
     <div class="text-sm font-semibold text-neutral-700 mb-1">④ 自己所見（本人記入）</div>
@@ -450,27 +409,86 @@ function viewSubmit() {
   </div>`;
 }
 
-/* トーク再現率（モデルの型をどれだけ写せているか） */
+/* 成功モデル乖離カルテ（健康診断のカルテ形式） */
+// 再現率→医療風の判定ランク
+function karteJudge(f) {
+  if (f >= 90) return { g: 'A', label: '正常', badge: 'bg-emerald-600 text-white', dot: 'bg-emerald-500', text: 'text-emerald-700' };
+  if (f >= 70) return { g: 'B', label: '軽度', badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-400', text: 'text-emerald-700' };
+  if (f >= 50) return { g: 'C', label: '要注意', badge: 'bg-amber-100 text-amber-700 border border-amber-200', dot: 'bg-amber-400', text: 'text-amber-700' };
+  return { g: 'D', label: '要改善', badge: 'bg-rose-100 text-rose-700 border border-rose-200', dot: 'bg-rose-500', text: 'text-rose-700' };
+}
 function talkFidelitySection(a) {
   const t = a.talkFidelity; if (!t || !t.moves || !t.moves.length) return '';
-  const col = v => v >= 80 ? 'text-emerald-600' : v >= 50 ? 'text-amber-600' : 'text-rose-600';
-  const rows = t.moves.map(m => `
-    <div class="py-2 border-b border-[#E8EFEA] last:border-0">
-      <div class="flex justify-between text-sm mb-1"><span class="text-neutral-800">${m.key}</span><span class="tabular-nums ${col(m.fidelity)}">${m.fidelity}%</span></div>
-      <div class="relative h-2 rounded-full bg-neutral-100 overflow-hidden">
-        <div class="absolute top-0 left-0 h-full bg-neutral-300" style="width:${Math.min(m.modelRate, 100)}%"></div>
-        <div class="absolute top-0 left-0 h-full ${m.gap < 0 ? 'bg-rose-400' : 'bg-emerald-500'} rounded-full" style="width:${Math.min(m.repRate, 100)}%"></div>
-      </div>
-      <div class="flex justify-between text-[11px] text-neutral-500 mt-0.5"><span>あなた ${m.repRate}% / モデル ${m.modelRate}%</span><span>${m.gap < 0 ? m.gap : '+' + m.gap}pt</span></div>
-    </div>`).join('');
+  const oj = karteJudge(t.overall);
   const w = t.weakest;
-  const oc = t.overall >= 70 ? 'text-emerald-600' : t.overall >= 45 ? 'text-amber-600' : 'text-rose-600';
-  return section('トーク再現率 — モデルの型をどれだけ写せているか',
-    `<div class="grid lg:grid-cols-3 gap-4 items-start">
-      ${card(`<div class="p-5 text-center"><div class="text-xs text-neutral-500 mb-1">総合再現率</div><div class="text-4xl font-semibold ${oc} tabular-nums">${t.overall}<span class="text-lg text-neutral-400">%</span></div><div class="text-[11px] text-neutral-500 mt-1">会話が成立した${t.denom}訪問で計測</div>${w ? `<div class="mt-3 text-left text-[12px] text-neutral-700 border-t border-[#E8EFEA] pt-3">最も写せていない型<br><b class="text-rose-600">${w.key}</b>（あなた${w.repRate}% / モデル${w.modelRate}%）<div class="text-emerald-600 mt-1">→ ${w.tip}</div></div>` : ''}</div>`)}
-      ${card(`<div class="p-5 lg:col-span-2"><div class="text-sm font-semibold text-neutral-700 mb-1">型ごとの再現度</div><div class="text-[11px] text-neutral-500 mb-2">濃い色＝あなた、灰＝モデルの目安</div>${rows}</div>`)}
-    </div>`,
-    'モデル（川上）の勝ちの型を基準に、この録音で各型を何割再現できたか。乖離の"中身"がこれ。');
+
+  // 検査表の行（型 = 検査項目、あなた = 測定値、モデル = 基準値）
+  const rows = t.moves.map(m => {
+    const j = karteJudge(m.fidelity);
+    const gapTxt = m.gap < 0 ? `${m.gap}pt` : `+${m.gap}pt`;
+    return `<tr class="border-t border-[#E8EFEA] align-top">
+      <td class="py-3 pr-2"><div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full ${j.dot} shrink-0"></span><span class="text-sm font-medium text-neutral-800">${m.key}</span></div></td>
+      <td class="py-3 px-2 text-right tabular-nums"><span class="text-base font-semibold ${j.text}">${m.repRate}<span class="text-[11px] text-neutral-400">%</span></span></td>
+      <td class="py-3 px-2 text-right tabular-nums text-neutral-500">${m.modelRate}<span class="text-[11px] text-neutral-400">%</span></td>
+      <td class="py-3 px-2 text-right tabular-nums ${m.gap < 0 ? 'text-rose-600' : 'text-emerald-600'}">${gapTxt}</td>
+      <td class="py-3 px-2 text-center"><span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full ${j.badge}">${j.g}・${j.label}</span></td>
+      <td class="py-3 pl-2 text-[12px] text-neutral-600 leading-relaxed min-w-[180px]">${m.fidelity >= 90 ? '基準を満たしています。この型を維持。' : m.tip}</td>
+    </tr>`;
+  }).join('');
+
+  const abList = ['A 正常 90%+', 'B 軽度 70–89%', 'C 要注意 50–69%', 'D 要改善 〜49%']
+    .map((s, i) => { const cs = ['text-emerald-600', 'text-emerald-500', 'text-amber-600', 'text-rose-600']; return `<span class="${cs[i]}">${s}</span>`; })
+    .join('<span class="text-neutral-300 mx-1.5">/</span>');
+
+  const inner = `
+    <div class="rounded-2xl border border-[#E8EFEA] bg-white overflow-hidden shadow-[0_1px_3px_rgba(16,40,30,0.05)]">
+      <!-- カルテ ヘッダー -->
+      <div class="px-5 sm:px-6 py-4 border-b border-[#E8EFEA]" style="background:linear-gradient(180deg,#F4FBF7,#ffffff)">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <div class="text-[11px] font-semibold tracking-wide text-emerald-700">RUMINA 鬼教官 ・ 成功モデル乖離ドック</div>
+            <h3 class="text-lg font-bold text-neutral-900 mt-0.5">トーク型 健康診断カルテ</h3>
+            <div class="text-[12px] text-neutral-500 mt-1">受診者：<span class="text-neutral-700 font-medium">${a.salesRepName || '田中 翔'}</span>　診断日：${a.date || '2026-07-03'}　検体：会話が成立した ${t.denom} 訪問</div>
+          </div>
+          <div class="text-center shrink-0">
+            <div class="text-[11px] text-neutral-500 mb-0.5">総合判定</div>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center justify-center w-11 h-11 rounded-xl text-xl font-bold ${oj.badge}">${oj.g}</span>
+              <div class="text-left"><div class="text-2xl font-bold text-neutral-900 tabular-nums leading-none">${t.overall}<span class="text-sm text-neutral-400">%</span></div><div class="text-[11px] ${oj.text}">${oj.label}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 検査表 -->
+      <div class="px-5 sm:px-6 pt-4 pb-2 overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
+          <thead><tr class="text-[11px] text-neutral-400">
+            <th class="text-left font-normal pb-1">検査項目（型）</th>
+            <th class="text-right font-normal pb-1 px-2">あなた</th>
+            <th class="text-right font-normal pb-1 px-2">成功モデル</th>
+            <th class="text-right font-normal pb-1 px-2">乖離</th>
+            <th class="text-center font-normal pb-1 px-2">判定</th>
+            <th class="text-left font-normal pb-1 pl-2">所見・処方</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="text-[11px] text-neutral-500 mt-2 pb-1">判定基準：${abList}</div>
+      </div>
+
+      <!-- Dr.Rumina 総合所見 -->
+      ${w ? `<div class="mx-5 sm:mx-6 mb-5 mt-2 rounded-xl border border-emerald-100 p-4 flex gap-3 items-start" style="background:#f2f9f4">
+        <img src="/assets/rumina.png" alt="Dr.Rumina" class="w-11 h-11 rounded-full object-cover object-top border border-emerald-200 shrink-0" onerror="this.style.display='none'">
+        <div>
+          <div class="text-[12px] font-semibold text-emerald-800 mb-0.5">Dr.ルミナの総合所見</div>
+          <div class="text-[13px] text-neutral-800 leading-relaxed">最も乖離が大きいのは <b class="text-rose-600">${w.key}</b>（あなた ${w.repRate}% / 成功モデル ${w.modelRate}%）。ここが総合判定 ${oj.g} の主因です。まずは「${w.tip}」を明日の全訪問で意識。1項目でも B 以上に上げれば、アポ率は必ず動きます。</div>
+        </div>
+      </div>` : ''}
+    </div>`;
+
+  return section('成功モデルとの乖離カルテ',
+    inner,
+    '成功モデル（川上）の勝ちの型を"基準値"に、あなたのトークを健康診断。どの型がどれだけ足りていないかをカルテで可視化。');
 }
 
 /* ---------- ④ レポート ---------- */
@@ -529,7 +547,6 @@ function viewReport() {
   ${gpsBlock}
   ${winTalkSection(a)}
   ${talkFidelitySection(a)}
-  ${hagaLogicSection(a)}
   ${diagnosisSection()}
 
   ${section('時間帯別 活動密度', card(`<div class="p-5">${C.hourlyDensity(a.hourly || [], idleHours)}<div class="text-[11px] text-neutral-500 mt-1">赤 = 活動が薄い時間帯</div></div>`))}

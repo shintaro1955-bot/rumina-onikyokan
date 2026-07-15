@@ -304,82 +304,17 @@ function applyCrmConfirm(a) {
     estimatedFields: ((a.quality || {}).estimatedFields || []).filter(f => !['appointmentRate', 'homeResponseRate', 'conversationRate'].includes(f)) };
 }
 
-/* ============================================================
-   Fit Founder代表・八賀の「勝ちトークロジック」基準
-   トップ営業の"数値"基準(TOP_BENCHMARK)に対し、こちらは
-   "どう話すか"の質的な型（フェーズ）。営業マンのトーク特徴が
-   このロジックからどこでズレているか（乖離）を可視化する。
-   ============================================================ */
-const HAGA_TALK_LOGIC = {
-  author: 'Fit Founder 代表 八賀',
-  title: '八賀式 訪販トークロジック（電気・太陽光・蓄電池）',
-  principle: '売り込まない。「気づき」を渡して、相手の口から課題を言わせる。断りは“入口”、最後は二択で必ず日程を置く。',
-  phases: [
-    { key: 'hook', no: 1, name: '冒頭フック（開口10秒）', move: '冒頭フック',
-      idea: '名乗りで終わらせない。10秒以内に「電気代／無料診断／明細」のどれかを刺し、相手に喋らせる。',
-      phrases: ['こんにちは、電気の“健康診断”で回っています。', '今、電気代って上がっていませんか？'],
-      kpi: 'openingQuestionRate', bench: 80 },
-    { key: 'problem', no: 2, name: '問題提起（危機感の共有）', move: '問題提起',
-      idea: '値上げ・時間帯単価など“相手ごと”の不利益を、相手の口から言わせて危機感を共有する。',
-      phrases: ['夜トク8だと昼の単価が高くて…', '燃料費調整でこの1年、じわじわ上がってますよね。'],
-      kpi: 'conversationRate', bench: TOP_BENCHMARK.conversationRate },
-    { key: 'detail', no: 3, name: '明細ドライブ（明細を見せてもらう）', move: '明細ドライブ',
-      idea: '“売る”のではなく“見る”。明細を30秒見せてもらう合意を取り、警戒を下げて会話を深める。',
-      phrases: ['明細だけ、30秒見させてもらえますか？', '数字を見れば、下げられる余地があるか一目で分かります。'],
-      kpi: 'averageConversationSeconds', bench: TOP_BENCHMARK.averageConversationSeconds },
-    { key: 'value', no: 4, name: '価値提示（創蓄・補助金の“今だけ”）', move: '創蓄・補助金',
-      idea: 'エコキュート／太陽光／蓄電池を入口に、補助金という“今だけ”の価値で前傾させる。',
-      phrases: ['補助金が“今だけ”なんです。', '創って貯めて使う、で電気代の考え方ごと変わります。'],
-      kpi: 'prospectRate', bench: 8 },
-    { key: 'rebuttal', no: 5, name: '切り返し（断りへの粘り）', move: '切り返し',
-      idea: '断られた瞬間に終わらない。最低1回「電気代だけ確認しても？」で粘りのターンを作る。',
-      phrases: ['ちなみに電気代だけ、確認してもいいですか？', 'お手間は取らせません。見るだけで大丈夫です。'],
-      kpi: 'averageRebuttalCount', bench: TOP_BENCHMARK.averageRebuttalCount },
-    { key: 'close', no: 6, name: '2択クロージング（日程確定）', move: '2択クロージング',
-      idea: '「行っていいですか？」ではなく、“AかB”の二択で日程を置いてくる。',
-      phrases: ['明日の夕方と明後日の昼、どちらがご都合いいですか？', '明細を見る日だけ、先に押さえさせてください。'],
-      kpi: 'appointmentRate', bench: TOP_BENCHMARK.appointmentRate },
-  ],
-};
-
-// 八賀ロジックとの乖離を算出（勝ちトークのmove有無＋KPIのトップ基準比の二軸）
-function buildTalkDeviation(a) {
-  const used = new Set(((a.winTalk && a.winTalk.topMoves) || []).map(m => m.move));
-  const rows = HAGA_TALK_LOGIC.phases.map(p => {
-    const val = a[p.kpi];
-    const ratio = (p.bench && val != null) ? val / p.bench : null;
-    const hasMove = used.has(p.move);
-    let status; // ok=再現できている / weak=あと一歩 / missing=型が出ていない
-    if (hasMove && (ratio == null || ratio >= 0.9)) status = 'ok';
-    else if (!hasMove && ratio != null && ratio < 0.7) status = 'missing';
-    else status = 'weak';
-    return { ...p, val, ratio: ratio == null ? null : +ratio.toFixed(2), hasMove, status };
-  });
-  const okc = rows.filter(r => r.status === 'ok').length;
-  return {
-    coverage: okc, total: rows.length,
-    coveragePct: Math.round(okc / rows.length * 100),
-    rows, gaps: rows.filter(r => r.status !== 'ok'),
-  };
-}
-
-// 八賀ロジックをテキスト化（ダウンロード用）
-function hagaLogicText() {
-  const L = HAGA_TALK_LOGIC;
-  let s = `${L.title}\n（監修：${L.author}）\n\n■ 基本思想\n${L.principle}\n\n`;
-  L.phases.forEach(p => {
-    s += `【${p.no}. ${p.name}】\n・狙い：${p.idea}\n・お手本トーク：\n`;
-    p.phrases.forEach(ph => { s += `    「${ph}」\n`; });
-    s += `・基準の型：${p.move}\n\n`;
-  });
-  s += `— Rumina 鬼教官 / Fit Founder\n`;
-  return s;
+// 成功モデル乖離カルテの検査項目（=talkFidelity.moves）から、基準未達の型を抽出
+function modelGaps(a) {
+  const moves = (a.talkFidelity && a.talkFidelity.moves) || [];
+  return moves.filter(m => m.fidelity < 90)
+    .sort((x, y) => x.gap - y.gap)
+    .map(m => ({ name: m.key, repRate: m.repRate, modelRate: m.modelRate, gap: m.gap, tip: m.tip }));
 }
 
 window.RUMINA = {
   TOP_BENCHMARK, TODAY_ANALYSIS, NEXT_ACTIONS,
   SALES_REPS: loadReps(), DEFAULT_REPS, SAMPLE_REPS, SAMPLE_TRANSCRIPT, PING_EVENTS, ANALYZE_STAGES,
   computeGap, generateCoachComment, buildRadar, computeScore, saveCrm, applyCrmConfirm,
-  saveReps, resetReps,
-  HAGA_TALK_LOGIC, buildTalkDeviation, hagaLogicText,
+  saveReps, resetReps, modelGaps,
 };
