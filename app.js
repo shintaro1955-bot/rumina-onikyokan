@@ -450,6 +450,29 @@ function viewSubmit() {
   </div>`;
 }
 
+/* トーク再現率（モデルの型をどれだけ写せているか） */
+function talkFidelitySection(a) {
+  const t = a.talkFidelity; if (!t || !t.moves || !t.moves.length) return '';
+  const col = v => v >= 80 ? 'text-emerald-600' : v >= 50 ? 'text-amber-600' : 'text-rose-600';
+  const rows = t.moves.map(m => `
+    <div class="py-2 border-b border-[#E8EFEA] last:border-0">
+      <div class="flex justify-between text-sm mb-1"><span class="text-neutral-800">${m.key}</span><span class="tabular-nums ${col(m.fidelity)}">${m.fidelity}%</span></div>
+      <div class="relative h-2 rounded-full bg-neutral-100 overflow-hidden">
+        <div class="absolute top-0 left-0 h-full bg-neutral-300" style="width:${Math.min(m.modelRate, 100)}%"></div>
+        <div class="absolute top-0 left-0 h-full ${m.gap < 0 ? 'bg-rose-400' : 'bg-emerald-500'} rounded-full" style="width:${Math.min(m.repRate, 100)}%"></div>
+      </div>
+      <div class="flex justify-between text-[11px] text-neutral-500 mt-0.5"><span>あなた ${m.repRate}% / モデル ${m.modelRate}%</span><span>${m.gap < 0 ? m.gap : '+' + m.gap}pt</span></div>
+    </div>`).join('');
+  const w = t.weakest;
+  const oc = t.overall >= 70 ? 'text-emerald-600' : t.overall >= 45 ? 'text-amber-600' : 'text-rose-600';
+  return section('トーク再現率 — モデルの型をどれだけ写せているか',
+    `<div class="grid lg:grid-cols-3 gap-4 items-start">
+      ${card(`<div class="p-5 text-center"><div class="text-xs text-neutral-500 mb-1">総合再現率</div><div class="text-4xl font-semibold ${oc} tabular-nums">${t.overall}<span class="text-lg text-neutral-400">%</span></div><div class="text-[11px] text-neutral-500 mt-1">会話が成立した${t.denom}訪問で計測</div>${w ? `<div class="mt-3 text-left text-[12px] text-neutral-700 border-t border-[#E8EFEA] pt-3">最も写せていない型<br><b class="text-rose-600">${w.key}</b>（あなた${w.repRate}% / モデル${w.modelRate}%）<div class="text-emerald-600 mt-1">→ ${w.tip}</div></div>` : ''}</div>`)}
+      ${card(`<div class="p-5 lg:col-span-2"><div class="text-sm font-semibold text-neutral-700 mb-1">型ごとの再現度</div><div class="text-[11px] text-neutral-500 mb-2">濃い色＝あなた、灰＝モデルの目安</div>${rows}</div>`)}
+    </div>`,
+    'モデル（川上）の勝ちの型を基準に、この録音で各型を何割再現できたか。乖離の"中身"がこれ。');
+}
+
 /* ---------- ④ レポート ---------- */
 function viewReport() {
   const a = SESSION.analysis, g = SESSION.gap, b = R.TOP_BENCHMARK;
@@ -505,6 +528,7 @@ function viewReport() {
 
   ${gpsBlock}
   ${winTalkSection(a)}
+  ${talkFidelitySection(a)}
   ${hagaLogicSection(a)}
   ${diagnosisSection()}
 

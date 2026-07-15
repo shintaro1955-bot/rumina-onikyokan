@@ -134,6 +134,18 @@ const TODAY_ANALYSIS = {
     topMoves: [{ move: '冒頭フック', count: 3 }, { move: '2択クロージング', count: 1 }, { move: '明細ドライブ', count: 1 }, { move: '問題提起', count: 1 }, { move: '創蓄・補助金', count: 1 }],
     summary: 'この日の勝ち筋は主に「冒頭フック」「2択クロージング」。この型を全員に写せば再現できる。',
   },
+  talkFidelity: {
+    overall: 52, denom: 14,
+    moves: [
+      { key: '冒頭フック', tip: '一言目で「電気の健康診断／明細／電気代」を出す', repRate: 64, modelRate: 95, gap: -31, fidelity: 67 },
+      { key: '明細ドライブ', tip: '「明細だけ30秒」で警戒を下げて数字に入る', repRate: 43, modelRate: 85, gap: -42, fidelity: 51 },
+      { key: '問題提起', tip: '「電気代上がってませんか」を相手に言わせる', repRate: 50, modelRate: 80, gap: -30, fidelity: 63 },
+      { key: '創蓄・補助金', tip: 'エコキュートを入口に創蓄・補助金の“今だけ”を出す', repRate: 21, modelRate: 70, gap: -49, fidelity: 30 },
+      { key: '切り返し', tip: '断りに最低1回は切り返して会話へ戻す', repRate: 22, modelRate: 75, gap: -53, fidelity: 29 },
+      { key: '2択クロージング', tip: '最後は“AかB”の二択で日程を置いてくる', repRate: 29, modelRate: 75, gap: -46, fidelity: 39 },
+    ],
+    weakest: { key: '切り返し', tip: '断りに最低1回は切り返して会話へ戻す', repRate: 22, modelRate: 75, gap: -53, fidelity: 29 },
+  },
   coachScore: 62,                    // /100
 };
 
