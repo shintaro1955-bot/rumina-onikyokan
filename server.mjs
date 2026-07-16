@@ -377,11 +377,12 @@ const server = createServer(async (req, res) => {
       // 共有シークレット(BOT_API_SECRET)必須。botが「あなたについて教えて？」等で叩く想定。
       if (path === '/api/coach-context' && req.method === 'GET') {
         if (!BOT_API_SECRET || (url.searchParams.get('secret') || '') !== BOT_API_SECRET) return json(res, 401, { error: 'Unauthorized' });
-        const lineId = url.searchParams.get('lineId') || '', repId = url.searchParams.get('repId') || '';
-        if (!lineId && !repId) return json(res, 400, { error: 'lineId か repId が必要です' });
+        const lineId = url.searchParams.get('lineId') || '', repId = url.searchParams.get('repId') || '', name = url.searchParams.get('name') || '';
+        if (!lineId && !repId && !name) return json(res, 400, { error: 'lineId か repId か name が必要です' });
         const db = getDb();
-        const user = Object.values(db.users).find(u => (lineId && u.lineId === lineId) || (repId && u.repId === repId));
-        if (!user) return json(res, 404, { found: false, error: 'このLINE/営業コードに紐づくユーザーが未登録です' });
+        // lineId(鬼教官に直接ログイン済み) → repId → name(ポータルのLINEログインで本人選択済みの氏名／botが橋渡し)の順で照合
+        const user = Object.values(db.users).find(u => (lineId && u.lineId === lineId) || (repId && u.repId === repId) || (name && u.name === name));
+        if (!user) return json(res, 404, { found: false, error: 'このLINE/営業コード/氏名に紐づくユーザーが未登録です' });
         return json(res, 200, coachContext(user, db.submissions[user.username] || null));
       }
 
