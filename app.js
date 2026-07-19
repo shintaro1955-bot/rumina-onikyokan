@@ -627,6 +627,44 @@ async function resetModelBaseline() {
 window.resetModelBaseline = resetModelBaseline;
 
 /* ---------- ④ レポート ---------- */
+/* ロープレチェック（説明力・差別化）— 八賀の研修と同じ評価軸を鬼教官に適用 */
+function roleplayCheckSection(a, b) {
+  const stOf = r => r >= 0.9 ? 'good' : r >= 0.7 ? 'warn' : 'bad';
+  const badge = { good: ['○ 良好', 'text-emerald-600 border-emerald-300 bg-emerald-50'], warn: ['△ 要改善', 'text-amber-600 border-amber-300 bg-amber-50'], bad: ['× 危険', 'text-rose-600 border-rose-300 bg-rose-50'] };
+  const fireR = a.openingQuestionRate / (b.openingQuestionRate || 1);
+  const explainR = (a.talkFidelity && a.talkFidelity.overall != null) ? a.talkFidelity.overall / 70 : (a.averageConversationSeconds / (b.averageConversationSeconds || 1));
+  const mendoR = a.appointmentRate / (b.appointmentRate || 1);
+  const axes = [
+    { key: '発火機会（欲しくさせる）', r: fireR,
+      good: '掴みは合格。冒頭で相手の関心に火をつけられている。',
+      bad: '冒頭で“自分ごと化”できず、発火機会を逃している。開口一番で相手の状況（電気代・お住まい）を刺せ。' },
+    { key: '差別化の説明力', r: explainR,
+      good: '型どおりに、うちの強みを伝えられている。',
+      bad: 'アセット（GX実績・クローズドデータ・Rumina・GXlab）を“具体”で説明しきれていない。「実績あります」で終わらせるな。' },
+    { key: 'めんどくさいスイッチ回避（決めきり）', r: mendoR,
+      good: '判断を軽くして、決めに繋げられている。',
+      bad: '情報過多・違い不明で“めんどくさいスイッチ”を押させ、検討で終わっている。違いを1点に絞り、即決理由と期限を置け。' },
+  ].map(x => { const st = stOf(x.r), bd = badge[st];
+    return `<div class="py-3 border-b border-neutral-200 last:border-0">
+      <div class="flex items-center justify-between gap-2">
+        <div class="text-sm font-medium text-neutral-900">${x.key}</div>
+        <span class="text-[11px] px-2 py-0.5 rounded-full border ${bd[1]} whitespace-nowrap">${bd[0]}</span>
+      </div>
+      <div class="text-[13px] text-neutral-600 mt-1 leading-relaxed">${st === 'good' ? x.good : x.bad}</div>
+    </div>`; }).join('');
+  const apo = ['冒頭30秒で相手を「自分ごと化」させた', 'その場の“気づき”（声で診断・電気の健康診断）を出せた', '差別化を1つ、言い切った（“うちだけ”を具体で）', '情報を増やすより「違いを1点」に絞った', '次に会う“理由”を顧客の言葉で作れた', '売り込みでなく、温度を上げてから提案した'];
+  const clo = ['「検討します」の理由を先回りで解消した', 'アセット（GX実績・クローズドデータ）で不安を“事実”で消した', '差別化を「比較」で見せた', '選択肢を整理し、判断を“簡単”にした', '沈黙を使い、顧客に選ばせた', '即決の理由・期限と後確導線をセットで作った'];
+  const chk = items => items.map(t => `<label class="flex items-start gap-2 text-[13px] text-neutral-700 py-1"><input type="checkbox" class="mt-1 accent-emerald-600"> ${t}</label>`).join('');
+  const body = `<div class="grid lg:grid-cols-2 gap-4">
+    ${card(`<div class="p-5"><div class="text-xs text-neutral-500 mb-2">録音から鬼教官が自動評価（KPIベース）</div>${axes}</div>`)}
+    ${card(`<div class="p-5"><div class="text-xs text-neutral-500 mb-3">ロープレ・相互チェック（研修でその場採点）</div>
+      <div class="text-[12px] font-semibold text-neutral-700 mb-1">アポインター版</div><div class="mb-3">${chk(apo)}</div>
+      <div class="text-[12px] font-semibold text-neutral-700 mb-1">クローザー版</div><div>${chk(clo)}</div>
+    </div>`)}
+  </div>`;
+  return section('ロープレチェック（説明力・差別化）', body, '八賀の研修と同じ観点。発火機会／めんどくさいスイッチ／差別化の説明力で、明日から鬼教官が日々チェックする。');
+}
+
 function viewReport() {
   const a = SESSION.analysis, g = SESSION.gap, b = R.TOP_BENCHMARK;
   const idleHours = (a.hourly || []).filter(h => h.ping <= 2).map(h => h.hour);
@@ -697,6 +735,7 @@ function viewReport() {
     <tbody>${cmpRows}</tbody></table></div>`))}
 
   ${coachPanel()}
+  ${roleplayCheckSection(a, b)}
   ${section('明日の改善アクション', card(`<div class="px-5 py-2">${actions}</div>`))}
 
   <div class="mt-8 flex flex-wrap gap-3">
