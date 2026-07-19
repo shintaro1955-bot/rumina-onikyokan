@@ -454,6 +454,40 @@ function viewSubmit() {
   </div>`;
 }
 
+/* cyzen照合（量の確定）— 行動量はcyzen、トーク品質は鬼教官 */
+function cyzenSection(a) {
+  const c = a.cyzen; if (!c || !c.matched) return '';
+  const conv = a.conversationPings ?? a.conversationCount ?? 0;
+  const gap = c.visits - c.visitStamp;
+  const cell = (label, val, unit, sub, cls) => `<div class="px-4 py-3">
+    <div class="text-[11px] text-neutral-500">${label}</div>
+    <div class="text-xl font-semibold tabular-nums ${cls || 'text-neutral-900'}">${val}<span class="text-xs text-neutral-400 ml-0.5">${unit || ''}</span></div>
+    ${sub ? `<div class="text-[11px] text-neutral-500 mt-0.5">${sub}</div>` : ''}</div>`;
+  const work = (c.workStart || c.workEnd)
+    ? `${(c.workStart || '').slice(11, 16) || '—'}〜${(c.workEnd || '').slice(11, 16) || '—'}`
+    : '—';
+  return section('cyzen照合 — 行動量の確定',
+    `${card(`<div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-neutral-200">
+      ${cell('訪問数（cyzen確定）', c.visits, '件', '本日の訪問件数(不在含む)', 'text-emerald-600')}
+      ${cell('アポ（cyzen確定）', c.apo, '件', c.seiyaku || c.haisen ? `成約${c.seiyaku} / 敗戦${c.haisen}` : '', 'text-emerald-600')}
+      ${cell('録音で会話が録れた', conv, '件', '鬼教官（質の母数）')}
+      ${cell('稼働', work, '', `GPS打刻 ${c.gpsStamp}`)}
+    </div>`)}
+    <div class="mt-3 grid lg:grid-cols-2 gap-3">
+      ${card(`<div class="p-4">
+        <div class="text-sm font-semibold text-neutral-700 mb-1">申告 vs 打刻の裏取り</div>
+        <div class="text-[13px] text-neutral-800 leading-relaxed">自己申告の訪問 <b>${c.visits}件</b> に対し、cyzenで「訪問」を打刻したのは <b>${c.visitStamp}件</b>。
+        ${gap > 0 ? `<span class="text-amber-600">差 ${gap}件は打刻されていません</span>（申告精度・打刻運用の是正余地）。` : '打刻と申告が一致しています。'}</div>
+      </div>`)}
+      ${card(`<div class="p-4">
+        <div class="text-sm font-semibold text-neutral-700 mb-1">照合キー</div>
+        <div class="text-[13px] text-neutral-700 leading-relaxed">営業コード <b>${c.code}</b>（${c.name || '—'}）${c.attr ? `<span class="text-[11px] text-neutral-500"> ・ ${c.attr}</span>` : ''}<br>
+        照合日：<b>${c.date}</b> ${c.exact ? '<span class="text-emerald-600">（録音日と一致）</span>' : `<span class="text-amber-600">（録音日 ${c.requestedDate} のcyzen記録が無いため直近の稼働日で表示）</span>`}</div>
+      </div>`)}
+    </div>`,
+    '訪問数・アポはcyzen（全営業の“量”）で確定。この下のカルテは録音から鬼教官が出す“質”。量×質で1人を見る。');
+}
+
 /* 成功モデル乖離カルテ（健康診断のカルテ形式） */
 // 再現率→医療風の判定ランク
 function karteJudge(f) {
@@ -632,6 +666,7 @@ function viewReport() {
     ${statCell('サボり', a.suspiciousIdleTimeMinutes, '分', a.gps?.connected ? 'GPS確定' : a.suspiciousWindow, a.gps?.connected ? 'text-rose-600' : '')}
   </div>`)}
 
+  ${cyzenSection(a)}
   ${gpsBlock}
   ${winTalkSection(a)}
   ${talkFidelitySection(a)}

@@ -16,6 +16,7 @@ import { analyze, computeModelProfile, DOMAIN_PROMPT } from './lib/pipeline.mjs'
 import { parsePlaud } from './lib/import-plaud.mjs';
 import { fetchAppointments } from './lib/crm.mjs';
 import { getDb, save, saveReport, getReport, UPLOAD_DIR } from './lib/store.mjs';
+import * as cyzen from './lib/cyzen.mjs';
 import { hashPassword, verifyPassword, signSession, verifySession, randomPassword } from './lib/auth.mjs';
 
 const ROOT = new URL('.', import.meta.url).pathname;
@@ -103,6 +104,33 @@ function modelTalk() {
   const m = getDb().model;
   return (m && Array.isArray(m.profile) && m.profile.length) ? m.profile : undefined;
 }
+/* cyzen照合：営業コード(repId=cyzenユーザーコード)と稼働日から、その日の行動量を引く。
+   その日の記録が無ければ直近の最活動日にフォールバック（PoC表示用。exact=falseで明示）。 */
+function cyzenForRep(repId, date) {
+  if (!cyzen.ready() || !repId) return null;
+  let rec = cyzen.dayActivity(repId, date), exact = true;
+  if (!rec) { rec = cyzen.bestDay(repId); exact = false; }
+  if (!rec) return null;
+  return {
+    matched: true, exact, code: repId, name: rec.name, attr: rec.attr,
+    date: rec.date, requestedDate: date,
+    visits: rec.visitsSelf, apo: rec.apo, shodan: rec.shodan, seiyaku: rec.seiyaku, haisen: rec.haisen,
+    visitStamp: rec.visitStamp, gpsStamp: rec.gpsStamp,
+    workStart: rec.workStart, workEnd: rec.workEnd,
+  };
+}
+// 解析コンテキストにcyzenの確定値を足す（分母＝訪問件数、アポ数）
+function withCyzen(ctx, repId, date) {
+  const c = cyzenForRep(repId, date);
+  if (!c) return ctx;
+  return {
+    ...ctx,
+    cyzen: c,
+    confirmedPings: c.visits > 0 ? c.visits : undefined,
+    crmAppointmentCount: c.apo > 0 ? c.apo : ctx.crmAppointmentCount,
+  };
+}
+
 // 録音・解析への同意が最新版で取得済みか
 function hasConsent(me) {
   if (!me) return false;
@@ -164,7 +192,14 @@ const server = createServer(async (req, res) => {
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET });
+      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready() });
+
+      // cyzen連携の状態（owner専用）
+      if (path === '/api/cyzen/status' && req.method === 'GET') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        return json(res, 200, cyzen.status());
+      }
 
       /* ---------- 認証 ---------- */
       if (path === '/api/me') return json(res, 200, { user: currentUser(req) });
@@ -424,14 +459,16 @@ const server = createServer(async (req, res) => {
         const rep = { name: body.name || meta.recordingId || 'インポート', team: '', workdayCount: 22 };
         const date = new Date().toISOString().slice(0, 10);
         const crm = await fetchAppointments(rep.name, date);   // CRMから確定アポ数を自動取得
-        const { analysis, pings, transcript } = analyze(segments, {
+        const meCz = currentUser(req);
+        const repCode = body.repId || (meCz && getDb().users[meCz.username] || {}).repId || null;
+        const { analysis, pings, transcript } = analyze(segments, withCyzen({
           durationSec: meta.durationSec, startHour: body.startHour ?? meta.startHour ?? 9,
           salesRep: rep, benchmark: BENCHMARK, date,
           gps: Array.isArray(body.gps) ? body.gps : null,
           diarize: meta.hasSpeakers ? 'acoustic' : 'heuristic',
           crmAppointmentCount: crm ? crm.count : undefined,
           modelTalk: modelTalk(),
-        });
+        }, repCode, date));
         const result = { sessionId: id, source: 'plaud', device: meta.device, benchmark: BENCHMARK, analysis, pings, transcript };
         SESSIONS.set(id, { id, status: 'done', result });
         // ログイン中なら本人の最新レポートとして保存（マイページ用）
@@ -509,12 +546,14 @@ async function runPipeline(s) {
   // ⑤⑥ ピンポン分割＋KPI抽出
   s.status = 'analyzing'; s.stage = 'segment';
   const rep = { name: s.fileName.replace(/\.[^.]+$/, ''), team: '', workdayCount: 22 };
-  const { analysis, pings, transcript } = analyze(segments, {
+  const runDate = new Date().toISOString().slice(0, 10);
+  const repCode = (s.userName && getDb().users[s.userName] || {}).repId || null;
+  const { analysis, pings, transcript } = analyze(segments, withCyzen({
     durationSec: duration, startHour: s.startHour, salesRep: rep, benchmark: BENCHMARK,
-    date: new Date().toISOString().slice(0, 10), gps: s.gps || null,
+    date: runDate, gps: s.gps || null,
     diarize: process.env.DIARIZE,   // 未設定なら既定=heuristic、'none'で無効化
     modelTalk: modelTalk(),
-  });
+  }, repCode, runDate));
 
   // 文字起こし済み → 音声の自動削除（PURGE_AUDIO_AFTER_ANALYZE=on のとき）
   let audioRetained = true;
