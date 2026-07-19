@@ -948,6 +948,90 @@ async function openLogItem(id) {
 }
 window.openLogItem = openLogItem;
 
+/* ---------- 全営業KPI（cyzen）＋教育セグメント・owner専用 ---------- */
+const SEG = {
+  S: { label: '良好', cls: 'bg-emerald-600 text-white', desc: '量・質とも基準クリア' },
+  A: { label: 'A 活動量不足', cls: 'bg-amber-100 text-amber-700 border border-amber-200', desc: '訪問数が足りない → 行動量の管理' },
+  B: { label: 'B 商談化不足', cls: 'bg-rose-100 text-rose-700 border border-rose-200', desc: '訪問はあるがアポ率が低い → 鬼教官でトーク矯正' },
+  C: { label: 'C クロージング', cls: 'bg-rose-100 text-rose-700 border border-rose-200', desc: '成約率が低い → クロージング教育' },
+  D: { label: 'D 稼働低下', cls: 'bg-neutral-200 text-neutral-700', desc: 'そもそも稼働日数が少ない → 稼働管理' },
+  E: { label: 'E 記録なし', cls: 'bg-neutral-100 text-neutral-400 border border-neutral-200', desc: '報告書が無く評価不能 → まず入力の徹底' },
+};
+function viewCyzen() {
+  return `
+  ${h1('全営業KPI（cyzen）', 'cyzenの行動データから全営業の「量」を集計し、教育セグメントを自動判定。誰に何を教えるべきかがここで決まる。')}
+  <div id="cyzenWrap" class="text-sm text-neutral-500">読み込み中…</div>
+  <div id="cyzenUpload" class="mt-6"></div>`;
+}
+async function loadCyzen() {
+  const wrap = document.getElementById('cyzenWrap');
+  const up = document.getElementById('cyzenUpload');
+  if (up) up.innerHTML = card(`<div class="p-4">
+    <div class="text-sm font-semibold text-neutral-700 mb-1">cyzen CSVを取り込む</div>
+    <div class="text-[12px] text-neutral-500 mb-3">cyzenの書き出しをそのままアップロード。サーバーの永続領域に保存され、即座に集計へ反映されます。</div>
+    <div class="grid sm:grid-cols-3 gap-3">
+      ${[['user', 'ユーザーマスター', '担当者の名簿'], ['report', '報告書（複数可）', '出勤/勤務終了/アポ獲得 等'], ['history', '行動履歴', 'GPS打刻（大容量・任意）']]
+      .map(([k, t, d]) => `<label class="block border border-dashed border-emerald-400/40 hover:border-emerald-400/70 rounded-lg p-3 text-center cursor-pointer transition">
+        <input type="file" accept=".csv" ${k === 'report' ? 'multiple' : ''} class="hidden" onchange="uploadCyzen(this,'${k}')">
+        <div class="text-[13px] text-neutral-800">${t}</div><div class="text-[11px] text-neutral-500 mt-0.5">${d}</div></label>`).join('')}
+    </div>
+    <div id="cyzenUpMsg" class="text-[12px] text-neutral-500 mt-2"></div>
+  </div>`);
+  if (!wrap) return;
+  let data;
+  try { data = await API.cyzenRoster(); } catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
+  if (!data.ready || !data.rows.length) {
+    wrap.innerHTML = `<div class="text-sm text-neutral-500 p-6 text-center border border-neutral-200 rounded-xl bg-white">cyzenデータが未取り込みです。下の「cyzen CSVを取り込む」からアップロードしてください。</div>`;
+    return;
+  }
+  const s = data.summary, b = data.bench;
+  const segCard = k => `<div class="px-4 py-3">
+    <div class="text-[11px] text-neutral-500">${SEG[k].label}</div>
+    <div class="text-2xl font-semibold tabular-nums ${k === 'S' ? 'text-emerald-600' : k === 'E' ? 'text-neutral-400' : k === 'D' ? 'text-neutral-600' : 'text-rose-600'}">${s[k]}<span class="text-xs text-neutral-400 ml-0.5">名</span></div>
+    <div class="text-[11px] text-neutral-500 mt-0.5">${SEG[k].desc}</div></div>`;
+  const rows = data.rows.filter(r => r.seg !== 'E').map(r => `<tr class="border-t border-neutral-200 hover:bg-emerald-50/40">
+    <td class="px-3 py-2"><span class="text-[11px] px-2 py-0.5 rounded-full ${SEG[r.seg].cls}">${r.seg}</span></td>
+    <td class="px-3 py-2 text-neutral-800">${r.name || '—'}</td>
+    <td class="px-3 py-2 text-[11px] text-neutral-500">${(r.attr || '').split('/').slice(0, 2).join('/')}</td>
+    <td class="px-3 py-2 text-right tabular-nums">${r.days}</td>
+    <td class="px-3 py-2 text-right tabular-nums">${r.visits}</td>
+    <td class="px-3 py-2 text-right tabular-nums ${r.vpd >= b.visitsPerDay ? 'text-emerald-600' : r.vpd < b.visitsPerDayMin ? 'text-rose-600' : ''}">${r.vpd}</td>
+    <td class="px-3 py-2 text-right tabular-nums">${r.apo}</td>
+    <td class="px-3 py-2 text-right tabular-nums ${r.apoRate >= b.apoRate ? 'text-emerald-600' : r.apoRate < b.apoRateMin ? 'text-rose-600' : ''}">${r.apoRate}%</td>
+    <td class="px-3 py-2 text-right tabular-nums">${r.closeRate == null ? '—' : r.closeRate + '%'}</td>
+    <td class="px-3 py-2 text-[11px] text-neutral-600">${r.why}</td>
+  </tr>`).join('');
+  wrap.innerHTML = `
+    ${card(`<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y sm:divide-y-0 divide-neutral-200">
+      ${['S', 'A', 'B', 'C', 'D', 'E'].map(segCard).join('')}
+    </div>`)}
+    <div class="mt-3 text-[12px] text-neutral-600">対象 ${s.total}名 ・ 期間${s.periodDays}日 ・ <b>評価できたのは ${s.evaluable}名</b>（残り${s.E}名は報告書が無く評価不能）</div>
+    ${card(`<div class="p-4 mt-3">
+      <div class="text-sm font-semibold text-neutral-700 mb-1">あるべき姿（実データの上位者から導出）</div>
+      <div class="text-[13px] text-neutral-700 leading-relaxed">訪問 <b>${b.visitsPerDay}件/日</b>（下限${b.visitsPerDayMin}）・ アポ率 <b>${b.apoRate}%</b>（下限${b.apoRateMin}%）・ 稼働 <b>${b.workHours}h/日</b>・ 成約率 <b>${b.closeRate}%</b>
+      <div class="text-[11px] text-neutral-500 mt-1">※ 社内の実在の上位者が到達している水準。理想論ではなく「同じ会社で現に出ている数字」。</div></div>
+    </div>`)}
+    <div class="mt-4">${card(`<div class="overflow-x-auto"><table class="w-full text-sm min-w-[900px]">
+      <thead><tr class="text-xs text-neutral-500 bg-neutral-50">
+        <th class="px-3 py-2 text-left font-normal">判定</th><th class="px-3 py-2 text-left font-normal">氏名</th><th class="px-3 py-2 text-left font-normal">属性</th>
+        <th class="px-3 py-2 text-right font-normal">稼働日</th><th class="px-3 py-2 text-right font-normal">訪問</th><th class="px-3 py-2 text-right font-normal">訪問/日</th>
+        <th class="px-3 py-2 text-right font-normal">アポ</th><th class="px-3 py-2 text-right font-normal">アポ率</th><th class="px-3 py-2 text-right font-normal">成約率</th>
+        <th class="px-3 py-2 text-left font-normal">所見</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`)}</div>`;
+}
+async function uploadCyzen(input, kind) {
+  const msg = document.getElementById('cyzenUpMsg');
+  const files = Array.from(input.files || []); if (!files.length) return;
+  if (msg) { msg.textContent = `アップロード中…（${files.length}件）`; msg.className = 'text-[12px] text-neutral-500 mt-2'; }
+  try {
+    for (const f of files) await API.cyzenUpload(f, kind);
+    if (msg) { msg.textContent = `✓ ${files.length}件を取り込みました。集計を更新します。`; msg.className = 'text-[12px] text-emerald-600 mt-2'; }
+    input.value = '';
+    setTimeout(loadCyzen, 400);
+  } catch (e) { if (msg) { msg.textContent = e.message; msg.className = 'text-[12px] text-rose-600 mt-2'; } }
+}
+window.uploadCyzen = uploadCyzen;
+
 /* ---------- LINE名寄せ（LINE↔kintone↔鬼教官・owner専用） ---------- */
 function viewLinkRep() {
   return `
@@ -999,8 +1083,8 @@ async function saveLink(username) {
 }
 window.saveLink = saveLink;
 
-const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep };
-function nav(v) { currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen };
+function nav(v) { currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function render() {
   app.innerHTML = VIEWS[currentView]();
   document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('nav-active', el.dataset.nav === currentView));
@@ -1268,7 +1352,7 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
+  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
   render();
 }
 window.doLogin = doLogin; window.doLogout = doLogout; window.issueRep = issueRep;

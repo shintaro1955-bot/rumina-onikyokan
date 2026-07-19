@@ -201,6 +201,36 @@ const server = createServer(async (req, res) => {
         return json(res, 200, cyzen.status());
       }
 
+      // cyzen CSVアップロード（owner専用）：kind=user|history|report
+      if (path === '/api/cyzen/upload' && req.method === 'POST') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const kind = url.searchParams.get('kind') || 'report';
+        const raw = decodeURIComponent(req.headers['x-file-name'] || 'upload.csv');
+        const safe = raw.replace(/[\/\\]/g, '_');
+        const dir = cyzen.ensureDir();
+        const dest = kind === 'user' ? join(dir, 'user-master.csv')
+          : kind === 'history' ? join(dir, 'action-history.csv')
+          : join(dir, 'report', safe.toLowerCase().endsWith('.csv') ? safe : safe + '.csv');
+        await streamPipeline(req, createWriteStream(dest));
+        const st = cyzen.reload();
+        return json(res, 200, { ok: true, kind, saved: safe, status: st });
+      }
+
+      // cyzenデータの再読込（owner専用）
+      if (path === '/api/cyzen/reload' && req.method === 'POST') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        return json(res, 200, cyzen.reload());
+      }
+
+      // 全営業KPI一覧＋教育セグメント（owner専用）
+      if (path === '/api/cyzen/roster' && req.method === 'GET') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        return json(res, 200, cyzen.roster());
+      }
+
       /* ---------- 認証 ---------- */
       if (path === '/api/me') return json(res, 200, { user: currentUser(req) });
 
