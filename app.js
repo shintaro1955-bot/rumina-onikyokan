@@ -257,6 +257,19 @@ function viewUpload() {
         <div class="text-sm text-neutral-800">音声ファイルをドロップ、またはクリック</div>
         <div class="text-xs text-neutral-500 mt-1">mp3 / m4a / wav / mp4　・　最大7時間</div>
       </label>
+
+      <div class="rounded-lg border border-neutral-200 p-4 space-y-3">
+        <div class="text-xs font-semibold text-neutral-700">またはその場で録音（ロープレ・対面OK）</div>
+        <div class="text-[11px] text-neutral-500">営業役 × 客役の“人対人”のロープレ会話を、端末のマイクでそのまま録音 → 停止後に「解析を開始する」で鬼教官が講評（話者も自動で振り分け）。</div>
+        <div class="flex items-center gap-3">
+          <button id="recBtn" type="button" onclick="toggleRoleplayRec()" class="px-4 py-2 rounded-md bg-rose-500 hover:bg-rose-400 text-white text-sm font-semibold transition inline-flex items-center gap-2">
+            <span id="recDot" class="w-2.5 h-2.5 rounded-full bg-white"></span><span id="recLabel">録音開始</span>
+          </button>
+          <span id="recTime" class="text-sm tabular-nums text-neutral-700">00:00</span>
+        </div>
+        <audio id="recAudio" controls class="hidden w-full"></audio>
+        <div id="recStatus" class="text-[11px] text-neutral-500">マイクを使います。ブラウザの許可を求められたら「許可」を選んでください。</div>
+      </div>
       <label class="block">
         <div class="text-xs text-neutral-500 mb-1">GPSログ（任意・JSON）— サボりを裏取り</div>
         <input id="gpsFile" type="file" accept=".json,application/json" class="block w-full text-xs text-neutral-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-neutral-100 file:text-neutral-700">
@@ -1092,16 +1105,21 @@ function render() {
 
 /* ---------- アップロード挙動 ---------- */
 let selectedFile = null, selectedGps = null;
+// 選択（ファイル／その場録音）をUIへ反映＋解析ボタンを有効化
+function applySelectedFile(f) {
+  selectedFile = f || null;
+  const meta = document.getElementById('fileMeta'), btn = document.getElementById('startBtn');
+  const fn = document.getElementById('fName'), fi = document.getElementById('fInfo');
+  const sizeMB = f ? f.size / 1e6 : 214;
+  if (fn) fn.textContent = f ? f.name : 'sample_field_recording_0703.m4a';
+  if (fi) fi.textContent = f ? `${sizeMB.toFixed(1)}MB ・ ${window.__whisperReady ? 'Whisperで実解析' : 'デモ（モック解析）'}` : 'デモ用サンプル ・ モック解析';
+  if (meta) meta.classList.remove('hidden');
+  if (btn) btn.disabled = false;
+}
 async function bindUpload() {
   const input = document.getElementById('file'), meta = document.getElementById('fileMeta'), btn = document.getElementById('startBtn');
   const drop = document.getElementById('drop'), gpsInput = document.getElementById('gpsFile');
-  function show(f) {
-    selectedFile = f || null;
-    const sizeMB = f ? f.size / 1e6 : 214;
-    document.getElementById('fName').textContent = f ? f.name : 'sample_field_recording_0703.m4a';
-    document.getElementById('fInfo').textContent = f ? `${sizeMB.toFixed(1)}MB ・ ${window.__whisperReady ? 'Whisperで実解析' : 'デモ（モック解析）'}` : 'デモ用サンプル ・ モック解析';
-    meta.classList.remove('hidden'); btn.disabled = false;
-  }
+  const show = applySelectedFile;
   input.addEventListener('change', e => show(e.target.files[0]));
   drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('border-emerald-400'); });
   drop.addEventListener('dragleave', () => drop.classList.remove('border-emerald-400'));
@@ -1164,6 +1182,58 @@ function analyzeError(msg) {
   if (ci) ci.innerHTML = `<span class="text-rose-600">解析に失敗しました：${msg}</span> <button onclick="nav('upload')" class="text-emerald-600 underline ml-1">戻る</button>`;
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- その場で録音（ロープレ・MediaRecorder） ---------- */
+let __rec = null, __recChunks = [], __recTimer = null, __recStart = 0, __recStream = null;
+function recSupported() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder); }
+function recSetLabel(recording) {
+  const label = document.getElementById('recLabel'), btn = document.getElementById('recBtn'), dot = document.getElementById('recDot');
+  if (label) label.textContent = recording ? '停止' : '録音開始';
+  if (btn) { btn.classList.toggle('bg-rose-500', !recording); btn.classList.toggle('hover:bg-rose-400', !recording); btn.classList.toggle('bg-neutral-800', recording); btn.classList.toggle('hover:bg-neutral-700', recording); }
+  if (dot) dot.classList.toggle('animate-pulse', recording);
+}
+async function toggleRoleplayRec() {
+  if (__rec && __rec.state === 'recording') { stopRoleplayRec(); return; }
+  const st = document.getElementById('recStatus');
+  if (!recSupported()) { if (st) st.textContent = 'この端末/ブラウザは録音に対応していません。ファイルアップロードをご利用ください。'; return; }
+  try { __recStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { if (st) st.textContent = 'マイクの使用が許可されませんでした。ブラウザの許可設定を確認してください。'; return; }
+  const cands = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+  const mime = cands.find(m => window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || '';
+  __recChunks = [];
+  try { __rec = new MediaRecorder(__recStream, mime ? { mimeType: mime } : undefined); }
+  catch (e) { __rec = new MediaRecorder(__recStream); }
+  __rec.ondataavailable = e => { if (e.data && e.data.size) __recChunks.push(e.data); };
+  __rec.onstop = () => {
+    const type = (__rec && __rec.mimeType) || mime || 'audio/webm';
+    const ext = type.includes('mp4') ? 'mp4' : type.includes('ogg') ? 'ogg' : 'webm';
+    const blob = new Blob(__recChunks, { type });
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const file = new File([blob], `roleplay_${stamp}.${ext}`, { type });
+    const au = document.getElementById('recAudio');
+    if (au) { au.src = URL.createObjectURL(blob); au.classList.remove('hidden'); }
+    applySelectedFile(file);
+    const st2 = document.getElementById('recStatus');
+    if (st2) st2.textContent = `録音完了（${(blob.size / 1e6).toFixed(1)}MB）。下の「解析を開始する」でロープレを講評します。`;
+    if (__recStream) { __recStream.getTracks().forEach(t => t.stop()); __recStream = null; }
+  };
+  __rec.start();
+  __recStart = performance.now();
+  recSetLabel(true);
+  if (st) st.textContent = '録音中… ロープレを実施してください。終わったら「停止」を押します。';
+  if (__recTimer) clearInterval(__recTimer);
+  __recTimer = setInterval(() => {
+    const sec = Math.floor((performance.now() - __recStart) / 1000);
+    const t = document.getElementById('recTime');
+    if (t) t.textContent = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+  }, 250);
+}
+function stopRoleplayRec() {
+  if (__rec && __rec.state === 'recording') { try { __rec.stop(); } catch (e) {} }
+  if (__recTimer) { clearInterval(__recTimer); __recTimer = null; }
+  recSetLabel(false);
+}
+window.toggleRoleplayRec = toggleRoleplayRec;
 
 /* ---------- 解析の入口 ---------- */
 async function startAnalyze() {
