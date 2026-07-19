@@ -214,11 +214,11 @@ function persistReport(id, result, userName) {
   });
 }
 
-// 起動時：ownerが居なければ管理者アカウントを1つseed（＝モデル営業マン。既定は営業部長 川上）
+// 起動時：ownerが居なければ管理者アカウントを1つseed（＝モデル営業マン。既定は owner）
 (function seedOwner() {
   const db = getDb();
   if (Object.keys(db.users).length) return;
-  const username = process.env.OWNER_USER || '川上';
+  const username = process.env.OWNER_USER || 'owner';
   const pw = process.env.OWNER_PASSWORD || 'rumina2026';
   const { salt, hash } = hashPassword(pw);
   db.users[username] = { username, name: username, role: 'owner', repId: 'owner', salt, hash, isModel: true };

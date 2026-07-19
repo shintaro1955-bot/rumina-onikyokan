@@ -517,7 +517,7 @@ function talkFidelitySection(a) {
   const isOwner = !!(window.__user && window.__user.role === 'owner');
   const baseline = model
     ? `基準値：<span class="text-emerald-700 font-medium">${model.by} さんの録音</span>（${(model.at || '').slice(0, 10)} ・ 会話${model.denom}訪問から算出）`
-    : `基準値：<span class="text-neutral-600 font-medium">初期値</span>（成功モデル未登録 — 川上さんの録音を登録すると実データ基準に）`;
+    : `基準値：<span class="text-neutral-600 font-medium">初期値</span>（成功モデル未登録 — 成功モデルの録音を登録すると実データ基準に）`;
 
   // 検査表の行（型 = 検査項目、あなた = 測定値、モデル = 基準値）
   const rows = t.moves.map(m => {
@@ -593,7 +593,7 @@ function talkFidelitySection(a) {
 
   return section('成功モデルとの乖離カルテ',
     inner,
-    '成功モデル（川上）の勝ちの型を"基準値"に、あなたのトークを健康診断。どの型がどれだけ足りていないかをカルテで可視化。');
+    '成功モデルの勝ちの型を"基準値"に、あなたのトークを健康診断。どの型がどれだけ足りていないかをカルテで可視化。');
 }
 
 /* 成功モデル登録（owner）：いま開いている録音の型を"基準値"に採用 */
@@ -627,7 +627,7 @@ async function resetModelBaseline() {
 window.resetModelBaseline = resetModelBaseline;
 
 /* ---------- ④ レポート ---------- */
-/* ロープレチェック（説明力・差別化）— 八賀の研修と同じ評価軸を鬼教官に適用 */
+/* ロープレチェック（説明力・差別化）— 研修と同じ評価軸を鬼教官に適用 */
 function roleplayCheckSection(a, b) {
   const stOf = r => r >= 0.9 ? 'good' : r >= 0.7 ? 'warn' : 'bad';
   const badge = { good: ['○ 良好', 'text-emerald-600 border-emerald-300 bg-emerald-50'], warn: ['△ 要改善', 'text-amber-600 border-amber-300 bg-amber-50'], bad: ['× 危険', 'text-rose-600 border-rose-300 bg-rose-50'] };
@@ -662,7 +662,7 @@ function roleplayCheckSection(a, b) {
       <div class="text-[12px] font-semibold text-neutral-700 mb-1">クローザー版</div><div>${chk(clo)}</div>
     </div>`)}
   </div>`;
-  return section('ロープレチェック（説明力・差別化）', body, '八賀の研修と同じ観点。発火機会／めんどくさいスイッチ／差別化の説明力で、明日から鬼教官が日々チェックする。');
+  return section('ロープレチェック（説明力・差別化）', body, '研修と同じ観点。発火機会／めんどくさいスイッチ／差別化の説明力で、明日から鬼教官が日々チェックする。');
 }
 
 function viewReport() {
@@ -1369,7 +1369,7 @@ async function doLogin() {
 }
 async function doLogout() { await API.logout(); window.__user = null; window.__mySubmission = null; await boot(); }
 
-// モデル（川上）との乖離を算出
+// 成功モデルとの乖離を算出
 function modelDeviation(a) {
   const b = R.TOP_BENCHMARK, g = R.computeGap(a, b);
   const items = [
@@ -1385,11 +1385,11 @@ function modelDeviation(a) {
 }
 function deviateNarrate(a) {
   const { behind } = modelDeviation(a), out = [];
-  if (!behind.length) { out.push({ tone: 'good', title: '結論', text: 'モデル（川上）とほぼ同じ型で動けている。この水準を維持しろ。' }); return out; }
+  if (!behind.length) { out.push({ tone: 'good', title: '結論', text: '成功モデルとほぼ同じ型で動けている。この水準を維持しろ。' }); return out; }
   const t = behind[0], s = behind[1];
-  out.push({ tone: 'harsh', title: '結論', text: `君はモデル（川上）と${behind.length}項目で乖離している。最大は「${t.k}」——君${t.me}${t.u}に対し川上は${t.top}${t.u}。ここが全ての起点だ。` });
-  if (s) out.push({ tone: 'warn', title: '次の乖離', text: `次が「${s.k}」（君${s.me}${s.u} / 川上${s.top}${s.u}）。ここも川上との差が大きい。` });
-  out.push({ tone: 'close', title: 'やること', text: `全部を一度に真似るな。まず「${t.k}」だけを川上の水準に寄せろ。1項目でいい。それが最短で差を詰める。` });
+  out.push({ tone: 'harsh', title: '結論', text: `君は成功モデルと${behind.length}項目で乖離している。最大は「${t.k}」——君${t.me}${t.u}に対しモデルは${t.top}${t.u}。ここが全ての起点だ。` });
+  if (s) out.push({ tone: 'warn', title: '次の乖離', text: `次が「${s.k}」（君${s.me}${s.u} / モデル${s.top}${s.u}）。ここもモデルとの差が大きい。` });
+  out.push({ tone: 'close', title: 'やること', text: `全部を一度に真似るな。まず「${t.k}」だけを成功モデルの水準に寄せろ。1項目でいい。それが最短で差を詰める。` });
   return out;
 }
 function deviationSection(a) {
@@ -1398,14 +1398,14 @@ function deviationSection(a) {
     const neg = x.d < 0, w = Math.min(Math.abs(x.d) / (Math.abs(x.d) + Math.abs(x.top) * 0.5) * 100, 100);
     return `<div class="flex items-center gap-3 py-1.5">
       <div class="w-20 text-xs text-neutral-600 shrink-0">${x.k}</div>
-      <div class="flex-1 text-xs text-neutral-500 tabular-nums">君 ${x.me}${x.u} / 川上 ${x.top}${x.u}</div>
+      <div class="flex-1 text-xs text-neutral-500 tabular-nums">君 ${x.me}${x.u} / モデル ${x.top}${x.u}</div>
       <div class="flex-1 h-1.5 rounded-full bg-neutral-200 overflow-hidden"><div class="h-full ${neg ? 'bg-rose-500/70' : 'bg-emerald-500/70'}" style="width:${w}%"></div></div>
       <div class="w-16 text-right text-xs tabular-nums ${neg ? 'text-rose-600' : 'text-emerald-600'}">${neg ? '' : '+'}${x.d}${x.u}</div>
     </div>`;
   }).join('');
   const border = { harsh: 'border-rose-400/60', good: 'border-emerald-400/60', warn: 'border-amber-400/60', close: 'border-neutral-400' };
   const blocks = deviateNarrate(a).map(x => `<div class="border-l-2 ${border[x.tone]} pl-3"><div class="text-xs text-neutral-500 mb-0.5">${x.title}</div><p class="text-[14px] leading-relaxed text-neutral-800">${x.text}</p></div>`).join('');
-  return section('モデル（川上）との乖離', card(`<div class="p-5 space-y-1 border-b border-neutral-200">${rows}</div><div class="p-5 space-y-3">${blocks}</div>`), 'モデル営業マン＝川上のKPIを基準に、どこがどれだけ離れているかをAIが言語化。');
+  return section('成功モデルとの乖離', card(`<div class="p-5 space-y-1 border-b border-neutral-200">${rows}</div><div class="p-5 space-y-3">${blocks}</div>`), '成功モデルのKPIを基準に、どこがどれだけ離れているかをAIが言語化。');
 }
 
 function viewMy() {
