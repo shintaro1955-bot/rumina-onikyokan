@@ -7,7 +7,7 @@ import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import { join, extname } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto';
 import { pipeline as streamPipeline } from 'node:stream/promises';
 
 import * as whisper from './lib/whisper.mjs';
@@ -37,6 +37,9 @@ const LINE_SECRET = process.env.LINE_LOGIN_CHANNEL_SECRET || '';
 const LINE_CALLBACK = process.env.LINE_CALLBACK_URL || '';   // 未設定ならリクエストのホストから自動生成
 const OWNER_LINE_ID = process.env.OWNER_LINE_ID || '';       // このLINEユーザーIDは管理者(owner)にする
 const LINE_READY = !!(LINE_ID && LINE_SECRET);
+
+// Fit Founderポータルからの本人引き継ぎ（?rk=）の共有秘密。ポータル側と同じ値にすること。
+const SSO_SECRET = process.env.RUMINA_SSO_SECRET || '';
 
 // Rumina Coach 連携（任意）。Coachの測定依頼リンク（?staff=&iv=）経由でアクセスした
 // セッションのみ、測定完了時に解析結果をCoachのwebhookへ送る。未設定なら何も送らない。
@@ -99,6 +102,45 @@ function uniqueUsername(db, base) {
   while (db.users[u]) u = `${base}_${++n}`;
   return u;
 }
+/* ---------- Fit Founderポータルからの本人引き継ぎ（?rk=...） ----------
+   ポータルでLINEログイン＋本人選択を終えた人がアプリを開くとURLに ?rk= が付く。
+   共有秘密(RUMINA_SSO_SECRET)でHMAC検証し、通れば鬼教官側も本人としてログイン済みにする。
+   ポータルの名簿を通っている＝実在の営業マンが確定しているので、承認待ちにはしない。 */
+function verifyRkToken(token) {
+  if (!token || !SSO_SECRET) return null;
+  const i = token.lastIndexOf('.');
+  if (i < 0) return null;
+  const body = token.slice(0, i), sig = token.slice(i + 1);
+  const expected = createHmac('sha256', SSO_SECRET).update(body).digest('base64url');
+  const a = Buffer.from(sig), b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  let payload;
+  try { payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')); } catch (e) { return null; }
+  if (!payload.exp || new Date().getTime() > payload.exp) return null;   // 10分で失効
+  if (!payload.lineId && !payload.driver) return null;
+  return payload;
+}
+/** rkのlineId／氏名で既存ユーザーを探し、無ければ作る。見つかった場合はlineIdを補完する。 */
+function userFromRk(rk) {
+  const db = getDb();
+  let user = rk.lineId ? Object.values(db.users).find(u => u.lineId === rk.lineId) : null;
+  if (!user && rk.driver) {
+    const norm = s => String(s || '').replace(/\s+/g, '').normalize('NFKC');
+    // 氏名一致で拾うのは「まだ誰のLINEとも紐付いていないアカウント」だけ。
+    // 既に別のlineIdが入っているアカウントは同姓同名の別人の可能性があるので触らない。
+    user = Object.values(db.users).find(u => !u.lineId &&
+      (norm(u.name) === norm(rk.driver) || norm(u.username) === norm(rk.driver)));
+    if (user && rk.lineId) { user.lineId = rk.lineId; save(); }   // 既存アカウントに紐付け
+  }
+  if (!user) {
+    const uname = uniqueUsername(db, (rk.driver || 'LINEユーザー').trim());
+    user = { username: uname, name: (rk.driver || uname).trim(), role: 'rep', repId: null,
+             lineId: rk.lineId || null, isModel: false, pending: false, viaPortal: true };
+    db.users[uname] = user; save();
+  } else if (user.pending) { user.pending = false; save(); }   // ポータル経由なら承認待ちを解除
+  return user;
+}
+
 // 登録済みの「成功モデル」基準（未登録なら undefined → pipeline側の初期MODEL_TALK）
 function modelTalk() {
   const m = getDb().model;
@@ -189,10 +231,25 @@ const server = createServer(async (req, res) => {
   const path = decodeURIComponent(url.pathname);
 
   try {
+    // ---------- ポータルからの本人引き継ぎ ----------
+    // URLに ?rk= が付いていたら本人として即ログインし、rkを外して同じ画面へ送り直す。
+    // （rkはURL＝履歴やリファラに残るため、Cookieに移し替えて以後は使わない）
+    if (url.searchParams.has('rk') && !path.startsWith('/api/')) {
+      const rk = verifyRkToken(url.searchParams.get('rk'));
+      url.searchParams.delete('rk');
+      const clean = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams : '');
+      if (rk) {
+        const user = userFromRk(rk);
+        setSessionCookie(req, res, signSession({ username: user.username, role: user.role }));
+      }
+      res.writeHead(302, { Location: clean || '/' });
+      return res.end();
+    }
+
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready() });
+      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), ssoReady: !!SSO_SECRET });
 
       // cyzen連携の状態（owner専用）
       if (path === '/api/cyzen/status' && req.method === 'GET') {
