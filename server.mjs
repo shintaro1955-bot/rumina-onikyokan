@@ -249,7 +249,9 @@ const server = createServer(async (req, res) => {
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), ssoReady: !!SSO_SECRET });
+      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), ssoReady: !!SSO_SECRET,
+        // ポータルと同じ共有秘密かを、値を出さずに突き合わせるための指紋（固定文字列のHMAC先頭12桁）
+        ssoFingerprint: SSO_SECRET ? createHmac('sha256', SSO_SECRET).update('rumina-sso-fingerprint-v1').digest('hex').slice(0, 12) : null });
 
       // cyzen連携の状態（owner専用）
       if (path === '/api/cyzen/status' && req.method === 'GET') {
