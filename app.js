@@ -1136,7 +1136,7 @@ async function saveLink(username) {
 window.saveLink = saveLink;
 
 const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, roleplay: viewRoleplay };
-function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); if (v === 'my') loadPortalProfile(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function render() {
   app.innerHTML = VIEWS[currentView]();
   document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('nav-active', el.dataset.nav === currentView));
@@ -1408,11 +1408,36 @@ function deviationSection(a) {
   return section('成功モデルとの乖離', card(`<div class="p-5 space-y-1 border-b border-neutral-200">${rows}</div><div class="p-5 space-y-3">${blocks}</div>`), '成功モデルのKPIを基準に、どこがどれだけ離れているかをAIが言語化。');
 }
 
+// マイページのポータル連携カード：本人確認・所属会社・GRAND PRIX実績（KPI/順位）＋ポータル導線。
+async function loadPortalProfile() {
+  const box = document.getElementById('portalCard');
+  if (!box) return;
+  let p; try { p = await API.portalProfile(); } catch (e) { p = { linked: false }; }
+  if (!p || (!p.linked && !p.corp && !p.name)) { box.innerHTML = ''; return; }
+  const chip = (t) => `<span class="text-[12px] rounded-full px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200">${t}</span>`;
+  const k = p.kpi || null;
+  const kpiHtml = k ? `<div class="flex flex-wrap gap-2 mt-2 items-center">
+      ${k.closerRank ? chip(`クローザー ${k.closerRank}位・成約 ${k.deals != null ? k.deals : '—'}件`) : ''}
+      ${k.appointerRank ? chip(`アポインター ${k.appointerRank}位・アポ ${k.appos != null ? k.appos : '—'}件`) : ''}
+      ${k.area ? `<span class="text-[12px] rounded-full px-2.5 py-1 bg-neutral-100 text-neutral-600">${k.area}</span>` : ''}
+      ${k.round ? `<span class="text-[12px] text-neutral-500">${k.round}</span>` : ''}
+    </div>` : (p.linked ? '<div class="text-[12px] text-neutral-500 mt-2">今期の実績はまだ集計されていません。</div>' : '');
+  box.innerHTML = card(`<div class="p-4 flex items-center gap-4 flex-wrap">
+    <div class="flex-1 min-w-[200px]">
+      <div class="text-[11px] text-emerald-700 font-semibold">ポータル連携${p.linked ? '・本人確認済み' : ''}</div>
+      <div class="text-base font-semibold text-neutral-900 mt-0.5">${p.name || ''}${p.corp ? ` <span class="text-[13px] text-neutral-500 font-normal">/ ${p.corp}</span>` : ''}</div>
+      ${kpiHtml}
+    </div>
+    ${p.portalUrl ? `<a href="${p.portalUrl}" target="_blank" rel="noopener" class="px-4 py-2 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100 transition">ポータルへ戻る</a>` : ''}
+  </div>`);
+}
+
 function viewMy() {
   const u = window.__user || { name: '' };
   const sub = window.__mySubmission;
   if (!sub || !sub.analysis) {
     return `${h1('マイページ', `${u.name} さん`)}
+      <div id="portalCard" class="mb-4"></div>
       ${card(`<div class="p-8 text-center"><div class="text-sm text-neutral-700 mb-3">まだ今日の録音がありません。</div>
         <button onclick="nav('upload')" class="px-5 py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">稼働終了・録音を出稿する</button></div>`)}`;
   }
@@ -1422,6 +1447,7 @@ function viewMy() {
     <div><div class="text-xs text-neutral-500">マイページ ・ 直近の稼働（${(sub.at || '').slice(0, 10)}）</div><h1 class="text-xl font-semibold text-neutral-900 mt-0.5">${u.name} さん</h1></div>
     <div class="text-right"><div class="text-xs text-neutral-500">鬼教官スコア</div><div class="text-2xl font-semibold text-emerald-600 tabular-nums">${a.coachScore}<span class="text-sm text-neutral-500">/100</span></div></div>
   </div>
+  <div id="portalCard" class="mb-4"></div>
   ${card(`<div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-neutral-200">
     ${statCell('総ピンポン', a.totalPings, '件', `達成 ${a.targetAchievementRate}%`)}
     ${statCell('在宅反応', a.homeResponseCount, '件', `${a.homeResponseRate}%`)}
@@ -1461,8 +1487,9 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
+  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'roleplay'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
   render();
+  if (currentView === 'my') loadPortalProfile();
 }
 window.doLogin = doLogin; window.doLogout = doLogout; window.issueRep = issueRep;
 window.nav = nav; window.startAnalyze = startAnalyze;

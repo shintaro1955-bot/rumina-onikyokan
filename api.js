@@ -94,6 +94,7 @@ window.API = (function () {
 
   /* ---------- cyzen（行動量） ---------- */
   async function cyzenStatus() { try { const r = await fetch('/api/cyzen/status'); return r.ok ? r.json() : { ready: false }; } catch { return { ready: false }; } }
+  async function portalProfile() { try { return await (await fetch('/api/portal-profile')).json(); } catch { return { linked: false }; } }
   async function cyzenRoster() { const r = await fetch('/api/cyzen/roster'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '名簿の取得に失敗しました'); return j; }
   async function cyzenUpload(file, kind) {
     const r = await fetch('/api/cyzen/upload?kind=' + encodeURIComponent(kind), {
@@ -106,5 +107,5 @@ window.API = (function () {
   async function getLineUsers() { const r = await fetch('/api/admin/line-users'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'LINEユーザー一覧の取得に失敗しました'); return j.users || []; }
   async function linkRep(username, repId) { const r = await fetch('/api/admin/link-rep', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, repId }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '紐付けに失敗しました'); return j; }
 
-  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenUpload };
+  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenUpload, portalProfile };
 })();

@@ -40,6 +40,8 @@ const LINE_READY = !!(LINE_ID && LINE_SECRET);
 
 // Fit Founderポータルからの本人引き継ぎ（?rk=）の共有秘密。ポータル側と同じ値にすること。
 const SSO_SECRET = process.env.RUMINA_SSO_SECRET || '';
+// Fit Founderポータルの基底URL（マイページの本人情報・KPIをサーバ間で引くため。BOT_API_SECRET共有）。
+const PORTAL_URL = (process.env.PORTAL_URL || '').replace(/\/$/, '');
 
 // Rumina Coach 連携（任意）。Coachの測定依頼リンク（?staff=&iv=）経由でアクセスした
 // セッションのみ、測定完了時に解析結果をCoachのwebhookへ送る。未設定なら何も送らない。
@@ -87,7 +89,7 @@ function currentUser(req) {
   const s = verifySession(parseCookies(req)[COOKIE]);
   if (!s) return null;
   const u = getDb().users[s.username];
-  return u ? { username: u.username, name: u.name, role: u.role, repId: u.repId } : null;
+  return u ? { username: u.username, name: u.name, role: u.role, repId: u.repId, corp: u.corp || null, viaPortal: !!u.viaPortal } : null;
 }
 // LINEコールバックURL（未設定ならリクエストのホストから組み立て）
 function lineCallback(req) {
@@ -135,9 +137,10 @@ function userFromRk(rk) {
   if (!user) {
     const uname = uniqueUsername(db, (rk.driver || 'LINEユーザー').trim());
     user = { username: uname, name: (rk.driver || uname).trim(), role: 'rep', repId: null,
-             lineId: rk.lineId || null, isModel: false, pending: false, viaPortal: true };
+             lineId: rk.lineId || null, corp: rk.corp || null, isModel: false, pending: false, viaPortal: true };
     db.users[uname] = user; save();
   } else if (user.pending) { user.pending = false; save(); }   // ポータル経由なら承認待ちを解除
+  if (rk.corp && user.corp !== rk.corp) { user.corp = rk.corp; save(); }   // 所属会社をポータル値で更新
   return user;
 }
 
@@ -292,6 +295,20 @@ const server = createServer(async (req, res) => {
 
       /* ---------- 認証 ---------- */
       if (path === '/api/me') return json(res, 200, { user: currentUser(req) });
+      // マイページのポータル連携：本人の氏名・所属会社・GRAND PRIX実績（KPI/順位）をポータルからサーバ間で取得。
+      if (path === '/api/portal-profile') {
+        const cu = currentUser(req);
+        const dbu = cu && getDb().users[cu.username];
+        const out = { linked: false, portalUrl: PORTAL_URL || null, name: dbu ? dbu.name : null, corp: (dbu && dbu.corp) || null, viaPortal: !!(dbu && dbu.viaPortal) };
+        if (dbu && dbu.lineId && PORTAL_URL && BOT_API_SECRET) {
+          try {
+            const r = await fetch(`${PORTAL_URL}/api/line/whoami?secret=${encodeURIComponent(BOT_API_SECRET)}&lineId=${encodeURIComponent(dbu.lineId)}`);
+            const j = await r.json().catch(() => ({}));
+            if (j && j.found) { out.linked = true; out.name = j.name || out.name; out.corp = j.corp || out.corp; out.kpi = j.kpi || null; }
+          } catch (e) { /* ポータル未到達でもマイページは壊さない */ }
+        }
+        return json(res, 200, out);
+      }
 
       /* ---------- 録音・解析への同意 ---------- */
       // 自分の同意状況（最新版を満たしているか）
