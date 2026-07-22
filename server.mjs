@@ -527,6 +527,19 @@ const server = createServer(async (req, res) => {
         return json(res, 200, coachContext(user, db.submissions[user.username] || null));
       }
 
+      // LINE bot向け：氏名から鬼教官に直接ログイン済みのLINE userIdを引く（あれば）。
+      // ポータル未登録でも鬼教官にログイン済みの人を個別に特定するための橋渡し。共有シークレット必須。
+      if (path === '/api/line/by-name' && req.method === 'GET') {
+        if (!BOT_API_SECRET || (url.searchParams.get('secret') || '') !== BOT_API_SECRET) return json(res, 401, { error: 'Unauthorized' });
+        const name = (url.searchParams.get('name') || '').trim();
+        if (!name) return json(res, 400, { error: 'name が必要です' });
+        const norm = s => String(s || '').replace(/\s+/g, '').normalize('NFKC');
+        const db = getDb();
+        const user = Object.values(db.users).find(u => u.lineId && norm(u.name) === norm(name));
+        if (!user) return json(res, 404, { found: false });
+        return json(res, 200, { found: true, lineId: user.lineId });
+      }
+
       // ① アップロード：ファイル本文を raw で受けて保存（multipart不要）
       if (path === '/api/audio/upload' && req.method === 'POST') {
         if (!API_KEY) return json(res, 400, { error: 'OPENAI_API_KEY が未設定です。.env を確認してください。' });
