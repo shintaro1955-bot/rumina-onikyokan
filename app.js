@@ -12,16 +12,43 @@ function h1(title, sub) {
     <h1 class="text-xl font-semibold text-neutral-900">${title}</h1>
     ${sub ? `<p class="text-sm text-neutral-500 mt-1">${sub}</p>` : ''}</div>`;
 }
-function card(inner, cls = '') { return `<div class="bg-white border border-[#E8EFEA] rounded-2xl shadow-[0_1px_3px_rgba(16,40,30,0.05)] ${cls}">${inner}</div>`; }
+function card(inner, cls = '') { return `<div class="mx-card ${cls}">${inner}</div>`; }
+
+/* ---------- 初期mixi風の箱パーツ ---------- */
+/** 見出し帯つきの箱。more={label,nav} を渡すと右肩に「◯◯ »」リンク。 */
+function mxBox(title, body, more) {
+  const m = more ? `<a class="mx-more" onclick="nav('${more.nav}')">${more.label} »</a>` : '';
+  return `<section class="mx-box"><div class="mx-head"><span class="t">${title}</span>${m}</div>
+    <div class="mx-body">${body}</div></section>`;
+}
+/** 「ラベル ： 値」の1行。tone='pos'|'neg' で色分け。 */
+function mxRow(label, value, tone) {
+  return `<div class="mx-row"><span class="l">${label}</span><span class="v ${tone || ''}">${value}</span></div>`;
+}
+/** プロフィール枠（顔・氏名・所属・スコア）。 */
+function mxProfile(name, meta, score, more) {
+  const m = more ? `<a class="mx-more" onclick="nav('${more.nav}')">${more.label} »</a>` : '';
+  return `<section class="mx-box"><div class="mx-head"><span class="t">プロフィール</span>${m}</div>
+    <div class="mx-body mx-prof">
+      <img src="/assets/rumina.png" alt="">
+      <div class="min-w-0">
+        <div class="mx-prof-n">${name}</div>
+        <div class="mx-prof-m">${meta}</div>
+        ${score === undefined ? '' : `<div class="mx-prof-s"><span>鬼教官スコア</span><b>${score}</b><span>/ 100</span></div>`}
+      </div>
+    </div></section>`;
+}
 function statCell(label, value, unit, sub, accent) {
   return `<div class="p-4">
     <div class="text-xs text-neutral-500 mb-1">${label}</div>
     <div class="text-xl font-semibold tabular-nums ${accent || 'text-neutral-900'}">${value}<span class="text-xs text-neutral-500 ml-0.5">${unit || ''}</span></div>
     ${sub ? `<div class="text-[11px] text-neutral-500 mt-0.5">${sub}</div>` : ''}</div>`;
 }
+/* 見出し帯＋本文。直下がcardなら1枚の箱として繋がる（CSS: .mx-sec>.mx-card）。 */
 function section(title, body, sub) {
-  return `<section class="mt-8">
-    <div class="mb-3"><h2 class="text-sm font-semibold text-neutral-700">${title}</h2>${sub ? `<p class="text-xs text-neutral-500 mt-0.5">${sub}</p>` : ''}</div>
+  return `<section class="mx-sec">
+    <div class="mx-head"><span class="t">${title}</span></div>
+    ${sub ? `<div class="mx-sub">${sub}</div>` : ''}
     ${body}</section>`;
 }
 
@@ -33,12 +60,19 @@ function coachPanel() {
       <div class="text-xs text-neutral-500 mb-1">${b.title}</div>
       <p class="text-[15px] leading-relaxed text-neutral-800">${b.text}</p>
     </div>`).join('');
+  // Claude APIの講評があれば最上部に。無ければ従来のルールベース講評のみ。
+  const ai = SESSION.analysis && SESSION.analysis.aiCritique;
+  const aiBlock = ai ? `
+    <div class="border-l-2 border-emerald-500 pl-4">
+      <div class="text-xs text-emerald-600 font-semibold mb-1">AIの講評（Claude が解析）</div>
+      <p class="text-[15px] leading-relaxed text-neutral-800 whitespace-pre-wrap">${String(ai).replace(/</g, '&lt;')}</p>
+    </div>` : '';
   return section('鬼教官の講評', card(`
     <div class="flex items-center gap-3 px-5 pt-5">
       <img src="/assets/rumina.png" alt="Dr.Rumina" class="w-12 h-12 rounded-full object-cover object-top border border-emerald-200 shadow-sm">
       <div><div class="text-sm font-semibold text-neutral-900">Rumina 鬼教官</div><div class="text-xs text-neutral-500">甘やかさない。だが必ず勝たせる。</div></div>
     </div>
-    <div class="p-5 space-y-5">${blocks}</div>`));
+    <div class="p-5 space-y-5">${aiBlock}${blocks}</div>`));
 }
 
 /* 自動診断 */
@@ -58,14 +92,15 @@ function diagnosisSection() {
       <div class="text-xs ${c.level === 'tip' ? 'text-emerald-600' : 'text-amber-600'} mb-0.5">${c.label}</div>
       <div class="text-[13px] text-neutral-600 leading-relaxed">${c.note}</div>
     </div>`).join('') || '<div class="text-sm text-neutral-500">特筆なし。</div>';
-  const head = `<span class="text-xs text-neutral-500">総合 ${d.grade} ・ 危険 ${d.criticalCount} ・ 要改善 ${d.warnCount} ・ 注意 ${d.cautions.length}</span>`;
-  const body = `<div class="grid md:grid-cols-2 gap-4">
-    ${card(`<div class="p-5"><div class="text-xs text-neutral-500 mb-3">何がダメか</div><div class="space-y-4">${weak}</div></div>`)}
-    ${card(`<div class="p-5"><div class="text-xs text-neutral-500 mb-3">何に気をつけるべきか</div><div class="space-y-3">${caut}</div></div>`)}
-  </div>`;
-  return `<section class="mt-8">
-    <div class="mb-3 flex items-baseline justify-between"><h2 class="text-sm font-semibold text-neutral-700">自動診断</h2>${head}</div>
-    ${body}</section>`;
+  return `<section class="mx-box">
+    <div class="mx-head">
+      <span class="t">自動診断</span>
+      <span class="mx-more" style="cursor:default">総合 ${d.grade} ・ 危険 ${d.criticalCount} ・ 要改善 ${d.warnCount} ・ 注意 ${d.cautions.length}</span>
+    </div>
+    <div class="mx-body grid md:grid-cols-2 gap-4">
+      <div><div class="text-xs text-neutral-500 mb-3">何がダメか</div><div class="space-y-4">${weak}</div></div>
+      <div class="md:border-l md:border-[#E3DED2] md:pl-4"><div class="text-xs text-neutral-500 mb-3">何に気をつけるべきか</div><div class="space-y-3">${caut}</div></div>
+    </div></section>`;
 }
 
 /* ---------- ⓪ 目標設定 ---------- */
@@ -160,27 +195,35 @@ window.updateGoal = updateGoal; window.resetGoal = resetGoal;
 function viewHome() {
   const a = SESSION.analysis, g = SESSION.gap;
   const gaps = [['ピンポン数', g.pings, '件'], ['在宅反応率', g.homeResponseRate, '%'], ['平均会話', g.averageConversationSeconds, '秒'], ['切り返し', g.averageRebuttalCount, '回'], ['冒頭質問率', g.openingQuestionRate, '%']]
-    .map(([l, v, u]) => `<div class="flex justify-between py-1.5 text-sm"><span class="text-neutral-600">${l}</span><span class="tabular-nums ${v < 0 ? 'text-rose-600' : 'text-emerald-600'}">${v < 0 ? '' : '+'}${v}${u}</span></div>`).join('');
+    .map(([l, v, u]) => mxRow(l, `${v < 0 ? '' : '+'}${v}${u}`, v < 0 ? 'neg' : 'pos')).join('');
   return `
-  <div class="flex items-start justify-between gap-4 mb-6">
-    <div>
-      <div class="text-xs text-neutral-500">田中 翔 ・ 第2営業部 ・ ${a.workdayIndex}/${a.workdayCount}勤務目</div>
-      <h1 class="text-xl font-semibold text-neutral-900 mt-0.5">本日のサマリー</h1>
+  ${mxProfile('田中 翔', `第2営業部 ・ ${a.workdayIndex}/${a.workdayCount}勤務目`, a.coachScore, { label: '目標設定', nav: 'goal' })}
+  <div class="mx-2col">
+    <div class="min-w-0">
+      ${mxBox('本日のサマリー', `
+        <div class="mx-kpi">
+          <div class="mx-kpi-c">
+            <div class="mx-kpi-l">鬼教官スコア</div>
+            <div class="mx-kpi-v">${a.coachScore}<small>/100</small></div>
+          </div>
+          <div class="mx-kpi-c">
+            <div class="mx-kpi-l">100ピンポン達成</div>
+            ${C.pingGauge(a.totalPings, a.targetPings)}
+          </div>
+        </div>`, { label: '詳細レポート', nav: 'report' })}
+      ${coachPanel()}
+      ${diagnosisSection()}
     </div>
-    <button onclick="nav('upload')" class="px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition shrink-0">稼働終了・録音を出稿</button>
-  </div>
-
-  <div class="grid lg:grid-cols-3 gap-4">
-    ${card(`<div class="p-5 flex flex-col items-center justify-center h-full"><div class="text-xs text-neutral-500 mb-1">鬼教官スコア</div><div class="text-5xl font-semibold text-emerald-600 tabular-nums">${a.coachScore}</div><div class="text-xs text-neutral-500 mt-1">/ 100</div></div>`)}
-    ${card(`<div class="p-5 flex flex-col items-center justify-center h-full"><div class="text-xs text-neutral-500 mb-1">100ピンポン達成</div>${C.pingGauge(a.totalPings, a.targetPings)}</div>`)}
-    ${card(`<div class="p-5"><div class="text-xs text-neutral-500 mb-2">トップ営業との差分</div>${gaps}</div>`)}
-  </div>
-
-  ${coachPanel()}
-  ${diagnosisSection()}
-
-  <div class="mt-8">
-    <button onclick="nav('report')" class="text-sm text-emerald-600 hover:text-emerald-600">詳細レポートを開く →</button>
+    <aside class="min-w-0">
+      ${mxBox('トップ営業との差分', gaps)}
+      ${mxBox('メニュー', `<div class="mx-nav">
+        <a onclick="nav('upload')">稼働終了・録音を出稿</a>
+        <a onclick="nav('report')">分析レポートを見る</a>
+        <a onclick="nav('submit')">上長へ提出書をつくる</a>
+        <a onclick="nav('issues')">チームのイシュー</a>
+        <a onclick="nav('reps')">営業マン一覧</a>
+      </div>`)}
+    </aside>
   </div>`;
 }
 
@@ -1443,22 +1486,39 @@ function viewMy() {
   }
   const a = sub.analysis; R.loadAnalysis(a);
   return `
-  <div class="flex items-end justify-between mb-6">
-    <div><div class="text-xs text-neutral-500">マイページ ・ 直近の稼働（${(sub.at || '').slice(0, 10)}）</div><h1 class="text-xl font-semibold text-neutral-900 mt-0.5">${u.name} さん</h1></div>
-    <div class="text-right"><div class="text-xs text-neutral-500">鬼教官スコア</div><div class="text-2xl font-semibold text-emerald-600 tabular-nums">${a.coachScore}<span class="text-sm text-neutral-500">/100</span></div></div>
-  </div>
-  <div id="portalCard" class="mb-4"></div>
-  ${card(`<div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-neutral-200">
-    ${statCell('総ピンポン', a.totalPings, '件', `達成 ${a.targetAchievementRate}%`)}
-    ${statCell('在宅反応', a.homeResponseCount, '件', `${a.homeResponseRate}%`)}
-    ${statCell('アポ', a.appointmentCount, '件', `${a.appointmentRate}%`)}
-    ${statCell('サボり', a.suspiciousIdleTimeMinutes, '分', a.gps?.connected ? 'GPS確定' : '')}
-  </div>`)}
-  ${deviationSection(a)}
-  ${coachPanel()}
-  <div class="mt-8 flex flex-wrap gap-3">
-    <button onclick="nav('upload')" class="px-5 py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">新しい録音を出稿</button>
-    <button onclick="nav('report')" class="px-5 py-2.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100 transition">詳しい分析レポート</button>
+  ${mxProfile(`${u.name} さん`, `直近の稼働 ${(sub.at || '').slice(0, 10)} ・ ${a.workdayIndex}/${a.workdayCount}勤務目`, a.coachScore, { label: '目標設定', nav: 'goal' })}
+  <div id="portalCard"></div>
+  <div class="mx-2col">
+    <div class="min-w-0">
+      ${mxBox('本日のサマリー', `
+        <div class="mx-kpi">
+          <div class="mx-kpi-c">
+            <div class="mx-kpi-l">鬼教官スコア</div>
+            <div class="mx-kpi-v">${a.coachScore}<small>/100</small></div>
+          </div>
+          <div class="mx-kpi-c">
+            <div class="mx-kpi-l">100ピンポン達成</div>
+            ${C.pingGauge(a.totalPings, a.targetPings)}
+          </div>
+        </div>`, { label: '詳細レポート', nav: 'report' })}
+      ${deviationSection(a)}
+      ${coachPanel()}
+    </div>
+    <aside class="min-w-0">
+      ${mxBox('本日の数字', `
+        ${mxRow('総ピンポン', `${a.totalPings} 件`)}
+        ${mxRow('達成率', `${a.targetAchievementRate}%`)}
+        ${mxRow('在宅反応', `${a.homeResponseCount} 件（${a.homeResponseRate}%）`)}
+        ${mxRow('アポ', `${a.appointmentCount} 件（${a.appointmentRate}%）`)}
+        ${mxRow('サボり', `${a.suspiciousIdleTimeMinutes} 分${a.gps?.connected ? '（GPS確定）' : ''}`, a.suspiciousIdleTimeMinutes > 0 ? 'neg' : '')}
+      `)}
+      ${mxBox('メニュー', `<div class="mx-nav">
+        <a onclick="nav('upload')">新しい録音を出稿</a>
+        <a onclick="nav('report')">詳しい分析レポート</a>
+        <a onclick="nav('submit')">上長へ提出書をつくる</a>
+        <a onclick="nav('roleplay')">ロープレ道場</a>
+      </div>`)}
+    </aside>
   </div>`;
 }
 

@@ -10,17 +10,72 @@
   } } } } };
 </script>
 <style>
-  body{background:#F7FBF9;color:#171717;font-family:-apple-system,'Hiragino Kaku Gothic ProN','Noto Sans JP',system-ui,sans-serif;}
+  body{background:#FBFAF5;color:#1F2420;font-family:-apple-system,'Hiragino Kaku Gothic ProN','Noto Sans JP',system-ui,sans-serif;}
   ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#cfe3d6;border-radius:5px}
-  .nav-active{color:#159947 !important;background:#eaf6ee}
-  /* 太陽光アプリに寄せた質感：主要ボタンは緑グラデ、サイドバー/ヘッダーは白 */
+  /* 太陽光アプリに寄せた質感：主要ボタンは緑グラデ */
   .bg-emerald-500{background-image:linear-gradient(90deg,#16A34A,#0F7A45) !important}
   .bg-emerald-500:hover,.hover\:bg-emerald-400:hover{background-image:linear-gradient(90deg,#12833d,#0c633a) !important}
-  aside.app-chrome,header.app-chrome{background:#ffffff}
+  aside.app-chrome,header.app-chrome{background:#F3F1E9}
   #app{animation:fade .25s ease}@keyframes fade{from{opacity:0}to{opacity:1}}
-  .navlink{display:block;width:100%;text-align:left;padding:.5rem .75rem;border-radius:.5rem;color:#525252;font-size:.875rem;transition:background .15s,color .15s}
-  .navlink:hover{color:#171717;background:#f5f5f5}
   body.logged-out .app-chrome{display:none !important}
+
+  /* ===== 初期mixi風の「箱組み」× Ruminaグリーン =====
+     見出し帯＋薄クリーム背景＋点線区切り＋2カラム。数字と一覧を詰めて見せる。 */
+  .mx-box,.mx-sec{margin-bottom:12px}
+  .mx-box{background:#fff;border:1px solid #DDD8CC;border-radius:3px;overflow:hidden}
+  .mx-head{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:linear-gradient(180deg,#17A34F 0%,#0F7A45 100%);color:#fff;
+    padding:6px 10px;font-size:12px;font-weight:700;letter-spacing:.02em;line-height:1.5}
+  .mx-head .t{display:flex;align-items:center;gap:6px;min-width:0}
+  .mx-head .t::before{content:"";width:6px;height:6px;background:#BFF3D6;border-radius:1px;flex:none}
+  .mx-more{color:#EAFBF1;font-size:11px;font-weight:500;text-decoration:none;white-space:nowrap;cursor:pointer}
+  .mx-more:hover{color:#fff;text-decoration:underline}
+  .mx-body{padding:10px 12px}
+  /* section()：見出し帯の直下に card が来たら1枚の箱として繋げる */
+  .mx-sec>.mx-head{border-radius:3px 3px 0 0}
+  .mx-sub{border-left:1px solid #DDD8CC;border-right:1px solid #DDD8CC;background:#F6FAF7;
+    padding:5px 10px;font-size:11px;color:#5C6B64}
+  .mx-sec>.mx-card{border-top:0;border-radius:0 0 3px 3px}
+  .mx-card{background:#fff;border:1px solid #DDD8CC;border-radius:3px}
+  /* 行（ラベル：値） */
+  .mx-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    padding:5px 0;border-bottom:1px dotted #E3DED2;font-size:13px}
+  .mx-row:last-child{border-bottom:0}
+  .mx-row .l{color:#5C5A52}
+  .mx-row .v{font-variant-numeric:tabular-nums;font-weight:700;color:#1F2420}
+  .mx-row .v.neg{color:#C2410C}.mx-row .v.pos{color:#0F7A45}
+  /* プロフィール枠 */
+  .mx-prof{display:flex;gap:12px;align-items:flex-start}
+  .mx-prof>img{width:72px;height:72px;object-fit:cover;object-position:top;
+    border:1px solid #DDD8CC;padding:2px;background:#fff;flex:none}
+  .mx-prof-n{font-size:15px;font-weight:700;color:#1F2420}
+  .mx-prof-m{font-size:11.5px;color:#6B7C74;margin-top:2px}
+  .mx-prof-s{margin-top:7px;font-size:11.5px;color:#5C6B64;display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
+  .mx-prof-s b{font-size:22px;color:#0F7A45;font-variant-numeric:tabular-nums;line-height:1}
+  /* 一覧リンク（メニュー等） */
+  .mx-nav a{display:block;padding:5px 2px;font-size:12.5px;color:#3A4741;text-decoration:none;
+    border-bottom:1px dotted #E3DED2;cursor:pointer}
+  .mx-nav a:last-child{border-bottom:0}
+  .mx-nav a:hover{color:#0F7A45;text-decoration:underline}
+  .mx-nav a::before{content:"» ";color:#8FBFA6}
+  /* 2カラム */
+  .mx-2col{display:grid;grid-template-columns:1fr;gap:12px;align-items:start}
+  @media(min-width:1024px){.mx-2col{grid-template-columns:minmax(0,1fr) 264px}}
+  /* サマリーのKPI並び */
+  .mx-kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center}
+  .mx-kpi-c{text-align:center;padding:4px}
+  .mx-kpi-l{font-size:11px;color:#6B7C74;margin-bottom:2px}
+  .mx-kpi-v{font-size:34px;font-weight:700;color:#0F7A45;font-variant-numeric:tabular-nums;line-height:1.1}
+  .mx-kpi-v small{font-size:12px;color:#8A968F;font-weight:500;margin-left:2px}
+  /* サイドバー */
+  .mx-brand-t{font-size:15px;font-weight:700;color:#123}
+  .mx-brand-s{font-size:11px;color:#0F7A45;font-weight:600}
+  .navlink{display:block;width:100%;text-align:left;padding:5px 2px;font-size:12.5px;color:#3A4741;
+    border-bottom:1px dotted #E3DED2;background:none;transition:color .12s,background .12s}
+  .navlink:last-child{border-bottom:0}
+  .navlink:hover{color:#0F7A45;background:#F4FAF6}
+  .nav-active{color:#0F7A45 !important;background:#EAF6EE;font-weight:700}
+  #userBadge{padding:8px 10px}
   @media print {
     .app-chrome{display:none !important}
     .no-print{display:none !important}
@@ -31,31 +86,35 @@
 
 <div class="min-h-screen flex">
   <!-- サイドバー：稼働の流れ順 -->
-  <aside class="app-chrome hidden md:flex flex-col w-56 border-r border-neutral-200 p-4 sticky top-0 h-screen">
-    <div class="px-3 py-2 mb-3">
-      <div class="text-sm font-semibold text-neutral-900">Rumina</div>
-      <div class="text-xs text-emerald-600">鬼教官</div>
+  <aside class="app-chrome hidden md:flex flex-col w-56 shrink-0 border-r border-[#DDD8CC] p-3 sticky top-0 h-screen overflow-y-auto">
+    <div class="px-1 pb-2">
+      <div class="mx-brand-t">Rumina</div>
+      <div class="mx-brand-s">鬼教官</div>
     </div>
-    <div class="px-3 text-[10px] font-semibold text-neutral-400 tracking-wide mb-1">日々の流れ</div>
-    <nav class="space-y-0.5">
-      <button data-nav="my" onclick="nav('my')" class="navlink">マイページ</button>
-      <button data-nav="goal" onclick="nav('goal')" class="navlink">① 目標設定</button>
-      <button data-nav="upload" onclick="nav('upload')" class="navlink">② 稼働終了・録音を出稿</button>
-      <button data-nav="report" onclick="nav('report')" class="navlink">③ 分析レポート</button>
-      <button data-nav="submit" onclick="nav('submit')" class="navlink">④ 上長へ提出書</button>
-      <button data-nav="roleplay" onclick="nav('roleplay')" class="navlink">ロープレ道場</button>
-    </nav>
-    <div data-owner class="px-3 text-[10px] font-semibold text-neutral-400 tracking-wide mb-1 mt-4">管理（管理者のみ）</div>
-    <nav class="space-y-0.5">
-      <button data-owner data-nav="home" onclick="nav('home')" class="navlink">チームホーム</button>
-      <button data-owner data-nav="issues" onclick="nav('issues')" class="navlink">イシュー・改善提案</button>
-      <button data-owner data-nav="reps" onclick="nav('reps')" class="navlink">営業マン一覧</button>
-      <button data-owner data-nav="admin" onclick="nav('admin')" class="navlink">管理者マスタ（名簿編集）</button>
-      <button data-owner data-nav="cyzen" onclick="nav('cyzen')" class="navlink">全営業KPI（cyzen）</button>
-      <button data-owner data-nav="log" onclick="nav('log')" class="navlink">診断ログ（録音の記録）</button>
-      <button data-owner data-nav="linkrep" onclick="nav('linkrep')" class="navlink">LINE名寄せ（個別コーチング）</button>
-    </nav>
-    <div id="userBadge" class="mt-auto px-3 pt-4 space-y-0.5"></div>
+    <section class="mx-box">
+      <div class="mx-head"><span class="t">日々の流れ</span></div>
+      <nav class="mx-body">
+        <button data-nav="my" onclick="nav('my')" class="navlink">マイページ</button>
+        <button data-nav="goal" onclick="nav('goal')" class="navlink">① 目標設定</button>
+        <button data-nav="upload" onclick="nav('upload')" class="navlink">② 稼働終了・録音を出稿</button>
+        <button data-nav="report" onclick="nav('report')" class="navlink">③ 分析レポート</button>
+        <button data-nav="submit" onclick="nav('submit')" class="navlink">④ 上長へ提出書</button>
+        <button data-nav="roleplay" onclick="nav('roleplay')" class="navlink">ロープレ道場</button>
+      </nav>
+    </section>
+    <section data-owner class="mx-box">
+      <div class="mx-head"><span class="t">管理（管理者のみ）</span></div>
+      <nav class="mx-body">
+        <button data-owner data-nav="home" onclick="nav('home')" class="navlink">チームホーム</button>
+        <button data-owner data-nav="issues" onclick="nav('issues')" class="navlink">イシュー・改善提案</button>
+        <button data-owner data-nav="reps" onclick="nav('reps')" class="navlink">営業マン一覧</button>
+        <button data-owner data-nav="admin" onclick="nav('admin')" class="navlink">管理者マスタ（名簿編集）</button>
+        <button data-owner data-nav="cyzen" onclick="nav('cyzen')" class="navlink">全営業KPI（cyzen）</button>
+        <button data-owner data-nav="log" onclick="nav('log')" class="navlink">診断ログ（録音の記録）</button>
+        <button data-owner data-nav="linkrep" onclick="nav('linkrep')" class="navlink">LINE名寄せ（個別コーチング）</button>
+      </nav>
+    </section>
+    <div class="mt-auto"><div id="userBadge" class="mx-box"></div></div>
   </aside>
 
   <div class="flex-1 min-w-0">
@@ -63,7 +122,7 @@
       <div><span class="text-sm font-semibold text-neutral-900">Rumina</span> <span class="text-xs text-emerald-600">鬼教官</span></div>
       <button onclick="doLogout()" class="text-[11px] text-neutral-500 underline">ログアウト</button>
     </header>
-    <main class="max-w-5xl mx-auto px-5 md:px-10 py-8 pb-28 md:pb-12"><div id="app"></div></main>
+    <main class="max-w-6xl mx-auto px-4 md:px-6 py-5 pb-28 md:pb-8"><div id="app"></div></main>
   </div>
 </div>
 

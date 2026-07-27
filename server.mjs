@@ -18,6 +18,7 @@ import { fetchAppointments } from './lib/crm.mjs';
 import { getDb, save, saveReport, getReport, UPLOAD_DIR } from './lib/store.mjs';
 import * as cyzen from './lib/cyzen.mjs';
 import { hashPassword, verifyPassword, signSession, verifySession, randomPassword } from './lib/auth.mjs';
+import { generateCritique, critiqueReady } from './lib/critique.mjs';
 
 const ROOT = new URL('.', import.meta.url).pathname;
 const PORT = process.env.PORT || 4180;
@@ -30,6 +31,9 @@ const CONSENT_VERSION = process.env.CONSENT_VERSION || '2026-07-15';
 const PURGE_AUDIO = /^(1|true|yes|on)$/i.test(process.env.PURGE_AUDIO_AFTER_ANALYZE || '');
 // LINE bot 個別コーチング連携：この共有シークレット付きでのみ /api/coach-context を許可
 const BOT_API_SECRET = process.env.BOT_API_SECRET || '';
+// GAS等からのサーバー間 録音取り込み（/api/audio/import）を許可する共有シークレット。
+// 未設定なら BOT_API_SECRET を流用。ログインCookieが無い自動取り込みはこの合言葉が必須。
+const INGEST_SECRET = process.env.INGEST_SECRET || BOT_API_SECRET;
 
 // LINEログイン（LINE Developers の「LINEログイン」チャネル）
 const LINE_ID = process.env.LINE_LOGIN_CHANNEL_ID || '';
@@ -97,6 +101,16 @@ function lineCallback(req) {
   const proto = req.headers['x-forwarded-proto'] || 'http';
   const host = req.headers['x-forwarded-host'] || req.headers.host;
   return `${proto}://${host}/api/line/callback`;
+}
+// repId または氏名から該当ユーザー(rep)を探す。サーバー間の自動取り込みで本人のマイページに紐付けるため。
+function findRepUser(repId, name) {
+  const users = getDb().users || {};
+  const norm = (s) => String(s || '').replace(/\s+/g, '').normalize('NFKC');
+  for (const [username, u] of Object.entries(users)) {
+    if (repId && u.repId && String(u.repId) === String(repId)) return { username, name: u.name };
+    if (name && u.name && norm(u.name) === norm(name)) return { username, name: u.name };
+  }
+  return null;
 }
 // 重複しないユーザー名を作る（LINE表示名ベース）
 function uniqueUsername(db, base) {
@@ -253,6 +267,7 @@ const server = createServer(async (req, res) => {
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
       if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), ssoReady: !!SSO_SECRET,
+        critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         // ポータルと同じ共有秘密かを、値を出さずに突き合わせるための指紋（固定文字列のHMAC先頭12桁）
         ssoFingerprint: SSO_SECRET ? createHmac('sha256', SSO_SECRET).update('rumina-sso-fingerprint-v1').digest('hex').slice(0, 12) : null });
 
@@ -566,8 +581,12 @@ const server = createServer(async (req, res) => {
       // Plaud NotePin 文字起こし取り込み（Whisper不要・即時解析）
       if (path === '/api/audio/import' && req.method === 'POST') {
         const meImp = currentUser(req);
-        if (meImp && !hasConsent(meImp)) return json(res, 403, { error: '録音・解析への同意が必要です。', needConsent: true });
         const body = await readBody(req);
+        // 認可：ログイン中の本人、または 共有シークレット付きのサーバー間取り込み(GAS等) のみ許可。
+        const ingestSecret = url.searchParams.get('secret') || body.secret || '';
+        const ingestOk = !!INGEST_SECRET && ingestSecret === INGEST_SECRET;
+        if (!meImp && !ingestOk) return json(res, 401, { error: 'ログイン、または取り込み用の合言葉(secret)が必要です。' });
+        if (meImp && !hasConsent(meImp)) return json(res, 403, { error: '録音・解析への同意が必要です。', needConsent: true });
         if (!body.export) return json(res, 400, { error: 'export（Plaud書き出し）がありません' });
         let parsed;
         try { parsed = parsePlaud(body.export); }
@@ -588,11 +607,13 @@ const server = createServer(async (req, res) => {
           crmAppointmentCount: crm ? crm.count : undefined,
           modelTalk: modelTalk(),
         }, repCode, date));
+        // Claude APIで鬼教官の講評を生成（ANTHROPIC_API_KEY 未設定なら null → フロントはルールベースにフォールバック）
+        analysis.aiCritique = await generateCritique({ analysis, transcript, benchmark: BENCHMARK, modelTalk: modelTalk() });
         const result = { sessionId: id, source: 'plaud', device: meta.device, benchmark: BENCHMARK, analysis, pings, transcript };
         SESSIONS.set(id, { id, status: 'done', result });
-        // ログイン中なら本人の最新レポートとして保存（マイページ用）
-        const me = currentUser(req);
-        if (me) { getDb().submissions[me.username] = { at: new Date().toISOString(), name: me.name, analysis }; save(); }
+        // マイページ保存：ログイン中はその本人、サーバー間取り込み(GAS)は repId/氏名で該当repを特定して保存。
+        const me = currentUser(req) || findRepUser(body.repId, rep.name);
+        if (me) { getDb().submissions[me.username] = { at: new Date().toISOString(), name: me.name || rep.name, analysis }; save(); }
         // 診断ログを永続化（文字起こし全文つき）
         persistReport(id, result, me ? me.username : null);
         // Rumina Coach 連携：測定依頼リンク（?staff=&iv=）経由でインポートした場合のみ送信
