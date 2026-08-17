@@ -23,6 +23,7 @@ import * as deepgram from './lib/deepgram.mjs';
 import { scoreTalk, ready as scoreReady } from './lib/score.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
+import { buildPersonalMessages } from './lib/coachdm.mjs';
 
 /* 文字起こしエンジン：DEEPGRAM_API_KEY があれば話者分離つきのDeepgramを既定に。
    TRANSCRIBE_PROVIDER=whisper|deepgram で明示指定もできる。 */
@@ -320,6 +321,16 @@ const server = createServer(async (req, res) => {
         if (!cyzen.ready()) return json(res, 200, { ok: false, error: 'cyzenのデータが未取込です' });
         const d = await buildDigest();
         return json(res, 200, d);
+      }
+
+      /* 個別コーチング文面（本人へのDM用）。owner または合言葉。
+         ここでは**生成のみ**。送信は上長の確認を経てから行う（自動送信しない）。 */
+      if (path === '/api/cyzen/coach-dm' && req.method === 'GET') {
+        const meC = currentUser(req);
+        const okS = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        if (!okS && (!meC || meC.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (!cyzen.ready()) return json(res, 200, { ok: false, error: 'cyzenのデータが未取込です' });
+        return json(res, 200, buildPersonalMessages({ all: url.searchParams.get('all') === '1' }));
       }
 
       if (path === '/api/cyzen/roster' && req.method === 'GET') {
