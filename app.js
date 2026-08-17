@@ -75,6 +75,37 @@ function coachPanel() {
     <div class="p-5 space-y-5">${aiBlock}${blocks}</div>`));
 }
 
+/* AI採点（Claude・話者ラベル前提）。参考値であることを明示し、決定論の判定は上書きしない。 */
+function aiScoreSection(a) {
+  const s = a && a.aiScore;
+  if (!s) return '';
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const bar = n => {
+    const v = Math.max(0, Math.min(5, +n || 0));
+    return `<span class="inline-flex gap-0.5 align-middle ml-1">${[1, 2, 3, 4, 5].map(i =>
+      `<span style="width:7px;height:7px;border-radius:1px;background:${i <= v ? (v <= 2 ? '#C2410C' : '#159947') : '#E3DED2'}"></span>`).join('')}</span>`;
+  };
+  const rows = (s.axes || []).map(x => `
+    <div class="py-2.5 border-b border-dotted border-[#E3DED2] last:border-0">
+      <div class="flex items-baseline justify-between gap-3">
+        <span class="text-[13px] text-neutral-800">${esc(x.label || x.key)}</span>
+        <span class="text-[12px] tabular-nums ${(+x.score) <= 2 ? 'text-orange-700' : 'text-emerald-700'} font-bold whitespace-nowrap">${esc(x.score)}/5${bar(x.score)}</span>
+      </div>
+      <div class="text-[12px] text-neutral-600 mt-1">根拠　${esc(x.evidence)}</div>
+      <div class="text-[12px] text-emerald-700 mt-0.5">明日　${esc(x.fix)}</div>
+    </div>`).join('');
+  return mxBox('AI採点（鬼教官の物差し）', `
+    <div class="flex items-baseline gap-3 mb-2">
+      <span class="text-2xl font-bold text-emerald-700 tabular-nums">${esc(s.overall)}<span class="text-xs text-neutral-500">/100</span></span>
+      <span class="text-[13px] text-neutral-800">${esc(s.verdict)}</span>
+    </div>
+    <div class="text-[11px] text-neutral-500 mb-2">客の発話量　${esc(s.customerTalkRatio)}</div>
+    ${rows}
+    <div class="text-[11px] text-neutral-500 mt-3 pt-2 border-t border-[#E3DED2]">
+      これはAIによる<b>参考値</b>です。ロープレの合否など確定判定は決定論チェックが正本で、AIでは上書きしません。${s.model ? `（${esc(s.model)}）` : ''}
+    </div>`);
+}
+
 /* 自動診断 */
 function diagnosisSection() {
   const d = SESSION.diagnosis;
@@ -749,6 +780,7 @@ function viewReport() {
 
   ${qualityBanner(a)}
   ${crmPanel(a)}
+  ${aiScoreSection(a)}
 
   <div class="mt-4"></div>
   ${card(`<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y sm:divide-y-0 divide-neutral-200">

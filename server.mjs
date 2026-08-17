@@ -19,6 +19,12 @@ import { getDb, save, saveReport, getReport, UPLOAD_DIR } from './lib/store.mjs'
 import * as cyzen from './lib/cyzen.mjs';
 import { hashPassword, verifyPassword, signSession, verifySession, randomPassword } from './lib/auth.mjs';
 import { generateCritique, critiqueReady } from './lib/critique.mjs';
+import * as deepgram from './lib/deepgram.mjs';
+import { scoreTalk, ready as scoreReady } from './lib/score.mjs';
+
+/* 文字起こしエンジン：DEEPGRAM_API_KEY があれば話者分離つきのDeepgramを既定に。
+   TRANSCRIBE_PROVIDER=whisper|deepgram で明示指定もできる。 */
+const STT = (process.env.TRANSCRIBE_PROVIDER || (deepgram.ready() ? 'deepgram' : 'whisper')).toLowerCase();
 
 const ROOT = new URL('.', import.meta.url).pathname;
 const PORT = process.env.PORT || 4180;
@@ -268,6 +274,7 @@ const server = createServer(async (req, res) => {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
       if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), ssoReady: !!SSO_SECRET,
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
+        sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
         // ポータルと同じ共有秘密かを、値を出さずに突き合わせるための指紋（固定文字列のHMAC先頭12桁）
         ssoFingerprint: SSO_SECRET ? createHmac('sha256', SSO_SECRET).update('rumina-sso-fingerprint-v1').digest('hex').slice(0, 12) : null });
 
@@ -673,15 +680,30 @@ async function runPipeline(s) {
   const chunks = await toChunks(s.path);                  // 24MB以下なら1チャンク（ffmpeg不要）
   s.progress = { done: 0, total: chunks.length };
 
-  // ③ 文字起こし（チャンクを順次Whisperへ。並列にする場合はここをPromise poolに）
+  // ③ 文字起こし（チャンクを順次エンジンへ。並列にする場合はここをPromise poolに）
   s.stage = 'transcribe';
+  const useDeepgram = STT === 'deepgram' && deepgram.ready();
   let segments = [];
   for (const ch of chunks) {
-    const segs = await whisper.transcribe(ch, { lang: 'ja', prompt: DOMAIN_PROMPT, model: MODEL, apiKey: API_KEY });
+    const segs = useDeepgram
+      ? await deepgram.transcribe(ch, { lang: 'ja' })                                    // 話者分離＋用語ブースト＋数字整形
+      : await whisper.transcribe(ch, { lang: 'ja', prompt: DOMAIN_PROMPT, model: MODEL, apiKey: API_KEY });
     segments = segments.concat(segs);
     s.progress.done++;
   }
   segments.sort((a, b) => a.startSec - b.startSec);
+
+  // ④ 話者の役割確定：Deepgramの話者番号 → sales/customer（1日で最も長く喋る＝営業）
+  let diarizeMethod = process.env.DIARIZE;      // 既定=heuristic、'none'で無効化
+  let speakerStats = null;
+  if (useDeepgram) {
+    const roled = deepgram.assignRoles(segments);
+    if (roled.salesSpeaker !== null) {
+      segments = roled.segments;
+      speakerStats = roled.stats;
+      diarizeMethod = 'acoustic';               // 実測済み＝推定バナーを出さない
+    }
+  }
 
   // ⑤⑥ ピンポン分割＋KPI抽出
   s.status = 'analyzing'; s.stage = 'segment';
@@ -691,9 +713,27 @@ async function runPipeline(s) {
   const { analysis, pings, transcript } = analyze(segments, withCyzen({
     durationSec: duration, startHour: s.startHour, salesRep: rep, benchmark: BENCHMARK,
     date: runDate, gps: s.gps || null,
-    diarize: process.env.DIARIZE,   // 未設定なら既定=heuristic、'none'で無効化
+    diarize: diarizeMethod,
     modelTalk: modelTalk(),
   }, repCode, runDate));
+
+  // ⑦ 講評・AI採点（話者ラベル付きの文字起こしを渡す。キー未設定ならどちらもnullで素通り）
+  s.stage = 'coach';
+  analysis.sttProvider = useDeepgram ? `deepgram:${deepgram.model()}` : `whisper:${MODEL}`;
+  analysis.speakerStats = speakerStats;
+  const labeled = useDeepgram ? deepgram.toLabeledText(segments) : transcript;
+  try {
+    analysis.aiCritique = await generateCritique({ analysis, transcript: labeled, benchmark: BENCHMARK, modelTalk: modelTalk() });
+    analysis.aiScore = await scoreTalk({
+      labeledTranscript: labeled,
+      diarized: diarizeMethod === 'acoustic',
+      kpis: {
+        総ピンポン: analysis.totalPings, 在宅反応率: analysis.homeResponseRate,
+        アポ率: analysis.appointmentRate, 平均会話秒: analysis.averageConversationSeconds,
+        冒頭質問率: analysis.openingQuestionRate, 切り返し: analysis.averageRebuttalCount,
+      },
+    });
+  } catch (e) { console.warn('[coach] 講評/採点をスキップ:', e.message); }
 
   // 文字起こし済み → 音声の自動削除（PURGE_AUDIO_AFTER_ANALYZE=on のとき）
   let audioRetained = true;
