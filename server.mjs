@@ -599,8 +599,19 @@ const server = createServer(async (req, res) => {
         const norm = s => String(s || '').replace(/\s+/g, '').normalize('NFKC');
         const db = getDb();
         const user = Object.values(db.users).find(u => u.lineId && norm(u.name) === norm(name));
-        if (!user) return json(res, 404, { found: false });
-        return json(res, 200, { found: true, lineId: user.lineId });
+        if (user) return json(res, 200, { found: true, lineId: user.lineId, via: 'onikyokan' });
+        // 鬼教官を一度も開いていない人はこちらに居ない。名寄せの正本はポータル
+        // （LINEログイン＋本人選択でdriverが確定している）なので、そちらに聞く。
+        if (PORTAL_URL && BOT_API_SECRET) {
+          try {
+            const r = await fetch(`${PORTAL_URL}/api/coach/line-id?secret=${encodeURIComponent(BOT_API_SECRET)}&name=${encodeURIComponent(name)}`);
+            if (r.ok) {
+              const j = await r.json();
+              if (j && j.found && j.lineId) return json(res, 200, { found: true, lineId: j.lineId, via: 'portal' });
+            }
+          } catch (e) { console.warn('[by-name] ポータル照会に失敗:', e.message); }
+        }
+        return json(res, 404, { found: false });
       }
 
       // ① アップロード：ファイル本文を raw で受けて保存（multipart不要）
