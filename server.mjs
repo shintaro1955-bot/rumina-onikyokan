@@ -24,6 +24,7 @@ import { scoreTalk, ready as scoreReady } from './lib/score.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
 import { buildPersonalMessages } from './lib/coachdm.mjs';
+import * as terakoya from './lib/terakoya.mjs';
 
 /* 文字起こしエンジン：DEEPGRAM_API_KEY があれば話者分離つきのDeepgramを既定に。
    TRANSCRIBE_PROVIDER=whisper|deepgram で明示指定もできる。 */
@@ -331,6 +332,14 @@ const server = createServer(async (req, res) => {
         if (!okS && (!meC || meC.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
         if (!cyzen.ready()) return json(res, 200, { ok: false, error: 'cyzenのデータが未取込です' });
         return json(res, 200, buildPersonalMessages({ all: url.searchParams.get('all') === '1' }));
+      }
+
+      /* FF寺子屋の対象者への案内文（owner または合言葉）。生成のみ・自動送信はしない。 */
+      if (path === '/api/terakoya/invites' && req.method === 'GET') {
+        const meT = currentUser(req);
+        const okT = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        if (!okT && (!meT || meT.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        return json(res, 200, terakoya.buildInvites());
       }
 
       if (path === '/api/cyzen/roster' && req.method === 'GET') {
