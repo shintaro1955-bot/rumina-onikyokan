@@ -1037,15 +1037,28 @@ async function loadLog() {
     <td class="px-3 py-2 text-[11px]">${r.audio === 'purged' ? '<span class="text-neutral-400">削除済</span>' : r.audio === 'kept' ? '<span class="text-neutral-600">保持</span>' : '<span class="text-neutral-300">音声なし</span>'}</td>
     <td class="px-3 py-2 text-[11px] text-neutral-400 whitespace-nowrap">${(r.at || '').replace('T', ' ').slice(0, 16)}</td>
     <td class="px-3 py-2 text-right text-[12px] text-emerald-600 whitespace-nowrap">文字起こし →</td>
+    <td class="px-3 py-2 text-right whitespace-nowrap"><button onclick="event.stopPropagation();deleteLogItem('${r.id}','${(r.name || '').replace(/'/g, '')}','${(r.at || '').slice(0, 10)}')" class="text-[11px] text-neutral-400 hover:text-rose-600 underline">削除</button></td>
   </tr>`).join('');
   wrap.innerHTML = `${card(`<div class="overflow-x-auto"><table class="w-full text-sm min-w-[760px]">
     <thead><tr class="text-xs text-neutral-500 bg-neutral-50">
       <th class="px-3 py-2 text-left font-normal">受診者</th><th class="px-3 py-2 text-left font-normal">稼働日</th><th class="px-3 py-2 text-left font-normal">出所</th>
       <th class="px-3 py-2 text-right font-normal">ピンポン</th><th class="px-3 py-2 text-right font-normal">スコア</th><th class="px-3 py-2 text-right font-normal">再現率</th>
-      <th class="px-3 py-2 text-left font-normal">音声</th><th class="px-3 py-2 text-left font-normal">記録時刻</th><th class="px-3"></th></tr></thead>
+      <th class="px-3 py-2 text-left font-normal">音声</th><th class="px-3 py-2 text-left font-normal">記録時刻</th><th class="px-3"></th><th class="px-3"></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`)}
     <div class="text-[11px] text-neutral-400 mt-2">${reports.length}件（新しい順）。行をクリックすると文字起こし全文が開きます。</div>`;
 }
+/* 診断ログの削除（owner専用）。取り消せないので必ず確認を挟む。 */
+async function deleteLogItem(id, name, date) {
+  const label = `${name || '（氏名なし）'}${date ? ' ・ ' + date : ''}`;
+  if (!confirm(`この診断ログを削除します。\n\n　${label}\n\n文字起こし全文・KPI・カルテも消え、元に戻せません。よろしいですか？`)) return;
+  try {
+    await API.deleteLogItem(id);
+    const d = document.getElementById('logDetail'); if (d) d.innerHTML = '';
+    await loadLog();
+  } catch (e) { alert('削除に失敗しました：' + e.message); }
+}
+window.deleteLogItem = deleteLogItem;
+
 async function openLogItem(id) {
   const box = document.getElementById('logDetail'); if (!box) return;
   box.innerHTML = `<div class="text-sm text-neutral-500 p-4">読み込み中…</div>`;

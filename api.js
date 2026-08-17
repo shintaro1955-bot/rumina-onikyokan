@@ -86,6 +86,7 @@ window.API = (function () {
   /* ---------- 診断ログ（録音の記録） ---------- */
   async function getLog() { const r = await fetch('/api/log'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'ログの取得に失敗しました'); return j.reports || []; }
   async function getLogItem(id) { const r = await fetch('/api/log/' + encodeURIComponent(id)); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'ログ詳細の取得に失敗しました'); return j.report; }
+  async function deleteLogItem(id) { const r = await fetch('/api/log/' + encodeURIComponent(id), { method: 'DELETE' }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'ログの削除に失敗しました'); return j; }
 
   /* ---------- 録音・解析への同意 ---------- */
   async function getConsent() { try { const r = await fetch('/api/consent'); return r.ok ? r.json() : { ok: false }; } catch { return { ok: false }; } }
@@ -107,5 +108,5 @@ window.API = (function () {
   async function getLineUsers() { const r = await fetch('/api/admin/line-users'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'LINEユーザー一覧の取得に失敗しました'); return j.users || []; }
   async function linkRep(username, repId) { const r = await fetch('/api/admin/link-rep', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, repId }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '紐付けに失敗しました'); return j; }
 
-  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenUpload, portalProfile };
+  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenUpload, portalProfile };
 })();
