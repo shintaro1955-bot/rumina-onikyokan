@@ -22,6 +22,7 @@ import { generateCritique, critiqueReady } from './lib/critique.mjs';
 import * as deepgram from './lib/deepgram.mjs';
 import { scoreTalk, ready as scoreReady } from './lib/score.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
+import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
 
 /* 文字起こしエンジン：DEEPGRAM_API_KEY があれば話者分離つきのDeepgramを既定に。
    TRANSCRIBE_PROVIDER=whisper|deepgram で明示指定もできる。 */
@@ -310,6 +311,17 @@ const server = createServer(async (req, res) => {
       }
 
       // 全営業KPI一覧＋教育セグメント（owner専用）
+      /* 行動量ダイジェスト（LINE配信用）。LINE Botからサーバー間で叩く想定。
+         ownerのログインでも取得可。dry=1 で文面だけ確認できる。 */
+      if (path === '/api/cyzen/digest' && req.method === 'GET') {
+        const meD = currentUser(req);
+        const okSecret = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        if (!okSecret && (!meD || meD.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (!cyzen.ready()) return json(res, 200, { ok: false, error: 'cyzenのデータが未取込です' });
+        const d = await buildDigest();
+        return json(res, 200, d);
+      }
+
       if (path === '/api/cyzen/roster' && req.method === 'GET') {
         const me = currentUser(req);
         if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
