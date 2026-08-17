@@ -21,6 +21,7 @@ import { hashPassword, verifyPassword, signSession, verifySession, randomPasswor
 import { generateCritique, critiqueReady } from './lib/critique.mjs';
 import * as deepgram from './lib/deepgram.mjs';
 import { scoreTalk, ready as scoreReady } from './lib/score.mjs';
+import { normalizeSegments } from './lib/janorm.mjs';
 
 /* 文字起こしエンジン：DEEPGRAM_API_KEY があれば話者分離つきのDeepgramを既定に。
    TRANSCRIBE_PROVIDER=whisper|deepgram で明示指定もできる。 */
@@ -692,6 +693,9 @@ async function runPipeline(s) {
     s.progress.done++;
   }
   segments.sort((a, b) => a.startSec - b.startSec);
+
+  // ③-b 日本語の後処理：漢数字→算用数字（Deepgramのnumeralsは日本語に効かない）＋用語の誤認補正
+  segments = normalizeSegments(segments);
 
   // ④ 話者の役割確定：Deepgramの話者番号 → sales/customer（1日で最も長く喋る＝営業）
   let diarizeMethod = process.env.DIARIZE;      // 既定=heuristic、'none'で無効化
