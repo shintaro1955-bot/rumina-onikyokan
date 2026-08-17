@@ -15,7 +15,7 @@ import { toChunks, probeDuration } from './lib/audio.mjs';
 import { analyze, computeModelProfile, DOMAIN_PROMPT } from './lib/pipeline.mjs';
 import { parsePlaud } from './lib/import-plaud.mjs';
 import { fetchAppointments } from './lib/crm.mjs';
-import { getDb, save, saveReport, getReport, UPLOAD_DIR } from './lib/store.mjs';
+import { getDb, save, saveReport, getReport, deleteReport, UPLOAD_DIR } from './lib/store.mjs';
 import * as cyzen from './lib/cyzen.mjs';
 import { hashPassword, verifyPassword, signSession, verifySession, randomPassword } from './lib/auth.mjs';
 import { generateCritique, critiqueReady } from './lib/critique.mjs';
@@ -522,6 +522,14 @@ const server = createServer(async (req, res) => {
         if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
         const rec = getReport(decodeURIComponent(mLog[1]));
         return rec ? json(res, 200, { report: rec }) : json(res, 404, { error: 'ログが見つかりません' });
+      }
+      // 削除（owner専用）：誤出稿や検証データの後始末。実体JSONと索引の両方を消す。
+      if (mLog && req.method === 'DELETE') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const id = decodeURIComponent(mLog[1]);
+        const ok = deleteReport(id);
+        return json(res, ok ? 200 : 404, ok ? { ok: true, id } : { error: 'ログが見つかりません' });
       }
 
       /* ---------- B-6：LINE↔kintone↔鬼教官 名寄せ・個別コーチング ---------- */
