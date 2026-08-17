@@ -1097,6 +1097,93 @@ const SEG = {
   D: { label: 'D 稼働低下', cls: 'bg-neutral-200 text-neutral-700', desc: 'そもそも稼働日数が少ない → 稼働管理' },
   E: { label: 'E 記録なし', cls: 'bg-neutral-100 text-neutral-400 border border-neutral-200', desc: '報告書が無く評価不能 → まず入力の徹底' },
 };
+/* ---------- 行動量ランキング（cyzen） ---------- */
+let RANK_SORT = 'visits';   // visits=総訪問数 / vpd=訪問per日 / apo=アポ数
+const RANK_DEF = {
+  visits: { label: '総訪問数', unit: '件', get: r => r.visits, sub: r => `${r.vpd}件/日 ・ ${r.days}日稼働` },
+  vpd: { label: '訪問/日', unit: '件/日', get: r => r.vpd, sub: r => `総${r.visits}件 ・ ${r.days}日稼働` },
+  apo: { label: 'アポ数', unit: '件', get: r => r.apo, sub: r => `訪問${r.visits}件 ・ アポ率${r.apoRate}%` },
+};
+function setRankSort(k) { RANK_SORT = k; loadRanking(); }
+window.setRankSort = setRankSort;
+
+function viewRanking() {
+  return `
+  ${h1('行動量ランキング', 'cyzenの行動データから、営業マン一人ひとりの「動いた量」を順位で可視化する。量が足りているかは、質を語る前の前提。')}
+  <div id="rankWrap" class="text-sm text-neutral-500">読み込み中…</div>`;
+}
+
+async function loadRanking() {
+  const wrap = document.getElementById('rankWrap'); if (!wrap) return;
+  let data;
+  try { data = await API.cyzenRoster(); }
+  catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
+  if (!data.ready) {
+    wrap.innerHTML = card(`<div class="p-8 text-center text-sm text-neutral-700">cyzenのデータがまだ取り込まれていません。
+      <div class="mt-3"><button onclick="nav('cyzen')" class="px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold">cyzenを取り込む</button></div></div>`);
+    return;
+  }
+  const def = RANK_DEF[RANK_SORT];
+  const bench = (data.bench || {}).visitsPerDay || 31;
+  // 記録が無い人（判定E）は順位に含めない＝「動いていない」ではなく「測れていない」ため
+  const rows = (data.rows || []).filter(r => r.days > 0).sort((a, z) => def.get(z) - def.get(a) || z.visits - a.visits);
+  if (!rows.length) { wrap.innerHTML = card(`<div class="p-8 text-center text-sm text-neutral-600">期間内に稼働記録のある営業マンがいません。</div>`); return; }
+
+  const max = def.get(rows[0]) || 1;
+  const medal = ['🥇', '🥈', '🥉'];
+  const segColor = { S: 'bg-emerald-100 text-emerald-800', A: 'bg-orange-100 text-orange-800', B: 'bg-amber-100 text-amber-800', C: 'bg-sky-100 text-sky-800', D: 'bg-rose-100 text-rose-800', E: 'bg-neutral-100 text-neutral-500' };
+
+  const tabs = Object.entries(RANK_DEF).map(([k, v]) =>
+    `<button onclick="setRankSort('${k}')" class="px-3 py-1 rounded text-[12px] border ${RANK_SORT === k ? 'bg-emerald-600 text-white border-emerald-600 font-bold' : 'bg-white text-neutral-600 border-[#DDD8CC] hover:bg-emerald-50'}">${v.label}</button>`).join(' ');
+
+  // 表彰台（上位3名）
+  const podium = rows.slice(0, 3).map((r, i) => `
+    <div class="text-center px-2 py-3 border border-[#DDD8CC] rounded bg-white">
+      <div class="text-2xl leading-none">${medal[i]}</div>
+      <div class="text-[13px] font-bold text-neutral-900 mt-1 truncate" title="${r.name}">${r.name || '—'}</div>
+      <div class="text-xl font-bold text-emerald-700 tabular-nums mt-0.5">${def.get(r)}<span class="text-[10px] text-neutral-500 ml-0.5">${def.unit}</span></div>
+      <div class="text-[10px] text-neutral-500 mt-0.5">${def.sub(r)}</div>
+    </div>`).join('');
+
+  const list = rows.map((r, i) => {
+    const v = def.get(r);
+    const pct = Math.max(2, Math.round(v / max * 100));
+    const overBench = RANK_SORT === 'vpd' && r.vpd >= bench;
+    return `<div class="flex items-center gap-3 py-2 border-b border-dotted border-[#E3DED2] last:border-0">
+      <div class="w-8 text-right text-[12px] tabular-nums ${i < 3 ? 'font-bold text-emerald-700' : 'text-neutral-500'}">${i + 1}</div>
+      <div class="w-32 shrink-0 truncate text-[13px] text-neutral-900" title="${r.name}">${r.name || '—'}</div>
+      <div class="flex-1 min-w-0">
+        <div class="h-3 rounded-sm bg-[#EFEDE5] overflow-hidden"><div class="h-full ${overBench ? 'bg-emerald-500' : 'bg-emerald-600/70'}" style="width:${pct}%"></div></div>
+        <div class="text-[10px] text-neutral-500 mt-0.5 truncate">${def.sub(r)}</div>
+      </div>
+      <div class="w-20 text-right text-[13px] font-bold tabular-nums text-neutral-900">${v}<span class="text-[10px] text-neutral-500 ml-0.5">${def.unit}</span></div>
+      <div class="w-8 text-center"><span class="text-[10px] px-1.5 py-0.5 rounded ${segColor[r.seg] || ''}">${r.seg}</span></div>
+    </div>`;
+  }).join('');
+
+  const totalVisits = rows.reduce((n, r) => n + r.visits, 0);
+  const avgVpd = (rows.reduce((n, r) => n + r.vpd, 0) / rows.length).toFixed(1);
+  const overCnt = rows.filter(r => r.vpd >= bench).length;
+
+  wrap.innerHTML = `
+    ${mxBox('集計の前提', `
+      ${mxRow('対象期間', `${data.summary.periodDays} 営業日`)}
+      ${mxRow('ランキング対象', `${rows.length} 名（稼働記録のある人のみ）`)}
+      ${mxRow('記録なしで除外', `${(data.summary.E || 0)} 名`, (data.summary.E || 0) > 0 ? 'neg' : '')}
+      ${mxRow('総訪問数', `${totalVisits.toLocaleString()} 件`)}
+      ${mxRow('平均訪問/日', `${avgVpd} 件`)}
+      ${mxRow(`あるべき水準(${bench}件/日)の到達`, `${overCnt} / ${rows.length} 名`, overCnt === 0 ? 'neg' : 'pos')}
+    `)}
+    ${mxBox('上位3名', `<div class="grid grid-cols-3 gap-2">${podium}</div>`)}
+    ${mxBox(`ランキング（${def.label}順）`, `
+      <div class="flex flex-wrap gap-1.5 mb-3">${tabs}</div>
+      ${list}
+      <div class="text-[11px] text-neutral-500 mt-3 pt-2 border-t border-[#E3DED2]">
+        判定 S=量質とも基準クリア / A=活動量不足 / B=商談化不足 / C=クロージング不足 / D=稼働低下。
+        <b>記録なし(E)の${(data.summary.E || 0)}名は順位に含めていません</b>（動いていないのではなく、cyzenに記録が上がっていないため）。
+      </div>`)}`;
+}
+
 function viewCyzen() {
   return `
   ${h1('全営業KPI（cyzen）', 'cyzenの行動データから全営業の「量」を集計し、教育セグメントを自動判定。誰に何を教えるべきかがここで決まる。')}
@@ -1223,8 +1310,8 @@ async function saveLink(username) {
 }
 window.saveLink = saveLink;
 
-const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, roleplay: viewRoleplay };
-function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); if (v === 'my') loadPortalProfile(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, ranking: viewRanking, roleplay: viewRoleplay };
+function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); if (v === 'ranking') loadRanking(); if (v === 'my') loadPortalProfile(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function render() {
   app.innerHTML = VIEWS[currentView]();
   document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('nav-active', el.dataset.nav === currentView));
@@ -1592,7 +1679,7 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'roleplay'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
+  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'ranking', 'roleplay'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
   render();
   if (currentView === 'my') loadPortalProfile();
 }
