@@ -13,8 +13,29 @@
       "teacher": "山口裕馬さん",
       "url": "https://meet.google.com/odp-egev-shg"
     },
-    { "date": "2026-09-02", "time": "21:00〜22:00", "place": "オンライン（Google Meet）", "url": "https://meet.google.com/odp-egev-shg" },
-    { "date": "2026-09-16", "time": "21:00〜22:00", "place": "オンライン（Google Meet）", "url": "https://meet.google.com/odp-egev-shg" },
-    { "date": "2026-09-30", "time": "21:00〜22:00", "place": "オンライン（Google Meet）", "url": "https://meet.google.com/odp-egev-shg" }
-  ]
+    {
+      "date": "2026-09-02",
+      "time": "21:00〜22:00",
+      "place": "オンライン（Google Meet）",
+      "url": "https://meet.google.com/odp-egev-shg"
+    },
+    {
+      "date": "2026-09-16",
+      "time": "21:00〜22:00",
+      "place": "オンライン（Google Meet）",
+      "url": "https://meet.google.com/odp-egev-shg"
+    },
+    {
+      "date": "2026-09-30",
+      "time": "21:00〜22:00",
+      "place": "オンライン（Google Meet）",
+      "url": "https://meet.google.com/odp-egev-shg"
+    }
+  ],
+  "excludeNames": [
+    "林起基",
+    "小寺茉友",
+    "福島幸也"
+  ],
+  "excludeReason": "人事確認のため送信対象外（8月の出退勤記録なし）"
 }
