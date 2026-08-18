@@ -17,6 +17,7 @@ import { parsePlaud } from './lib/import-plaud.mjs';
 import { fetchAppointments } from './lib/crm.mjs';
 import { getDb, save, saveReport, getReport, deleteReport, UPLOAD_DIR } from './lib/store.mjs';
 import * as cyzen from './lib/cyzen.mjs';
+import * as cyzenApi from './lib/cyzen-api.mjs';
 import { hashPassword, verifyPassword, signSession, verifySession, randomPassword } from './lib/auth.mjs';
 import { generateCritique, critiqueReady } from './lib/critique.mjs';
 import * as deepgram from './lib/deepgram.mjs';
@@ -277,11 +278,20 @@ const server = createServer(async (req, res) => {
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), ssoReady: !!SSO_SECRET,
+      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), ssoReady: !!SSO_SECRET,
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
         // ポータルと同じ共有秘密かを、値を出さずに突き合わせるための指紋（固定文字列のHMAC先頭12桁）
         ssoFingerprint: SSO_SECRET ? createHmac('sha256', SSO_SECRET).update('rumina-sso-fingerprint-v1').digest('hex').slice(0, 12) : null });
+
+      /* cyzen APIの疎通確認。グループ取得が通れば認証・company_idとも正しい。
+         キーの値は返さない（設定できているかどうかだけ返す）。 */
+      if (path === '/api/cyzen/api-test' && req.method === 'GET') {
+        const meAt = currentUser(req);
+        const okAt = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        if (!okAt && (!meAt || meAt.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        return json(res, 200, { ...cyzenApi.info(), ping: await cyzenApi.ping() });
+      }
 
       // cyzen連携の状態（owner専用）
       if (path === '/api/cyzen/status' && req.method === 'GET') {
