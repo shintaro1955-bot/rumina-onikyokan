@@ -18,6 +18,7 @@ import { fetchAppointments } from './lib/crm.mjs';
 import { getDb, save, saveReport, getReport, deleteReport, UPLOAD_DIR } from './lib/store.mjs';
 import * as cyzen from './lib/cyzen.mjs';
 import * as cyzenApi from './lib/cyzen-api.mjs';
+import * as walk from './lib/walk.mjs';
 import { hashPassword, verifyPassword, signSession, verifySession, randomPassword } from './lib/auth.mjs';
 import { generateCritique, critiqueReady } from './lib/critique.mjs';
 import * as deepgram from './lib/deepgram.mjs';
@@ -278,7 +279,7 @@ const server = createServer(async (req, res) => {
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), ssoReady: !!SSO_SECRET,
+      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready(), ssoReady: !!SSO_SECRET,
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
         // ポータルと同じ共有秘密かを、値を出さずに突き合わせるための指紋（固定文字列のHMAC先頭12桁）
@@ -382,6 +383,17 @@ const server = createServer(async (req, res) => {
         const okT = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
         if (!okT && (!meT || meT.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
         return json(res, 200, terakoya.buildInvites());
+      }
+
+      /* 歩行行動量（GPS打刻から算出）。訪問数と結合して歩行効率も返す。 */
+      if (path === '/api/cyzen/walk' && req.method === 'GET') {
+        const meW = currentUser(req);
+        const okW = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        if (!okW && (!meW || meW.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (!walk.ready()) return json(res, 200, { ready: false, error: 'GPS行動履歴(action-history.csv)がありません' });
+        const vmap = new Map((cyzen.ready() ? (cyzen.roster().rows || []) : [])
+          .filter(r => r.days > 0).map(r => [r.code, { visits: r.visits }]));
+        return json(res, 200, walk.stats({ days: +(url.searchParams.get('days') || 30), visitsByCode: vmap }));
       }
 
       if (path === '/api/cyzen/roster' && req.method === 'GET') {

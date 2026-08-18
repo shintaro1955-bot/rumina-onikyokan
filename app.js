@@ -1103,6 +1103,10 @@ const RANK_DEF = {
   visits: { label: '総訪問数', unit: '件', get: r => r.visits, sub: r => `${r.vpd}件/日 ・ ${r.days}日稼働` },
   vpd: { label: '訪問/日', unit: '件/日', get: r => r.vpd, sub: r => `総${r.visits}件 ・ ${r.days}日稼働` },
   apo: { label: 'アポ数', unit: '件', get: r => r.apo, sub: r => `訪問${r.visits}件 ・ アポ率${r.apoRate}%` },
+  // ここから歩行（GPS打刻から算出。訪問数と違い自動記録なので取りこぼしが少ない）
+  walkKm: { walk: true, label: '歩行距離', unit: 'km', get: r => r.walkKm, sub: r => `1日${r.walkPerDay}km ・ ${r.days}日 ・ 歩行比${r.walkRatio}%` },
+  walkPerDay: { walk: true, label: '歩行/日', unit: 'km/日', get: r => r.walkPerDay, sub: r => `総${r.walkKm}km ・ 車移動${r.rideKm}km` },
+  visitsPerKm: { walk: true, label: '歩行効率', unit: '件/km', get: r => r.visitsPerKm || 0, sub: r => `訪問${r.visits ?? '—'}件 ÷ 歩行${r.walkKm}km` },
 };
 function setRankSort(k) { RANK_SORT = k; loadRanking(); }
 window.setRankSort = setRankSort;
@@ -1125,6 +1129,8 @@ async function loadRanking() {
   }
   const def = RANK_DEF[RANK_SORT];
   const bench = (data.bench || {}).visitsPerDay || 31;
+  // 歩行タブなら別APIのデータで一覧を作る（全員分をそのまま出す）
+  if (def.walk) return renderWalkRanking(wrap, def);
   // 記録が無い人（判定E）は順位に含めない＝「動いていない」ではなく「測れていない」ため
   const rows = (data.rows || []).filter(r => r.days > 0).sort((a, z) => def.get(z) - def.get(a) || z.visits - a.visits);
   if (!rows.length) { wrap.innerHTML = card(`<div class="p-8 text-center text-sm text-neutral-600">期間内に稼働記録のある営業マンがいません。</div>`); return; }
@@ -1188,6 +1194,63 @@ async function loadRanking() {
       <div class="text-[11px] text-neutral-500 mt-3 pt-2 border-t border-[#E3DED2]">
         判定 S=量質とも基準クリア / A=活動量不足 / B=商談化不足 / C=クロージング不足 / D=稼働低下。
         <b>記録なし(E)の${(data.summary.E || 0)}名は順位に含めていません</b>（動いていないのではなく、cyzenに記録が上がっていないため）。
+      </div>`)}`;
+}
+
+/* 歩行ランキング（GPS打刻から算出）。全員分をそのまま並べる。 */
+async function renderWalkRanking(wrap, def) {
+  let w;
+  try { w = await API.cyzenWalk(30); }
+  catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
+  if (!w.ready || !(w.rows || []).length) {
+    wrap.innerHTML = card(`<div class="p-8 text-center text-sm text-neutral-700">GPSの行動履歴が取り込まれていません。
+      <div class="mt-3"><button onclick="nav('cyzen')" class="px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold">cyzenを取り込む</button></div></div>`);
+    return;
+  }
+  const rows = [...w.rows].sort((a, z) => def.get(z) - def.get(a));
+  const max = def.get(rows[0]) || 1;
+  const medal = ['🥇', '🥈', '🥉'];
+  const tabs = Object.entries(RANK_DEF).map(([k, v]) =>
+    `<button onclick="setRankSort('${k}')" class="px-3 py-1 rounded text-[12px] border ${RANK_SORT === k ? 'bg-emerald-600 text-white border-emerald-600 font-bold' : 'bg-white text-neutral-600 border-[#DDD8CC] hover:bg-emerald-50'}">${v.label}</button>`).join(' ');
+
+  const podium = rows.slice(0, 3).map((r, i) => `
+    <div class="text-center px-2 py-3 border border-[#DDD8CC] rounded bg-white">
+      <div class="text-2xl leading-none">${medal[i]}</div>
+      <div class="text-[13px] font-bold text-neutral-900 mt-1 truncate" title="${r.name}">${r.name}</div>
+      <div class="text-xl font-bold text-emerald-700 tabular-nums mt-0.5">${def.get(r)}<span class="text-[10px] text-neutral-500 ml-0.5">${def.unit}</span></div>
+      <div class="text-[10px] text-neutral-500 mt-0.5">${def.sub(r)}</div>
+    </div>`).join('');
+
+  const list = rows.map((r, i) => {
+    const v = def.get(r);
+    const pct = Math.max(2, Math.round(v / max * 100));
+    return `<div class="flex items-center gap-3 py-2 border-b border-dotted border-[#E3DED2] last:border-0">
+      <div class="w-8 text-right text-[12px] tabular-nums ${i < 3 ? 'font-bold text-emerald-700' : 'text-neutral-500'}">${i + 1}</div>
+      <div class="w-32 shrink-0 truncate text-[13px] text-neutral-900" title="${r.name}">${r.name}</div>
+      <div class="flex-1 min-w-0">
+        <div class="h-3 rounded-sm bg-[#EFEDE5] overflow-hidden"><div class="h-full bg-emerald-600/70" style="width:${pct}%"></div></div>
+        <div class="text-[10px] text-neutral-500 mt-0.5 truncate">${def.sub(r)}</div>
+      </div>
+      <div class="w-24 text-right text-[13px] font-bold tabular-nums text-neutral-900">${v}<span class="text-[10px] text-neutral-500 ml-0.5">${def.unit}</span></div>
+    </div>`;
+  }).join('');
+
+  const noVisit = rows.filter(r => r.visits == null).length;
+  wrap.innerHTML = `
+    ${mxBox('集計の前提', `
+      ${mxRow('対象期間', `${w.window.days}日（${w.window.from} 〜 ${w.window.to}）`)}
+      ${mxRow('対象人数', `${w.count} 名（GPS打刻のある全員）`)}
+      ${mxRow('歩行距離の合計', `${w.totalWalkKm.toLocaleString()} km`)}
+      ${mxRow('1日あたりの中央値', `${w.medianWalkPerDay} km`)}
+    `)}
+    ${mxBox('上位3名', `<div class="grid grid-cols-3 gap-2">${podium}</div>`)}
+    ${mxBox(`ランキング（${def.label}順・全${rows.length}名）`, `
+      <div class="flex flex-wrap gap-1.5 mb-3">${tabs}</div>
+      ${list}
+      <div class="text-[11px] text-neutral-500 mt-3 pt-2 border-t border-[#E3DED2]">
+        GPS打刻の隣接点から距離を積み上げ、<b>時速7.2km以下を歩行</b>・それ超を車等の移動として分離。
+        30分以上の空白と20km超の飛び（測位エラー）は除外。
+        ${def.label === '歩行効率' ? `<br><b>注意：</b>訪問数は報告書ベースのため記録漏れがあり、${noVisit}名は訪問数が取得できていません。効率が0に近い人は「歩いたが訪問していない」とは限りません。` : ''}
       </div>`)}`;
 }
 
