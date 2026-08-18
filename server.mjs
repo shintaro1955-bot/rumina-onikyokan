@@ -290,6 +290,7 @@ const server = createServer(async (req, res) => {
         const meAt = currentUser(req);
         const okAt = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
         if (!okAt && (!meAt || meAt.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (url.searchParams.get('probe') === '1') return json(res, 200, await cyzenApi.probe());
         return json(res, 200, { ...cyzenApi.info(), ping: await cyzenApi.ping() });
       }
 
