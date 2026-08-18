@@ -335,6 +335,14 @@ const server = createServer(async (req, res) => {
         return json(res, 200, buildPersonalMessages({ all: url.searchParams.get('all') === '1' }));
       }
 
+      /* アポインター全員への個別案内（氏名＋トップ実績＋寺子屋）。owner または合言葉。 */
+      if (path === '/api/terakoya/appointers' && req.method === 'GET') {
+        const meP = currentUser(req);
+        const okP = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        if (!okP && (!meP || meP.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        return json(res, 200, terakoya.buildAppointerInvites());
+      }
+
       /* 寺子屋の開催案内（全体向け・成績に触れない一般告知）。owner または合言葉。 */
       if (path === '/api/terakoya/announcement' && req.method === 'GET') {
         const meA = currentUser(req);
