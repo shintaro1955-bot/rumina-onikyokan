@@ -8,3 +8,6 @@ uploads/*
 .DS_Store
 data/
 cyzen-data/
+
+# 寺子屋の対象者リスト（個人データ。永続領域にのみ置く）
+data/terakoya-targets.csv

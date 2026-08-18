@@ -25,6 +25,7 @@ import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
 import { buildPersonalMessages } from './lib/coachdm.mjs';
 import * as terakoya from './lib/terakoya.mjs';
+import { DATA_DIR as DATA_DIR_PATH } from './lib/store.mjs';
 
 /* 文字起こしエンジン：DEEPGRAM_API_KEY があれば話者分離つきのDeepgramを既定に。
    TRANSCRIBE_PROVIDER=whisper|deepgram で明示指定もできる。 */
@@ -332,6 +333,20 @@ const server = createServer(async (req, res) => {
         if (!okS && (!meC || meC.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
         if (!cyzen.ready()) return json(res, 200, { ok: false, error: 'cyzenのデータが未取込です' });
         return json(res, 200, buildPersonalMessages({ all: url.searchParams.get('all') === '1' }));
+      }
+
+      /* 寺子屋 対象者リストのアップロード（owner専用）。
+         個人データのためリポジトリには置かず、永続領域(DATA_DIR)に保存する。 */
+      if (path === '/api/terakoya/upload' && req.method === 'POST') {
+        const meU = currentUser(req);
+        if (!meU || meU.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const chunks = [];
+        for await (const c of req) chunks.push(c);
+        const buf = Buffer.concat(chunks);
+        if (!buf.length) return json(res, 400, { error: 'ファイルが空です' });
+        await mkdir(DATA_DIR_PATH, { recursive: true });
+        await writeFile(join(DATA_DIR_PATH, 'terakoya-targets.csv'), buf);
+        return json(res, 200, { ok: true, bytes: buf.length, ...terakoya.buildInvites() });
       }
 
       /* FF寺子屋の対象者への案内文（owner または合言葉）。生成のみ・自動送信はしない。 */
