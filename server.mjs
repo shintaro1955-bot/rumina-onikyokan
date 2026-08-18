@@ -335,6 +335,14 @@ const server = createServer(async (req, res) => {
         return json(res, 200, buildPersonalMessages({ all: url.searchParams.get('all') === '1' }));
       }
 
+      /* 寺子屋の開催案内（全体向け・成績に触れない一般告知）。owner または合言葉。 */
+      if (path === '/api/terakoya/announcement' && req.method === 'GET') {
+        const meA = currentUser(req);
+        const okA = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        if (!okA && (!meA || meA.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        return json(res, 200, terakoya.buildAnnouncement());
+      }
+
       /* 寺子屋 対象者リストのアップロード（owner専用）。
          個人データのためリポジトリには置かず、永続領域(DATA_DIR)に保存する。 */
       if (path === '/api/terakoya/upload' && req.method === 'POST') {
