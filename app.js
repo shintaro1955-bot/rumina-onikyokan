@@ -1162,7 +1162,13 @@ async function loadRanking() {
   }).join('');
 
   const totalVisits = rows.reduce((n, r) => n + r.visits, 0);
-  const avgVpd = (rows.reduce((n, r) => n + r.vpd, 0) / rows.length).toFixed(1);
+  // 配信(digest)と物差しを揃える：母数は訪問実績のある人、代表値は中央値。
+  // クローザーや訪問0件を混ぜた平均は基準が下振れするため使わない。
+  const visiting = rows.filter(r => r.visits > 0);
+  const med = (xs => { if (!xs.length) return 0; const a = [...xs].sort((p, q) => p - q), m = a.length >> 1;
+    return +(a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2).toFixed(1); })(visiting.map(r => r.vpd));
+  const threshold = +(med * 0.7).toFixed(1);
+  const belowCnt = visiting.filter(r => r.vpd < threshold).length;
   const overCnt = rows.filter(r => r.vpd >= bench).length;
 
   wrap.innerHTML = `
@@ -1171,7 +1177,8 @@ async function loadRanking() {
       ${mxRow('ランキング対象', `${rows.length} 名（稼働記録のある人のみ）`)}
       ${mxRow('記録なしで除外', `${(data.summary.E || 0)} 名`, (data.summary.E || 0) > 0 ? 'neg' : '')}
       ${mxRow('総訪問数', `${totalVisits.toLocaleString()} 件`)}
-      ${mxRow('平均訪問/日', `${avgVpd} 件`)}
+      ${mxRow('中央値（訪問実績のある人）', `${med} 件/日 ・ ${visiting.length}名`)}
+      ${mxRow('指導の目安（中央値の70%）', `${threshold} 件/日 未満 ・ ${belowCnt}名`, belowCnt ? 'neg' : 'pos')}
       ${mxRow(`あるべき水準(${bench}件/日)の到達`, `${overCnt} / ${rows.length} 名`, overCnt === 0 ? 'neg' : 'pos')}
     `)}
     ${mxBox('上位3名', `<div class="grid grid-cols-3 gap-2">${podium}</div>`)}
