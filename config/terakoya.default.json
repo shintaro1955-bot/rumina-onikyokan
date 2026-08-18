@@ -1,0 +1,20 @@
+{
+  "name": "FF寺子屋",
+  "description": "営業活動の一助となる社内勉強会。隔週水曜 21:00〜22:00 開催。",
+  "howToJoin": "オンライン（Google Meet）https://meet.google.com/odp-egev-shg",
+  "note": "詳細や今後の講義予定は追って発表されます。",
+  "cadence": "隔週水曜 21:00〜22:00",
+  "sessions": [
+    {
+      "date": "2026-08-19",
+      "time": "21:00〜22:00",
+      "place": "オンライン（Google Meet）",
+      "theme": "アポイント獲得を継続するための8つのポイント",
+      "teacher": "山口裕馬さん",
+      "url": "https://meet.google.com/odp-egev-shg"
+    },
+    { "date": "2026-09-02", "time": "21:00〜22:00", "place": "オンライン（Google Meet）", "url": "https://meet.google.com/odp-egev-shg" },
+    { "date": "2026-09-16", "time": "21:00〜22:00", "place": "オンライン（Google Meet）", "url": "https://meet.google.com/odp-egev-shg" },
+    { "date": "2026-09-30", "time": "21:00〜22:00", "place": "オンライン（Google Meet）", "url": "https://meet.google.com/odp-egev-shg" }
+  ]
+}
