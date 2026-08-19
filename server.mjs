@@ -169,6 +169,8 @@ function userFromRk(rk) {
     db.users[uname] = user; save();
   } else if (user.pending) { user.pending = false; save(); }   // ポータル経由なら承認待ちを解除
   if (rk.corp && user.corp !== rk.corp) { user.corp = rk.corp; save(); }   // 所属会社をポータル値で更新
+  // cyzen行動量を出せるよう、repId(=cyzenコード)を氏名から補完する
+  if (!user.repId) { const code = cyzen.codeByName(user.name); if (code) { user.repId = code; save(); } }
   return user;
 }
 
@@ -437,6 +439,15 @@ const server = createServer(async (req, res) => {
             const j = await r.json().catch(() => ({}));
             if (j && j.found) { out.linked = true; out.name = j.name || out.name; out.corp = j.corp || out.corp; out.kpi = j.kpi || null; }
           } catch (e) { /* ポータル未到達でもマイページは壊さない */ }
+        }
+        // cyzen行動量（本人）：repId(=cyzenコード)、無ければ氏名から解決して集計を返す
+        if (cyzen.ready() && dbu) {
+          const code = dbu.repId || cyzen.codeByName(out.name || dbu.name);
+          if (code) {
+            if (!dbu.repId) { dbu.repId = code; save(); }
+            const cz = cyzen.personSummary(code);
+            if (cz && !cz.empty) out.cyzen = cz;
+          }
         }
         return json(res, 200, out);
       }

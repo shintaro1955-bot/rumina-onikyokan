@@ -1754,13 +1754,29 @@ async function loadPortalProfile() {
       ${k.area ? `<span class="text-[12px] rounded-full px-2.5 py-1 bg-neutral-100 text-neutral-600">${k.area}</span>` : ''}
       ${k.round ? `<span class="text-[12px] text-neutral-500">${k.round}</span>` : ''}
     </div>` : (p.linked ? '<div class="text-[12px] text-neutral-500 mt-2">今期の実績はまだ集計されていません。</div>' : '');
-  box.innerHTML = card(`<div class="p-4 flex items-center gap-4 flex-wrap">
-    <div class="flex-1 min-w-[200px]">
-      <div class="text-[11px] text-emerald-700 font-semibold">ポータル連携${p.linked ? '・本人確認済み' : ''}</div>
-      <div class="text-base font-semibold text-neutral-900 mt-0.5">${p.name || ''}${p.corp ? ` <span class="text-[13px] text-neutral-500 font-normal">/ ${p.corp}</span>` : ''}</div>
-      ${kpiHtml}
+  const cz = p.cyzen || null;
+  const unfiled = cz && cz.days > 0 && cz.visits === 0;
+  const czHtml = cz ? `<div class="mt-3 pt-3 border-t border-[#E8EFEA]">
+      <div class="text-[11px] text-neutral-500 mb-1">cyzen 行動量（直近${cz.periodDays}日）</div>
+      <div class="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-neutral-800">
+        <span>稼働 <b class="tabular-nums text-emerald-700">${cz.days}</b>日<span class="text-neutral-400">（GPS）</span></span>
+        <span>訪問 <b class="tabular-nums">${cz.visits}</b>件<span class="text-neutral-400"> / ${cz.visitsPerDay}件·日</span></span>
+        <span>アポ <b class="tabular-nums">${cz.apo}</b>件<span class="text-neutral-400"> / ${cz.apoRate}%</span></span>
+        ${cz.seiyaku ? `<span>成約 <b class="tabular-nums">${cz.seiyaku}</b>件</span>` : ''}
+        ${cz.lastDate ? `<span class="text-neutral-400">最終稼働 ${cz.lastDate}</span>` : ''}
+      </div>
+      ${unfiled ? `<div class="text-[11px] text-amber-600 mt-1.5">GPSでは${cz.days}日動けていますが、cyzenに訪問件数が未入力です。入力すると数字が正しく残ります。</div>` : ''}
+    </div>` : '';
+  box.innerHTML = card(`<div class="p-4">
+    <div class="flex items-center gap-4 flex-wrap">
+      <div class="flex-1 min-w-[200px]">
+        <div class="text-[11px] text-emerald-700 font-semibold">ポータル連携${p.linked ? '・本人確認済み' : ''}</div>
+        <div class="text-base font-semibold text-neutral-900 mt-0.5">${p.name || ''}${p.corp ? ` <span class="text-[13px] text-neutral-500 font-normal">/ ${p.corp}</span>` : ''}</div>
+        ${kpiHtml}
+      </div>
+      ${p.portalUrl ? `<a href="${p.portalUrl}" target="_blank" rel="noopener" class="px-4 py-2 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100 transition">ポータルへ戻る</a>` : ''}
     </div>
-    ${p.portalUrl ? `<a href="${p.portalUrl}" target="_blank" rel="noopener" class="px-4 py-2 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100 transition">ポータルへ戻る</a>` : ''}
+    ${czHtml}
   </div>`);
 }
 
