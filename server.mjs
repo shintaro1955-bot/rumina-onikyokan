@@ -298,10 +298,10 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { ...cyzenApi.info(), ping: await cyzenApi.ping() });
       }
 
-      // cyzen連携の状態（owner専用）
+      // cyzen連携の状態（ログインで閲覧可）
       if (path === '/api/cyzen/status' && req.method === 'GET') {
         const me = currentUser(req);
-        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        if (!me) return json(res, 401, { error: 'ログインが必要です' });
         return json(res, 200, cyzen.status());
       }
 
@@ -392,17 +392,24 @@ const server = createServer(async (req, res) => {
       if (path === '/api/cyzen/walk' && req.method === 'GET') {
         const meW = currentUser(req);
         const okW = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
-        if (!okW && (!meW || meW.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (!okW && !meW) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
         if (!walk.ready()) return json(res, 200, { ready: false, error: 'GPS行動履歴(action-history.csv)がありません' });
         const vmap = new Map((cyzen.ready() ? (cyzen.roster().rows || []) : [])
           .filter(r => r.days > 0).map(r => [r.code, { visits: r.visits }]));
         return json(res, 200, walk.stats({ days: +(url.searchParams.get('days') || 30), visitsByCode: vmap }));
       }
 
+      // 全営業KPI / 行動量ランキングの元データ（ログインで閲覧可）。
+      // 一般社員には順位・行動量は見せるが、個人の弱点判定(seg/why/成約率)は伏せる。
       if (path === '/api/cyzen/roster' && req.method === 'GET') {
         const me = currentUser(req);
-        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
-        return json(res, 200, cyzen.roster());
+        if (!me) return json(res, 401, { error: 'ログインが必要です' });
+        const data = cyzen.roster();
+        if (me.role !== 'owner' && Array.isArray(data.rows)) {
+          data.rows = data.rows.map(({ seg, why, closeRate, seiyaku, haisen, ...rest }) => rest);
+          if (data.summary) data.summary = { periodDays: data.summary.periodDays, total: data.summary.total, evaluable: data.summary.evaluable };
+        }
+        return json(res, 200, data);
       }
 
       // 入力コンプライアンス：GPSで動いているのに勤務終了報告を出していない人（owner専用）

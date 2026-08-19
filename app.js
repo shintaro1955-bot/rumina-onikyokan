@@ -1163,7 +1163,7 @@ async function loadRanking() {
         <div class="text-[10px] text-neutral-500 mt-0.5 truncate">${def.sub(r)}</div>
       </div>
       <div class="w-20 text-right text-[13px] font-bold tabular-nums text-neutral-900">${v}<span class="text-[10px] text-neutral-500 ml-0.5">${def.unit}</span></div>
-      <div class="w-8 text-center"><span class="text-[10px] px-1.5 py-0.5 rounded ${segColor[r.seg] || ''}">${r.seg}</span></div>
+      <div class="w-8 text-center">${r.seg ? `<span class="text-[10px] px-1.5 py-0.5 rounded ${segColor[r.seg] || ''}">${r.seg}</span>` : ''}</div>
     </div>`;
   }).join('');
 
