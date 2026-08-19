@@ -99,6 +99,8 @@ window.API = (function () {
   async function cyzenWalk(days) { const r = await fetch('/api/cyzen/walk?days=' + (days || 30)); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '歩行データの取得に失敗しました'); return j; }
   async function cyzenRoster() { const r = await fetch('/api/cyzen/roster'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '名簿の取得に失敗しました'); return j; }
   async function cyzenCompliance() { const r = await fetch('/api/cyzen/compliance'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '入力状況の取得に失敗しました'); return j; }
+  async function cyzenReminders() { const r = await fetch('/api/cyzen/reminders'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'リマインド情報の取得に失敗しました'); return j; }
+  async function cyzenReminderRun(live) { const r = await fetch('/api/cyzen/reminders/run' + (live ? '?live=1' : ''), { method: 'POST' }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '実行に失敗しました'); return j; }
   async function cyzenUpload(file, kind) {
     const r = await fetch('/api/cyzen/upload?kind=' + encodeURIComponent(kind), {
       method: 'POST', headers: { 'x-file-name': encodeURIComponent(file.name) }, body: file,
@@ -110,5 +112,5 @@ window.API = (function () {
   async function getLineUsers() { const r = await fetch('/api/admin/line-users'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'LINEユーザー一覧の取得に失敗しました'); return j.users || []; }
   async function linkRep(username, repId) { const r = await fetch('/api/admin/link-rep', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, repId }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '紐付けに失敗しました'); return j; }
 
-  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenWalk, cyzenUpload, portalProfile };
+  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenReminders, cyzenReminderRun, cyzenWalk, cyzenUpload, portalProfile };
 })();

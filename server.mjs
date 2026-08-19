@@ -19,6 +19,7 @@ import { getDb, save, saveReport, getReport, deleteReport, UPLOAD_DIR } from './
 import * as cyzen from './lib/cyzen.mjs';
 import * as cyzenApi from './lib/cyzen-api.mjs';
 import * as walk from './lib/walk.mjs';
+import * as reminders from './lib/reminders.mjs';
 import { hashPassword, verifyPassword, signSession, verifySession, randomPassword } from './lib/auth.mjs';
 import { generateCritique, critiqueReady } from './lib/critique.mjs';
 import * as deepgram from './lib/deepgram.mjs';
@@ -407,6 +408,20 @@ const server = createServer(async (req, res) => {
         const me = currentUser(req);
         if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
         return json(res, 200, cyzen.compliance());
+      }
+
+      // 入力リマインド：対象・到達可否・設定・いま送る分のプレビュー（owner専用）
+      if (path === '/api/cyzen/reminders' && req.method === 'GET') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        return json(res, 200, { config: reminders.config(), ...reminders.due() });
+      }
+      // 今すぐ1回実行（既定ドライラン。?live=1 かつ有効設定なら実送信）（owner専用）
+      if (path === '/api/cyzen/reminders/run' && req.method === 'POST') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const live = url.searchParams.get('live') === '1';
+        return json(res, 200, await reminders.runOnce({ live }));
       }
 
       /* ---------- 認証 ---------- */
@@ -870,4 +885,6 @@ async function runPipeline(s) {
 server.listen(PORT, () => {
   console.log(`Rumina 鬼教官 (Phase 1) → http://localhost:${PORT}`);
   console.log(API_KEY ? '✓ Whisper 接続可（OPENAI_API_KEY 検出）' : '⚠ OPENAI_API_KEY 未設定 → モックUIのみ動作');
+  // cyzenデータがある時だけ入力リマインドのスケジューラを起動（実送信はenv+トークンで有効化）
+  if (cyzen.ready()) reminders.startScheduler();
 });

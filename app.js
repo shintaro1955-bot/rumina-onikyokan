@@ -1265,8 +1265,42 @@ function viewCyzen() {
 function viewCompliance() {
   return `
   ${h1('入力チェック（cyzen未入力の名指し）', 'GPSで動いているのに勤務終了報告を出していない人を抽出。動いた証拠(GPS)があるのでフェアに指摘できる。Ruminaから本人へ送る文面つき。')}
+  <div id="remindWrap" class="mb-4"></div>
   <div id="compWrap" class="text-sm text-neutral-500">読み込み中…</div>`;
 }
+async function loadReminders() {
+  const box = document.getElementById('remindWrap'); if (!box) return;
+  let d; try { d = await API.cyzenReminders(); } catch { box.innerHTML = ''; return; }
+  const c = d.config || {};
+  const status = c.canSend ? '<span class="text-emerald-600 font-semibold">実送信 ON</span>'
+    : c.enabled ? '<span class="text-amber-600 font-semibold">ドライラン（トークン未設定）</span>'
+    : '<span class="text-neutral-500 font-semibold">停止中（ドライラン）</span>';
+  const reach = (d.reachable || []).length, unreach = (d.unreachable || []).length, dueN = (d.due || []).length;
+  box.innerHTML = card(`<div class="p-4">
+    <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
+      <div class="text-sm font-semibold text-neutral-700">自動リマインド（${c.intervalHours}時間ごと・フレンドリー名指し）</div>
+      <div class="text-[12px]">状態：${status}</div>
+    </div>
+    <div class="text-[13px] text-neutral-700 leading-relaxed">
+      未入力のうち <b class="text-emerald-700">LINE連携済み ${reach}名</b> に、${c.quietStart}〜${c.quietEnd}時の間・最大${c.dailyCap}回/日でやさしく催促します（今すぐ送る分：${dueN}名）。
+      <span class="text-rose-600">未連携 ${unreach}名</span>はLINEに繋がっていないため届きません（まず本人のLINEログインが必要）。
+    </div>
+    <div class="mt-3 flex items-center gap-2 flex-wrap">
+      <button onclick="runReminders()" class="px-3.5 py-1.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-[13px] font-semibold transition">今すぐ試験実行（ドライラン）</button>
+      <span id="remindRunMsg" class="text-[12px] text-neutral-500"></span>
+    </div>
+    <div class="text-[11px] text-neutral-400 mt-2">実送信は「LINE Messagingトークン設定＋REMINDER_ENABLED=on」で有効化。ドライランは送らず記録だけ残します。文面プレビューは下の表と同じRuminaのやさしい口調です。</div>
+  </div>`);
+}
+async function runReminders() {
+  const msg = document.getElementById('remindRunMsg');
+  if (msg) { msg.textContent = '実行中…'; msg.className = 'text-[12px] text-neutral-500'; }
+  try {
+    const r = await API.cyzenReminderRun(false);
+    if (msg) { msg.textContent = `${r.mode}：対象${r.dueCount}名を処理（送信記録${r.sent.length}件）。${r.reason === 'quiet-hours' ? '※現在クワイエット時間のため0件' : ''}`; msg.className = 'text-[12px] text-emerald-600'; }
+  } catch (e) { if (msg) { msg.textContent = e.message; msg.className = 'text-[12px] text-rose-600'; } }
+}
+window.runReminders = runReminders;
 async function loadCompliance() {
   const wrap = document.getElementById('compWrap'); if (!wrap) return;
   let data;
@@ -1434,7 +1468,7 @@ async function saveLink(username) {
 window.saveLink = saveLink;
 
 const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay };
-function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); if (v === 'compliance') loadCompliance(); if (v === 'ranking') loadRanking(); if (v === 'my') loadPortalProfile(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); if (v === 'compliance') { loadCompliance(); loadReminders(); } if (v === 'ranking') loadRanking(); if (v === 'my') loadPortalProfile(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function render() {
   app.innerHTML = VIEWS[currentView]();
   document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('nav-active', el.dataset.nav === currentView));
