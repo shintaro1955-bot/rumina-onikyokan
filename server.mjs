@@ -292,7 +292,7 @@ const server = createServer(async (req, res) => {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
       if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready(), ssoReady: !!SSO_SECRET,
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
-        cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note, diag: lastIngest.diag || null } : null,
+        cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
         // ポータルと同じ共有秘密かを、値を出さずに突き合わせるための指紋（固定文字列のHMAC先頭12桁）
         ssoFingerprint: SSO_SECRET ? createHmac('sha256', SSO_SECRET).update('rumina-sso-fingerprint-v1').digest('hex').slice(0, 12) : null });
@@ -307,11 +307,13 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { ...cyzenApi.info(), ping: await cyzenApi.ping() });
       }
 
-      // cyzen連携の状態（ログインで閲覧可）
+      // cyzen連携の状態（ログインで閲覧可）。取り込み診断はowner専用で付ける。
       if (path === '/api/cyzen/status' && req.method === 'GET') {
         const me = currentUser(req);
         if (!me) return json(res, 401, { error: 'ログインが必要です' });
-        return json(res, 200, cyzen.status());
+        const st = cyzen.status();
+        if (me.role === 'owner') st.lastIngest = lastIngest.at ? lastIngest : null;
+        return json(res, 200, st);
       }
 
       // cyzen CSVアップロード（owner専用）：kind=user|history|report
