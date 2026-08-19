@@ -414,7 +414,7 @@ const server = createServer(async (req, res) => {
       if (path === '/api/cyzen/reminders' && req.method === 'GET') {
         const me = currentUser(req);
         if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
-        return json(res, 200, { config: reminders.config(), ...reminders.due() });
+        return json(res, 200, { config: reminders.config(), ...(await reminders.due()) });
       }
       // 今すぐ1回実行（既定ドライラン。?live=1 かつ有効設定なら実送信）（owner専用）
       if (path === '/api/cyzen/reminders/run' && req.method === 'POST') {
