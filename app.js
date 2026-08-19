@@ -1467,8 +1467,82 @@ async function saveLink(username) {
 }
 window.saveLink = saveLink;
 
+
+/* ===== 寺子屋（Zoom研修）とその日の学び（日記）=====
+ * 研修は必ず鬼教官を通す運用にするため、ZoomのURLは「参加する」を押した人にだけ返す。
+ * 参加するとマイページに履歴が残り、その日の学びを書いてもらう。
+ * 翌日、マイページの先頭に「昨日の学び」を出して忘れないようにする。 */
+// 小さなfetchヘルパー（api.jsは用途別メソッド方式なので、ここでは素のfetchを使う）
+async function tkFetch(url, opt) {
+  const r = await fetch(url, Object.assign({ headers: { 'Content-Type': 'application/json' } }, opt || {}));
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || '通信に失敗しました');
+  return j;
+}
+window.__terakoya = null; window.__diary = null;
+async function loadTerakoya() {
+  try { window.__terakoya = await tkFetch('/api/terakoya/session'); } catch (e) { window.__terakoya = null; }
+  try { window.__diary = await tkFetch('/api/diary'); } catch (e) { window.__diary = null; }
+  const el = document.getElementById('terakoyaCard'); if (el) el.innerHTML = terakoyaCard();
+  const dl = document.getElementById('diaryCard'); if (dl) dl.innerHTML = diaryCard();
+}
+function terakoyaCard() {
+  const t = window.__terakoya; if (!t || !t.session) return '';
+  const s = t.session;
+  const body = `
+    ${mxRow('テーマ', esc(s.theme || '—'))}
+    ${mxRow('日時', esc(s.startAt || '—'))}
+    <div class="p-3">
+      ${t.joined
+        ? '<div class="text-[12px] text-neutral-600 mb-2">参加を記録しました。</div>'
+        : '<div class="text-[12px] text-neutral-600 mb-2">下のボタンから参加してください。ここからだけ入れます。</div>'}
+      <button onclick="joinTerakoya()" class="px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[13px] font-semibold">
+        ${t.joined ? 'もう一度ひらく' : '寺子屋に参加する'}</button>
+      <span id="tkMsg" class="ml-2 text-[11px] text-neutral-500"></span>
+    </div>`;
+  return mxBox('寺子屋', body);
+}
+async function joinTerakoya() {
+  const m = document.getElementById('tkMsg');
+  try {
+    const r = await tkFetch('/api/terakoya/join', { method: 'POST', body: '{}' });
+    if (m) m.textContent = '参加を記録しました。';
+    window.open(r.zoomUrl, '_blank', 'noopener');
+    loadTerakoya();
+  } catch (e) { if (m) m.textContent = e.message || '開けませんでした'; }
+}
+window.joinTerakoya = joinTerakoya;
+
+function diaryCard() {
+  const d = window.__diary; if (!d) return '';
+  const y = d.yesterday;
+  const head = y ? `<div class="p-3 border-b border-dashed" style="border-color:#E3DED2">
+      <div class="text-[11px] text-neutral-500 mb-1">昨日の学び（${esc(y.day)}）</div>
+      <div class="text-[13px] text-neutral-800 whitespace-pre-wrap">${esc(y.body)}</div>
+    </div>` : '';
+  const cur = d.mine ? d.mine.body : '';
+  const body = `${head}
+    <div class="p-3">
+      <div class="text-[11px] text-neutral-500 mb-1">今日の学び（${esc(d.today)}）</div>
+      <textarea id="diaryBody" rows="4" class="w-full text-[13px] p-2 border rounded"
+        style="border-color:#DDD8CC" placeholder="今日わかったこと・明日ためすことを一言で。">${esc(cur)}</textarea>
+      <div class="mt-2">
+        <button onclick="saveDiary()" class="px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white text-[13px] font-semibold">書きとめる</button>
+        <span id="diaryMsg" class="ml-2 text-[11px] text-neutral-500"></span>
+      </div>
+    </div>`;
+  return mxBox('今日の学び', body);
+}
+async function saveDiary() {
+  const ta = document.getElementById('diaryBody'); const m = document.getElementById('diaryMsg');
+  if (!ta || !ta.value.trim()) { if (m) m.textContent = '内容を入力してください'; return; }
+  try { await tkFetch('/api/diary', { method: 'POST', body: JSON.stringify({ body: ta.value }) }); if (m) m.textContent = '書きとめました。'; loadTerakoya(); }
+  catch (e) { if (m) m.textContent = e.message || '保存できませんでした'; }
+}
+window.saveDiary = saveDiary;
+
 const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay };
-function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); if (v === 'compliance') { loadCompliance(); loadReminders(); } if (v === 'ranking') loadRanking(); if (v === 'my') loadPortalProfile(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); if (v === 'compliance') { loadCompliance(); loadReminders(); } if (v === 'ranking') loadRanking(); if (v === 'my') { loadPortalProfile(); loadTerakoya(); } window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function render() {
   app.innerHTML = VIEWS[currentView]();
   document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('nav-active', el.dataset.nav === currentView));
@@ -1786,6 +1860,8 @@ function viewMy() {
   if (!sub || !sub.analysis) {
     return `${h1('マイページ', `${u.name} さん`)}
       <div id="portalCard" class="mb-4"></div>
+      <div id="terakoyaCard" class="mb-4"></div>
+      <div id="diaryCard" class="mb-4"></div>
       ${card(`<div class="p-8 text-center"><div class="text-sm text-neutral-700 mb-3">まだ今日の録音がありません。</div>
         <button onclick="nav('upload')" class="px-5 py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">稼働終了・録音を出稿する</button></div>`)}`;
   }
@@ -1793,6 +1869,8 @@ function viewMy() {
   return `
   ${mxProfile(`${u.name} さん`, `直近の稼働 ${(sub.at || '').slice(0, 10)} ・ ${a.workdayIndex}/${a.workdayCount}勤務目`, a.coachScore, { label: '目標設定', nav: 'goal' })}
   <div id="portalCard"></div>
+  <div id="terakoyaCard" class="mb-4"></div>
+  <div id="diaryCard" class="mb-4"></div>
   <div class="mx-2col">
     <div class="min-w-0">
       ${mxBox('本日のサマリー', `

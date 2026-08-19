@@ -15,7 +15,7 @@ import { toChunks, probeDuration } from './lib/audio.mjs';
 import { analyze, computeModelProfile, DOMAIN_PROMPT } from './lib/pipeline.mjs';
 import { parsePlaud } from './lib/import-plaud.mjs';
 import { fetchAppointments } from './lib/crm.mjs';
-import { getDb, save, saveReport, getReport, deleteReport, UPLOAD_DIR } from './lib/store.mjs';
+import { getDb, save, saveReport, getReport, deleteReport, UPLOAD_DIR, getTerakoya, setTerakoyaSession, markAttendance, listAttendance, saveDiary, getDiary, listDiaries } from './lib/store.mjs';
 import * as cyzen from './lib/cyzen.mjs';
 import * as cyzenApi from './lib/cyzen-api.mjs';
 import * as walk from './lib/walk.mjs';
@@ -104,6 +104,13 @@ function setSessionCookie(req, res, token) {
   res.setHeader('Set-Cookie', `${COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/;${secure} Max-Age=${7 * 86400}`);
 }
 function clearSessionCookie(res) { res.setHeader('Set-Cookie', `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`); }
+/** リクエストのJSON本文を読む（既存の読み方に合わせた小さなヘルパー） */
+async function readJson(req) {
+  const chunks = [];
+  for await (const c of req) chunks.push(c);
+  if (!chunks.length) return null;
+  try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch (e) { return null; }
+}
 function currentUser(req) {
   const s = verifySession(parseCookies(req)[COOKIE]);
   if (!s) return null;
@@ -396,6 +403,57 @@ const server = createServer(async (req, res) => {
         const okT = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
         if (!okT && (!meT || meT.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
         return json(res, 200, terakoya.buildInvites());
+      }
+
+      /* ===== 寺子屋（Zoom研修）=====
+         研修は必ず鬼教官を通す運用。ZoomのURLはここでしか見られない。 */
+      if (path === '/api/terakoya/session' && req.method === 'GET') {
+        const meS = currentUser(req);
+        if (!meS) return json(res, 401, { error: 'ログインが必要です' });
+        const t = getTerakoya();
+        const day = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+        const joined = t.attendance.some((a) => a.user === meS.name && t.session && a.sessionId === t.session.id);
+        return json(res, 200, { session: t.session, joined, today: day, diary: getDiary(meS.name, day) });
+      }
+      if (path === '/api/terakoya/session' && req.method === 'PUT') {
+        const meS = currentUser(req);
+        if (!meS || meS.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const body = await readJson(req);
+        return json(res, 200, { ok: true, session: setTerakoyaSession(body || {}) });
+      }
+      /* 参加ボタン（＝出欠）。押した人だけにZoomのURLを返す。 */
+      if (path === '/api/terakoya/join' && req.method === 'POST') {
+        const meJ = currentUser(req);
+        if (!meJ) return json(res, 401, { error: 'ログインが必要です' });
+        const t = getTerakoya();
+        if (!t.session || !t.session.zoomUrl) return json(res, 404, { error: 'いま予定されている寺子屋はありません' });
+        markAttendance(meJ.name, t.session.id);
+        return json(res, 200, { ok: true, zoomUrl: t.session.zoomUrl, session: t.session });
+      }
+      /* 出欠一覧（owner） */
+      if (path === '/api/terakoya/attendance' && req.method === 'GET') {
+        const meA2 = currentUser(req);
+        if (!meA2 || meA2.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const t = getTerakoya();
+        return json(res, 200, { session: t.session, attendance: listAttendance(t.session && t.session.id) });
+      }
+      /* その日の学び（日記）。本人のみ。翌日マイページの先頭に出す。 */
+      if (path === '/api/diary' && req.method === 'GET') {
+        const meD = currentUser(req);
+        if (!meD) return json(res, 401, { error: 'ログインが必要です' });
+        const now = new Date(Date.now() + 9 * 3600 * 1000);
+        const day = now.toISOString().slice(0, 10);
+        const yday = new Date(now.getTime() - 86400000).toISOString().slice(0, 10);
+        return json(res, 200, { today: day, mine: getDiary(meD.name, day), yesterday: getDiary(meD.name, yday), recent: listDiaries(meD.name, 7) });
+      }
+      if (path === '/api/diary' && req.method === 'POST') {
+        const meD = currentUser(req);
+        if (!meD) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readJson(req);
+        const day = String((b && b.day) || new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10));
+        if (!b || !String(b.body || '').trim()) return json(res, 400, { error: '内容を入力してください' });
+        const t = getTerakoya();
+        return json(res, 200, { ok: true, diary: saveDiary(meD.name, day, b.body, t.session && t.session.id) });
       }
 
       /* 歩行行動量（GPS打刻から算出）。訪問数と結合して歩行効率も返す。 */
