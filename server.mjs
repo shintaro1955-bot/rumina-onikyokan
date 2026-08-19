@@ -20,6 +20,7 @@ import * as cyzen from './lib/cyzen.mjs';
 import * as cyzenApi from './lib/cyzen-api.mjs';
 import * as walk from './lib/walk.mjs';
 import * as reminders from './lib/reminders.mjs';
+import * as cyzenIngest from './lib/cyzen-ingest.mjs';
 import { hashPassword, verifyPassword, signSession, verifySession, randomPassword } from './lib/auth.mjs';
 import { generateCritique, critiqueReady } from './lib/critique.mjs';
 import * as deepgram from './lib/deepgram.mjs';
@@ -284,6 +285,7 @@ const server = createServer(async (req, res) => {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
       if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready(), ssoReady: !!SSO_SECRET,
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
+        cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
         // ポータルと同じ共有秘密かを、値を出さずに突き合わせるための指紋（固定文字列のHMAC先頭12桁）
         ssoFingerprint: SSO_SECRET ? createHmac('sha256', SSO_SECRET).update('rumina-sso-fingerprint-v1').digest('hex').slice(0, 12) : null });
@@ -326,6 +328,14 @@ const server = createServer(async (req, res) => {
         const me = currentUser(req);
         if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
         return json(res, 200, cyzen.reload());
+      }
+
+      // cyzen APIから今すぐ取り込み（owner専用・手動確認用）。安全弁つき。
+      if (path === '/api/cyzen/ingest' && req.method === 'POST') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const r = await runLiveIngest();
+        return json(res, 200, r);
       }
 
       // 全営業KPI一覧＋教育セグメント（owner専用）
@@ -900,9 +910,36 @@ async function runPipeline(s) {
   notifyCoach(s.interventionId, analysis); // fire-and-forget（Coach連携時のみ・未設定なら何もしない）
 }
 
+/* ライブ取り込み1回分。安全弁：担当者50名未満なら（＝空/失敗）適用せず既存維持。 */
+let lastIngest = { at: null, ok: null, note: 'not-run' };
+async function runLiveIngest() {
+  if (!cyzenApi.ready()) { lastIngest = { at: new Date().toISOString(), ok: false, note: 'api未設定' }; return lastIngest; }
+  try {
+    const r = await cyzenIngest.ingestReports({ days: 31 });
+    if (!r.ok) { lastIngest = { at: new Date().toISOString(), ok: false, note: r.error }; return { ...lastIngest }; }
+    // 安全弁：担当者50名未満（空）か、稼働レコード20件未満（＝報告書のマッピング失敗の疑い）なら適用しない
+    if (r.users.size < 50 || r.day.size < 20) { lastIngest = { at: new Date().toISOString(), ok: false, note: `適用せず（担当者${r.users.size}名 / 稼働${r.day.size}レコード＝空 or マッピング要確認）。同梱データ維持`, diag: r.diag }; return { ...lastIngest }; }
+    cyzen.applyLive(r.users, r.day, r.meta);
+    lastIngest = { at: new Date().toISOString(), ok: true, note: `適用：担当者${r.users.size}名 / 報告${r.diag.reports}件 / 稼働${r.day.size}レコード`, diag: r.diag };
+    console.log(`✓ cyzenライブ取り込み：${lastIngest.note}`);
+    return { ...lastIngest };
+  } catch (e) {
+    lastIngest = { at: new Date().toISOString(), ok: false, note: 'エラー: ' + e.message };
+    console.error('[cyzen ingest]', e.message);
+    return { ...lastIngest };
+  }
+}
+
 server.listen(PORT, () => {
   console.log(`Rumina 鬼教官 (Phase 1) → http://localhost:${PORT}`);
   console.log(API_KEY ? '✓ Whisper 接続可（OPENAI_API_KEY 検出）' : '⚠ OPENAI_API_KEY 未設定 → モックUIのみ動作');
   // cyzenデータがある時だけ入力リマインドのスケジューラを起動（実送信はenv+トークンで有効化）
   if (cyzen.ready()) reminders.startScheduler();
+  // cyzen API があれば5分ごとに報告書ベースの行動量を最新化（空データは適用しない安全弁つき）
+  if (cyzenApi.ready() && !/^(0|off|false)$/i.test(process.env.CYZEN_LIVE_REFRESH || '')) {
+    const MIN = Math.max(1, Number(process.env.CYZEN_REFRESH_MINUTES || 5));
+    console.log(`✓ cyzenライブ更新スケジューラ起動（${MIN}分ごと）`);
+    runLiveIngest();   // 起動直後に1回
+    setInterval(() => { runLiveIngest().catch(e => console.error('[cyzen ingest]', e.message)); }, MIN * 60 * 1000);
+  }
 });
