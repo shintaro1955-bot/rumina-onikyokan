@@ -1260,6 +1260,59 @@ function viewCyzen() {
   <div id="cyzenWrap" class="text-sm text-neutral-500">読み込み中…</div>
   <div id="cyzenUpload" class="mt-6"></div>`;
 }
+
+/* ---------- 入力コンプライアンス（未入力の名指し＋Rumina文面）owner専用 ---------- */
+function viewCompliance() {
+  return `
+  ${h1('入力チェック（cyzen未入力の名指し）', 'GPSで動いているのに勤務終了報告を出していない人を抽出。動いた証拠(GPS)があるのでフェアに指摘できる。Ruminaから本人へ送る文面つき。')}
+  <div id="compWrap" class="text-sm text-neutral-500">読み込み中…</div>`;
+}
+async function loadCompliance() {
+  const wrap = document.getElementById('compWrap'); if (!wrap) return;
+  let data;
+  try { data = await API.cyzenCompliance(); } catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
+  if (data.needHistory) { wrap.innerHTML = `<div class="text-sm text-neutral-600 p-6 text-center border border-neutral-200 rounded-xl bg-white">この判定には <b>行動履歴CSV（GPS）</b> が必要です。「全営業KPI（cyzen）」の取り込み欄から行動履歴をアップロードしてください。</div>`; return; }
+  if (!data.ready || !data.rows.length) { wrap.innerHTML = `<div class="text-sm text-neutral-500 p-6 text-center border border-neutral-200 rounded-xl bg-white">未入力の該当者はいません。</div>`; return; }
+  const s = data.summary;
+  const badge = lv => lv === 'none' ? '<span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-600 text-white">完全未入力</span>'
+    : lv === 'low' ? '<span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">低入力</span>'
+    : '<span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">要改善</span>';
+  const esc = t => (t || '').replace(/</g, '&lt;');
+  const rows = data.rows.map((r, i) => `<tr class="border-t border-neutral-200 align-top">
+    <td class="px-3 py-2">${badge(r.level)}</td>
+    <td class="px-3 py-2 text-neutral-800 whitespace-nowrap">${r.name}<div class="text-[11px] text-neutral-400">${r.attr}</div></td>
+    <td class="px-3 py-2 text-right tabular-nums">${r.worked}</td>
+    <td class="px-3 py-2 text-right tabular-nums ${r.reported === 0 ? 'text-rose-600 font-semibold' : ''}">${r.reported}</td>
+    <td class="px-3 py-2 text-right tabular-nums ${r.rate < 50 ? 'text-rose-600' : 'text-amber-600'}">${r.rate}%</td>
+    <td class="px-3 py-2 w-[46%]">
+      <div class="text-[12px] text-neutral-700 leading-relaxed bg-neutral-50 border border-neutral-200 rounded-lg p-2">${esc(r.message)}</div>
+      <button onclick="copyText(this,${JSON.stringify(JSON.stringify(r.message))})" class="mt-1 text-[11px] text-emerald-600 hover:underline">この文面をコピー</button>
+    </td>
+  </tr>`).join('');
+  const allText = data.rows.map(r => `【${r.name}】\n${r.message}`).join('\n\n');
+  wrap.innerHTML = `
+    ${card(`<div class="grid grid-cols-3 divide-x divide-neutral-200">
+      <div class="px-4 py-3"><div class="text-[11px] text-neutral-500">完全未入力</div><div class="text-2xl font-semibold text-rose-600 tabular-nums">${s.none}<span class="text-xs text-neutral-400 ml-0.5">名</span></div><div class="text-[11px] text-neutral-500">GPSは動いてるのに報告0日</div></div>
+      <div class="px-4 py-3"><div class="text-[11px] text-neutral-500">低入力(50%未満)</div><div class="text-2xl font-semibold text-rose-500 tabular-nums">${s.low}<span class="text-xs text-neutral-400 ml-0.5">名</span></div></div>
+      <div class="px-4 py-3"><div class="text-[11px] text-neutral-500">要改善(80%未満)</div><div class="text-2xl font-semibold text-amber-600 tabular-nums">${s.warn}<span class="text-xs text-neutral-400 ml-0.5">名</span></div></div>
+    </div>`)}
+    <div class="mt-3 flex items-center justify-between gap-3 flex-wrap">
+      <div class="text-[12px] text-neutral-600">対象 <b>${s.target}名</b>（期間${s.periodDays}日・稼働3日以上の現場職）。判定根拠はGPS打刻＝動いた物証。</div>
+      <button onclick="copyText(this,${JSON.stringify(JSON.stringify(allText))})" class="px-3 py-1.5 rounded-md border border-neutral-300 text-sm text-neutral-700 hover:bg-neutral-100">全員分の文面をコピー</button>
+    </div>
+    <div class="mt-3">${card(`<div class="overflow-x-auto"><table class="w-full text-sm min-w-[820px]">
+      <thead><tr class="text-xs text-neutral-500 bg-neutral-50">
+        <th class="px-3 py-2 text-left font-normal">判定</th><th class="px-3 py-2 text-left font-normal">氏名</th>
+        <th class="px-3 py-2 text-right font-normal">稼働日(GPS)</th><th class="px-3 py-2 text-right font-normal">報告日</th><th class="px-3 py-2 text-right font-normal">入力率</th>
+        <th class="px-3 py-2 text-left font-normal">Rumina からの連絡（文面）</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`)}</div>
+    <div class="mt-3 text-[11px] text-neutral-500">※ 送信は現状「コピーして送る／bot連携で送る」運用です。自動一斉送信は本人のLINE名寄せ完了と承認が前提です。</div>`;
+}
+function copyText(btn, jsonStr) {
+  let t; try { t = JSON.parse(jsonStr); } catch { t = jsonStr; }
+  navigator.clipboard.writeText(t).then(() => { const o = btn.textContent; btn.textContent = '✓ コピーしました'; setTimeout(() => btn.textContent = o, 1500); }).catch(() => {});
+}
+window.copyText = copyText;
 async function loadCyzen() {
   const wrap = document.getElementById('cyzenWrap');
   const up = document.getElementById('cyzenUpload');
@@ -1380,8 +1433,8 @@ async function saveLink(username) {
 }
 window.saveLink = saveLink;
 
-const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, ranking: viewRanking, roleplay: viewRoleplay };
-function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); if (v === 'ranking') loadRanking(); if (v === 'my') loadPortalProfile(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay };
+function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); if (v === 'compliance') loadCompliance(); if (v === 'ranking') loadRanking(); if (v === 'my') loadPortalProfile(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function render() {
   app.innerHTML = VIEWS[currentView]();
   document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('nav-active', el.dataset.nav === currentView));
@@ -1749,7 +1802,7 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'ranking', 'roleplay'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
+  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
   render();
   if (currentView === 'my') loadPortalProfile();
 }

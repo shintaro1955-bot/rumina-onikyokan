@@ -402,6 +402,13 @@ const server = createServer(async (req, res) => {
         return json(res, 200, cyzen.roster());
       }
 
+      // 入力コンプライアンス：GPSで動いているのに勤務終了報告を出していない人（owner専用）
+      if (path === '/api/cyzen/compliance' && req.method === 'GET') {
+        const me = currentUser(req);
+        if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        return json(res, 200, cyzen.compliance());
+      }
+
       /* ---------- 認証 ---------- */
       if (path === '/api/me') return json(res, 200, { user: currentUser(req) });
       // マイページのポータル連携：本人の氏名・所属会社・GRAND PRIX実績（KPI/順位）をポータルからサーバ間で取得。
