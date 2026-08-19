@@ -292,7 +292,7 @@ const server = createServer(async (req, res) => {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
       if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready(), ssoReady: !!SSO_SECRET,
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
-        cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
+        cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note, diag: lastIngest.diag || null } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
         // ポータルと同じ共有秘密かを、値を出さずに突き合わせるための指紋（固定文字列のHMAC先頭12桁）
         ssoFingerprint: SSO_SECRET ? createHmac('sha256', SSO_SECRET).update('rumina-sso-fingerprint-v1').digest('hex').slice(0, 12) : null });
