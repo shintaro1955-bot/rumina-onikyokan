@@ -100,6 +100,19 @@ window.API = (function () {
   async function cyzenRoster() { const r = await fetch('/api/cyzen/roster'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '名簿の取得に失敗しました'); return j; }
   async function cyzenCompliance() { const r = await fetch('/api/cyzen/compliance'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '入力状況の取得に失敗しました'); return j; }
   async function cyzenTrends(days) { const r = await fetch('/api/cyzen/trends' + (days ? '?days=' + days : '')); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '伸びの取得に失敗しました'); return j; }
+
+  /* ---------- Field OS ---------- */
+  async function dashboard() { try { const r = await fetch('/api/me/dashboard'); return r.ok ? r.json() : null; } catch { return null; } }
+  async function setGoal(g) { const r = await fetch('/api/me/goal', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(g) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '目標の保存に失敗しました'); return j; }
+  async function getWeights() { try { const r = await fetch('/api/momentum/weights'); return r.ok ? (await r.json()).weights : null; } catch { return null; } }
+  async function setWeights(w) { const r = await fetch('/api/momentum/weights', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(w) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '重みの保存に失敗しました'); return j.weights; }
+  async function completeDrill(moduleId, score) { const r = await fetch('/api/academy/complete', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ moduleId, score }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '完了記録に失敗しました'); return j; }
+  async function academyProgress() { try { const r = await fetch('/api/academy/progress'); return r.ok ? r.json() : { learning: {}, xp: 0, due: [] }; } catch { return { learning: {}, xp: 0, due: [] }; } }
+  async function getPosts() { try { const r = await fetch('/api/posts'); return r.ok ? (await r.json()).posts : []; } catch { return []; } }
+  async function addPost(p) { const r = await fetch('/api/posts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(p) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '投稿に失敗しました'); return j.post; }
+  async function deletePost(id) { await fetch('/api/posts/' + encodeURIComponent(id), { method: 'DELETE' }); }
+  async function react(targetId, kind) { const r = await fetch('/api/react', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ targetId, kind }) }); const j = await r.json().catch(() => ({})); return j; }
+  async function markRead(postId) { try { await fetch('/api/read', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ postId }) }); } catch {} }
   async function cyzenReminders() { const r = await fetch('/api/cyzen/reminders'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'リマインド情報の取得に失敗しました'); return j; }
   async function cyzenReminderRun(live) { const r = await fetch('/api/cyzen/reminders/run' + (live ? '?live=1' : ''), { method: 'POST' }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '実行に失敗しました'); return j; }
   async function cyzenUpload(file, kind) {
@@ -113,5 +126,6 @@ window.API = (function () {
   async function getLineUsers() { const r = await fetch('/api/admin/line-users'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'LINEユーザー一覧の取得に失敗しました'); return j.users || []; }
   async function linkRep(username, repId) { const r = await fetch('/api/admin/link-rep', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, repId }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '紐付けに失敗しました'); return j; }
 
-  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenTrends, cyzenReminders, cyzenReminderRun, cyzenWalk, cyzenUpload, portalProfile };
+  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenTrends, cyzenReminders, cyzenReminderRun, cyzenWalk, cyzenUpload, portalProfile,
+    dashboard, setGoal, getWeights, setWeights, completeDrill, academyProgress, getPosts, addPost, deletePost, react, markRead };
 })();

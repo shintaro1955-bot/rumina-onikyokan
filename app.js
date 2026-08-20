@@ -1577,7 +1577,7 @@ function viewTerakoya() {
   </div>`;
 }
 
-const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMy, my: viewMy, terakoya: viewTerakoya, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay };
+const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, my: viewMy, terakoya: viewTerakoya, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay };
 // 新IA(today/field/academy/league/me)は同一currentViewでnav-activeを共有させる別名解決
 const NAV_ALIAS = { ranking: 'league', my: 'me' };
 function nav(v) {
@@ -1591,7 +1591,9 @@ function nav(v) {
   if (v === 'cyzen') loadCyzen();
   if (v === 'compliance') { loadCompliance(); loadReminders(); }
   if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
-  if (v === 'me' || v === 'my') { loadPortalProfile(); loadTerakoya(); }
+  if (v === 'me') loadMePerf();
+  if (v === 'my') { loadPortalProfile(); loadTerakoya(); }
+  if (v === 'academy') loadAcademy();
   if (v === 'terakoya') loadTerakoya();
   loadRail();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2025,90 +2027,229 @@ function viewToday() {
 async function loadToday() {
   const wrap = document.getElementById('todayWrap'); if (!wrap) return;
   const u = window.__user || {};
-  let p = {}; try { p = await API.portalProfile(); } catch {}
-  const today = p.cyzenToday || null, cz = p.cyzen || null, tr = p.cyzenTrend || null;
-  const target = foGoalTarget();
+  const d = await API.dashboard() || {};
+  window.__dash = d;
+  const today = d.today, cz = d.cyzen, tr = d.trend, mo = d.momentum, streak = d.streak || 0;
+  const target = (d.goal && d.goal.visits) || 50;
   const tv = today ? today.visits : 0, ta = today ? today.apo : 0;
   const pct = target ? tv / target * 100 : 0;
   const remain = Math.max(0, target - tv);
   const workH = today && today.workStart && today.workEnd
     ? ((Date.parse(today.workEnd.replace(' ', 'T')) - Date.parse(today.workStart.replace(' ', 'T'))) / 3600000) : null;
+  const score = mo && mo.score != null ? mo.score : null;
 
-  // Today Hero
   const hero = `<div class="fo-card" style="padding:20px">
-    <div class="muted" style="font-size:12px;font-weight:700;letter-spacing:.04em">${foGreet()}, ${u.name || ''}さん</div>
-    <div style="font-size:14px;margin-top:2px;color:var(--text)">今日も、昨日の自分を超えよう。</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+      <div>
+        <div class="muted" style="font-size:12px;font-weight:700;letter-spacing:.04em">${foGreet()}, ${u.name || ''}さん</div>
+        <div style="font-size:14px;margin-top:2px;color:var(--text)">今日も、昨日の自分を超えよう。</div>
+      </div>
+      ${score != null ? `<div style="text-align:right"><div class="muted" style="font-size:10px;font-weight:700;letter-spacing:.06em">MOMENTUM</div>
+        <div style="font-size:30px;font-weight:700;color:var(--primary);line-height:1" class="num">${score}</div>
+        <div class="muted" style="font-size:10px">${mo.confidence === 'low' ? '（データ少・暫定）' : '/ 1000'}</div></div>` : ''}
+    </div>
     <div style="display:flex;gap:20px;align-items:center;margin-top:16px;flex-wrap:wrap">
       ${ring(pct)}
-      <div style="display:grid;grid-template-columns:repeat(3,auto);gap:14px 22px">
+      <div style="display:grid;grid-template-columns:repeat(4,auto);gap:14px 22px">
         ${foStat('訪問', `${tv}`, target ? `/ ${target}` : '')}
         ${foStat('アポ', `${ta}`, '件')}
         ${foStat('稼働', workH != null ? workH.toFixed(1) : '—', workH != null ? 'h' : '')}
+        ${foStat('連続', streak, '日')}
       </div>
     </div>
     ${today ? (remain > 0
       ? `<div class="fo-chip" style="margin-top:16px">あと ${remain} 訪問で今日の目標達成</div>`
-      : `<div class="fo-chip" style="margin-top:16px;background:var(--primary-soft)">今日の訪問目標を達成しています</div>`)
-      : `<div style="margin-top:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:13px">今日のcyzen記録がまだありません。</span><button class="fo-btn ghost" style="padding:6px 12px;font-size:13px" onclick="nav('goal')">目標を設定</button></div>`}
-    ${today && today.date ? `<div class="muted" style="font-size:11px;margin-top:10px">${today.date} の実績 ・ <span onclick="nav('field')" style="color:var(--primary);cursor:pointer">1日を振り返る →</span></div>` : ''}
+      : `<div class="fo-chip" style="margin-top:16px">今日の訪問目標を達成しています</div>`)
+      : `<div style="margin-top:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:13px">今日のcyzen記録がまだありません。</span><button class="fo-btn ghost" style="padding:6px 12px;font-size:13px" onclick="openGoal()">目標を設定</button></div>`}
+    <div class="muted" style="font-size:11px;margin-top:10px">${today && today.date ? today.date + ' の実績 ・ ' : ''}<span onclick="openGoal()" style="color:var(--primary);cursor:pointer">目標を調整</span>${today ? ` ・ <span onclick="nav('field')" style="color:var(--primary);cursor:pointer">1日を振り返る →</span>` : ''}</div>
   </div>`;
 
-  // AI Next Action（ルールベース）
   let na;
   if (!today) na = '今日の稼働記録がまだありません。まず1件目の訪問を記録しましょう。';
   else if (remain > 0) { const now = new Date().getHours(); na = `${remain}訪問すると今日の目標に届きます。${now < 18 ? `${Math.min(19, now + 2)}時までに残り${Math.ceil(remain / 2)}件を目安に。` : '今日はあと少し、行けるところまで。'}`; }
   else if (ta === 0) na = '訪問数は目標到達。次はアポ1件を狙って、刺さった家に一言添えましょう。';
   else na = '今日は量・アポとも良いペース。この調子でクロージングまで丁寧に。';
   const nextAction = `<div class="fo-card" style="padding:16px">
-    <div style="display:flex;align-items:center;gap:8px"><span class="fo-chip">NEXT ACTION</span></div>
+    <span class="fo-chip">NEXT ACTION</span>
     <div style="font-size:15px;margin-top:10px;line-height:1.6;color:var(--text)">${na}</div>
     <div style="margin-top:12px;display:flex;gap:8px"><button class="fo-btn" style="padding:7px 14px;font-size:13px" onclick="nav('field')">今日を見る</button><button class="fo-btn ghost" style="padding:7px 14px;font-size:13px" onclick="this.closest('.fo-card').style.opacity=.5;this.textContent='完了'">完了にする</button></div>
   </div>`;
 
-  // Mission Stories（学習・現状はシード）
   const missions = ['今日の必修', '第一声', '切り返し', '商品知識', '成功事例'];
-  const stories = `<div class="fo-card" style="padding:14px 16px">
-    <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:2px">
+  const stories = `<div class="fo-card" style="padding:14px 16px"><div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:2px">
       ${missions.map((m, i) => `<button onclick="nav('academy')" style="flex:none;width:76px;text-align:center;background:none;border:0;cursor:pointer">
-        <div style="width:66px;height:66px;border-radius:16px;margin:0 auto;display:flex;align-items:center;justify-content:center;
-          background:var(--primary-soft);border:2px solid ${i === 0 ? 'var(--primary)' : 'transparent'};color:var(--primary);font-weight:700;font-size:12px">${i === 0 ? 'MUST' : ''}</div>
+        <div style="width:66px;height:66px;border-radius:16px;margin:0 auto;display:flex;align-items:center;justify-content:center;background:var(--primary-soft);border:2px solid ${i === 0 ? 'var(--primary)' : 'transparent'};color:var(--primary);font-weight:700;font-size:12px">${i === 0 ? 'MUST' : ''}</div>
         <div style="font-size:11px;margin-top:5px;color:var(--text)">${m}</div></button>`).join('')}
-    </div>
-  </div>`;
+    </div></div>`;
 
-  // Daily Drill（シード）
+  const drillDue = d.dueReviews ? ` ・ 復習${d.dueReviews}件` : '';
   const drill = `<div class="fo-card" style="padding:16px">
-    <div style="display:flex;justify-content:space-between;align-items:center"><span class="fo-chip">DAILY DRILL ・ 3分</span><span class="muted" style="font-size:11px">今日の学習</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span class="fo-chip">DAILY DRILL ・ 3分</span><span class="muted" style="font-size:11px">今日の学習${drillDue}</span></div>
     <div style="font-size:16px;font-weight:700;margin-top:10px;color:var(--text)">玄関先10秒の第一声</div>
     <div class="muted" style="font-size:12px;margin-top:4px">動画60秒 → 3問クイズ → 音声ロープレ</div>
     <div style="margin-top:12px"><button class="fo-btn" style="padding:8px 16px;font-size:13.5px" onclick="nav('academy')">トレーニングを始める</button></div>
   </div>`;
 
-  // Performance Feed（伸び自動投稿）
-  let feed = '';
-  if (tr && tr.deltaVpd > 0) {
-    feed = foPost(`${u.name || 'あなた'}さん、今週は伸びています`,
-      `今週の訪問/日 <b class="num">${tr.recVpd}</b> 件（先週 ${tr.priVpd} → ${tr.growth == null ? 'NEW' : '+' + tr.growth + '%'}）`);
-  } else if (cz) {
-    feed = foPost(`直近${cz.periodDays}日の実績`,
-      `訪問 <b class="num">${cz.visits}</b>件（${cz.visitsPerDay}件/日）・ アポ <b class="num">${cz.apo}</b>件 ・ 稼働 <b class="num">${cz.days}</b>日`);
-  }
+  let perf = '';
+  if (tr && tr.deltaVpd > 0) perf = foPost('perf-' + (u.name || ''), `${u.name || 'あなた'}さん、今週は伸びています`, `今週の訪問/日 <b class="num">${tr.recVpd}</b> 件（先週 ${tr.priVpd} → ${tr.growth == null ? 'NEW' : '+' + tr.growth + '%'}）`, null);
+  else if (cz) perf = foPost('perf-' + (u.name || ''), `直近${cz.periodDays}日の実績`, `訪問 <b class="num">${cz.visits}</b>件（${cz.visitsPerDay}件/日）・ アポ <b class="num">${cz.apo}</b>件 ・ 稼働 <b class="num">${cz.days}</b>日`, null);
 
-  wrap.innerHTML = hero + nextAction + stories + drill + feed;
+  wrap.innerHTML = hero + composerHtml() + nextAction + stories + drill + perf + '<div id="mgrPosts"></div>';
+  loadPosts();
 }
+
+/* 上長投稿（owner=作成、全員=閲覧・リアクション・既読） */
+function composerHtml() {
+  if (!(window.__user && window.__user.role === 'owner')) return '';
+  return `<div class="fo-card" style="padding:14px 16px">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="fo-chip">上長から配信</span>
+      <select id="pgType" class="fo-btn ghost" style="padding:5px 10px;font-size:12px">
+        <option value="notice">重要連絡</option><option value="focus">今日の重点</option><option value="success">成功事例</option><option value="talk">営業トーク</option><option value="product">商品アップデート</option><option value="compliance">コンプラ</option></select>
+      <label style="font-size:12px;display:flex;align-items:center;gap:4px;margin-left:auto"><input type="checkbox" id="pgImp"> 重要(既読管理)</label></div>
+    <input id="pgTitle" placeholder="タイトル" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;color:var(--text)">
+    <textarea id="pgBody" rows="2" placeholder="本文" style="width:100%;margin-top:8px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text)"></textarea>
+    <div style="margin-top:8px;text-align:right"><button class="fo-btn" style="padding:7px 16px;font-size:13px" onclick="submitPost()">配信する</button></div>
+  </div>`;
+}
+async function submitPost() {
+  const type = document.getElementById('pgType').value, title = document.getElementById('pgTitle').value, body = document.getElementById('pgBody').value, important = document.getElementById('pgImp').checked;
+  if (!title && !body) return;
+  try { await API.addPost({ type, title, body, important }); document.getElementById('pgTitle').value = ''; document.getElementById('pgBody').value = ''; loadPosts(); } catch (e) { alert(e.message); }
+}
+window.submitPost = submitPost;
+const POST_LABEL = { notice: '重要連絡', focus: '今日の重点', success: '成功事例', talk: '営業トーク', product: '商品アップデート', compliance: 'コンプラ' };
+async function loadPosts() {
+  const box = document.getElementById('mgrPosts'); if (!box) return;
+  const posts = await API.getPosts();
+  const owner = window.__user && window.__user.role === 'owner';
+  box.innerHTML = posts.map(p => {
+    if (p.important) API.markRead(p.id);
+    const rc = p.reactions || { by: {}, total: 0 };
+    const reacts = ['称賛', 'ナイスアクション', '学びになった'].map(k => `<button class="fo-btn ghost" style="padding:6px 12px;font-size:12px;${p.myReaction === k ? 'color:var(--primary);border-color:var(--primary)' : ''}" onclick="doReact('${p.id}','${k}')">${k}${rc.by[k] ? ' ' + rc.by[k] : ''}</button>`).join('');
+    return `<div class="fo-card" style="padding:16px;margin-top:14px" data-post="${p.id}">
+      <div style="display:flex;gap:8px;align-items:center"><span class="fo-chip" style="font-size:11px">${POST_LABEL[p.type] || 'お知らせ'}</span>
+        ${p.important ? '<span class="fo-chip" style="font-size:11px;background:transparent;color:var(--danger);border:1px solid var(--danger)">重要</span>' : ''}
+        <span class="muted" style="font-size:11px;margin-left:auto">${p.author} ・ ${(p.createdAt || '').replace('T', ' ').slice(5, 16)}</span>
+        ${owner ? `<button class="tn-ico" style="width:26px;height:26px" onclick="delPost('${p.id}')" title="削除">✕</button>` : ''}</div>
+      ${p.title ? `<div style="font-size:15px;font-weight:700;margin-top:8px;color:var(--text)">${(p.title || '').replace(/</g, '&lt;')}</div>` : ''}
+      ${p.body ? `<div style="font-size:14px;margin-top:6px;line-height:1.6;color:var(--text);white-space:pre-wrap">${(p.body || '').replace(/</g, '&lt;')}</div>` : ''}
+      <div style="display:flex;gap:6px;margin-top:12px;border-top:1px solid var(--border);padding-top:10px;flex-wrap:wrap">${reacts}
+        ${owner && p.important ? `<span class="muted" style="font-size:11px;margin-left:auto;align-self:center">既読 ${p.readCount ?? 0}名</span>` : ''}</div>
+    </div>`;
+  }).join('');
+}
+async function doReact(id, kind) { await API.react(id, kind); loadPosts(); }
+async function delPost(id) { if (confirm('この投稿を削除しますか？')) { await API.deletePost(id); loadPosts(); } }
+window.doReact = doReact; window.delPost = delPost;
+
+/* 目標設定モーダル */
+function openGoal() {
+  const g = (window.__dash && window.__dash.goal) || { visits: 50, apo: null };
+  const m = document.createElement('div');
+  m.id = 'goalModal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML = `<div class="fo-card" style="padding:20px;max-width:360px;width:100%" onclick="event.stopPropagation()">
+    <div style="font-size:16px;font-weight:700;color:var(--text)">今日の目標</div>
+    <label style="display:block;margin-top:14px;font-size:13px" class="muted">1日の訪問目標（件）</label>
+    <input id="gVisits" type="number" value="${g.visits}" style="width:100%;margin-top:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:15px;color:var(--text)">
+    <label style="display:block;margin-top:12px;font-size:13px" class="muted">1日のアポ目標（件・任意）</label>
+    <input id="gApo" type="number" value="${g.apo ?? ''}" placeholder="任意" style="width:100%;margin-top:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:15px;color:var(--text)">
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="fo-btn ghost" onclick="closeGoal()">キャンセル</button><button class="fo-btn" onclick="saveGoal()">保存</button></div>
+  </div>`;
+  m.onclick = closeGoal;
+  document.body.appendChild(m);
+}
+function closeGoal() { const m = document.getElementById('goalModal'); if (m) m.remove(); }
+async function saveGoal() {
+  const visits = parseInt(document.getElementById('gVisits').value) || 50;
+  const apoV = document.getElementById('gApo').value; const apo = apoV === '' ? null : parseInt(apoV);
+  try { await API.setGoal({ visits, apo }); closeGoal(); if (currentView === 'today') loadToday(); else if (currentView === 'me') loadMePerf(); loadRail(); } catch (e) { alert(e.message); }
+}
+window.openGoal = openGoal; window.closeGoal = closeGoal; window.saveGoal = saveGoal;
+
+/* ---------- MY PERFORMANCE（/me） ---------- */
+function viewMePerf() { return `<div id="mePerf"><div class="fo-card muted" style="padding:20px">読み込み中…</div></div>`; }
+async function loadMePerf() {
+  const wrap = document.getElementById('mePerf'); if (!wrap) return;
+  const d = await API.dashboard() || {}; window.__dash = d;
+  const u = window.__user || {}; const mo = d.momentum, cz = d.cyzen;
+  const PL = { goal: '行動目標達成', conversion: 'アポ・成約への転換', continuity: '稼働の継続', learning: '学習・ロープレ', report: '報告品質' };
+  const bars = mo && mo.parts ? Object.keys(PL).map(k => {
+    const v = Math.round((mo.parts[k] || 0) * 100), w = mo.weights[k];
+    return `<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="color:var(--text)">${PL[k]} <span class="muted">・重み${w}%</span></span><span class="num" style="color:var(--text)">${v}%</span></div>
+      <div style="height:8px;border-radius:5px;background:var(--surface-2);margin-top:4px;overflow:hidden"><div style="height:100%;width:${v}%;background:var(--primary)"></div></div></div>`;
+  }).join('') : '<div class="muted" style="font-size:13px">Momentumの算出に十分なデータがありません。</div>';
+
+  const moCard = `<div class="fo-card" style="padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-size:15px;font-weight:700;color:var(--text)">Momentum Score</div>
+      <div class="muted" style="font-size:11px">式 v${mo && mo.weights ? mo.weights.version : '—'}</div></div>
+    <div style="font-size:40px;font-weight:700;color:var(--primary);line-height:1.1;margin-top:6px" class="num">${mo && mo.score != null ? mo.score : '—'}<span class="muted" style="font-size:14px;font-weight:500"> / 1000</span></div>
+    ${mo && mo.confidence === 'low' ? '<div class="muted" style="font-size:11px">※データが少なく暫定値です</div>' : ''}
+    ${bars}
+    ${u.role === 'owner' ? `<div style="margin-top:14px;text-align:right"><button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="openWeights()">重みを設定</button></div>` : ''}
+  </div>`;
+
+  const g = d.goal || { visits: 50 };
+  const goalCard = `<div class="fo-card" style="padding:16px;margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700;color:var(--text)">目標</div><button class="fo-btn ghost" style="padding:5px 12px;font-size:12px" onclick="openGoal()">変更</button></div>
+    <div style="font-size:13px;margin-top:8px;color:var(--text)">訪問 <b class="num">${g.visits}</b> 件/日${g.apo != null ? ` ・ アポ <b class="num">${g.apo}</b> 件/日` : ''}</div>
+  </div>`;
+
+  const statCard = cz ? `<div class="fo-card" style="padding:16px;margin-top:14px">
+    <div style="font-weight:700;color:var(--text)">直近${cz.periodDays}日</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px">
+      ${foStat('訪問', cz.visits, '件')}${foStat('訪問/日', cz.visitsPerDay, '')}${foStat('アポ', cz.apo, '件')}${foStat('連続', d.streak, '日')}</div>
+  </div>` : '';
+
+  const xpCard = `<div class="fo-card" style="padding:16px;margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700;color:var(--text)">学習</div><div class="fo-chip">${d.xp || 0} XP</div></div>
+    <div class="muted" style="font-size:12px;margin-top:8px">${d.dueReviews ? `復習期限 ${d.dueReviews}件` : '復習期限はありません'}</div>
+    <div style="margin-top:10px"><button class="fo-btn" style="padding:7px 14px;font-size:13px" onclick="nav('academy')">Academyへ</button></div>
+  </div>`;
+
+  const recCard = `<div class="fo-card" style="padding:16px;margin-top:14px"><div style="font-weight:700;color:var(--text)">録音の振り返り</div>
+    <div class="muted" style="font-size:12px;margin-top:6px">${window.__mySubmission ? '直近の講評があります' : 'まだ録音の記録がありません'}</div>
+    <div style="margin-top:10px;display:flex;gap:8px"><button class="fo-btn ghost" style="padding:7px 14px;font-size:13px" onclick="nav('upload')">録音を出稿</button>${window.__mySubmission ? `<button class="fo-btn" style="padding:7px 14px;font-size:13px" onclick="nav('report')">レポート</button>` : ''}</div></div>`;
+
+  wrap.innerHTML = `${h1('My Performance')}${moCard}${goalCard}${statCard}${xpCard}${recCard}`;
+}
+
+/* Momentum重み設定（owner） */
+async function openWeights() {
+  const w = await API.getWeights() || { goal: 35, conversion: 25, continuity: 15, learning: 15, report: 10 };
+  const PL = { goal: '行動目標達成', conversion: '転換', continuity: '継続', learning: '学習', report: '報告品質' };
+  const m = document.createElement('div'); m.id = 'wModal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML = `<div class="fo-card" style="padding:20px;max-width:380px;width:100%" onclick="event.stopPropagation()">
+    <div style="font-size:16px;font-weight:700;color:var(--text)">Momentum の重み（合計100）</div>
+    ${Object.keys(PL).map(k => `<label style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;color:var(--text)">${PL[k]}
+      <input type="number" id="w_${k}" value="${w[k]}" style="width:80px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:14px;color:var(--text)"></label>`).join('')}
+    <div id="wMsg" class="muted" style="font-size:12px;margin-top:10px"></div>
+    <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end"><button class="fo-btn ghost" onclick="document.getElementById('wModal').remove()">閉じる</button><button class="fo-btn" onclick="saveWeights()">保存</button></div>
+  </div>`;
+  m.onclick = () => m.remove(); document.body.appendChild(m);
+}
+async function saveWeights() {
+  const keys = ['goal', 'conversion', 'continuity', 'learning', 'report'];
+  const w = {}; keys.forEach(k => w[k] = parseInt(document.getElementById('w_' + k).value) || 0);
+  try { await API.setWeights(w); document.getElementById('wModal').remove(); loadMePerf(); }
+  catch (e) { const el = document.getElementById('wMsg'); if (el) { el.textContent = e.message; el.style.color = 'var(--danger)'; } }
+}
+window.openWeights = openWeights; window.saveWeights = saveWeights;
 function foStat(label, val, unit) {
   return `<div><div class="muted" style="font-size:11px">${label}</div><div style="font-size:22px;font-weight:700;color:var(--text)" class="num">${val}<span class="muted" style="font-size:12px;font-weight:500;margin-left:2px">${unit || ''}</span></div></div>`;
 }
-function foPost(title, body) {
+function foPost(id, title, body) {
+  const reacts = ['称賛', 'ナイスアクション', '学びになった'].map(r =>
+    `<button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="${id ? `doReact('${id}','${r}')` : `foReact(this,'${r}')`}">${r}</button>`).join('');
   return `<div class="fo-card" style="padding:16px">
     <div style="display:flex;gap:10px;align-items:center">
       <img src="/assets/rumina.png" style="width:38px;height:38px;border-radius:50%;object-fit:cover;object-position:top;border:1px solid var(--border)">
       <div style="font-size:14px;font-weight:700;color:var(--text)">${title}</div>
     </div>
     <div style="font-size:14px;margin-top:10px;line-height:1.6;color:var(--text)">${body}</div>
-    <div style="display:flex;gap:6px;margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
-      ${['称賛', 'ナイスアクション', '学びになった'].map(r => `<button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="foReact(this,'${r}')">${r}</button>`).join('')}
-    </div>
+    <div style="display:flex;gap:6px;margin-top:12px;border-top:1px solid var(--border);padding-top:10px">${reacts}</div>
   </div>`;
 }
 function foReact(btn, kind) { btn.textContent = '✓ ' + kind; btn.style.color = 'var(--primary)'; btn.style.borderColor = 'var(--primary)'; }
@@ -2137,52 +2278,86 @@ async function loadField() {
   wrap.innerHTML = head + replay;
 }
 
-/* ---------- ACADEMY（学習・現状はシード） ---------- */
-function viewAcademy() {
-  const drills = [
-    { t: '玄関先10秒の第一声', d: '警戒を解く入り方', tag: '必修' },
-    { t: '「間に合ってます」の切り返し', d: '断りを会話に戻す', tag: '切り返し' },
-    { t: '創蓄・補助金の"今だけ"', d: '価値提示の型', tag: '商品' },
-    { t: '2択クロージング', d: '日程を置いてくる', tag: 'クロージング' },
-  ];
-  return `${h1('Academy')}
-    <div class="fo-card" style="padding:16px">
-      <div class="fo-chip">DAILY DRILL ・ 3分</div>
-      <div style="font-size:17px;font-weight:700;margin-top:10px;color:var(--text)">${drills[0].t}</div>
-      <div class="muted" style="font-size:12.5px;margin-top:4px">動画60秒 → 3問クイズ → 音声ロープレ</div>
-      <div style="margin-top:14px"><button class="fo-btn" onclick="nav('roleplay')">トレーニングを始める</button></div>
-    </div>
-    <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
-      ${drills.map(x => `<div class="fo-card" style="padding:14px"><span class="fo-chip" style="font-size:11px">${x.tag}</span>
-        <div style="font-weight:700;margin-top:8px;color:var(--text)">${x.t}</div>
-        <div class="muted" style="font-size:12px;margin-top:3px">${x.d}</div></div>`).join('')}
-    </div>
-    <div class="muted" style="font-size:11.5px;margin-top:14px">※ 教材コンテンツは順次追加します。ロープレは既存のロープレ道場に接続しています。</div>`;
+/* ---------- ACADEMY（学習：Daily Drill＋間隔復習＋XP） ---------- */
+const DRILLS = [
+  { id: 'hook', t: '玄関先10秒の第一声', d: '警戒を解く入り方', tag: '必修' },
+  { id: 'rebuttal', t: '「間に合ってます」の切り返し', d: '断りを会話に戻す', tag: '切り返し' },
+  { id: 'value', t: '創蓄・補助金の"今だけ"', d: '価値提示の型', tag: '商品' },
+  { id: 'close', t: '2択クロージング', d: '日程を置いてくる', tag: 'クロージング' },
+  { id: 'detail', t: '明細ドライブ', d: '30秒だけ、で数字に入る', tag: '必修' },
+  { id: 'compliance', t: '訪販コンプライアンス', d: '言ってはいけない一言', tag: 'コンプラ' },
+];
+function viewAcademy() { return `${h1('Academy')}<div id="acaWrap"><div class="fo-card muted" style="padding:20px">読み込み中…</div></div>`; }
+async function loadAcademy() {
+  const wrap = document.getElementById('acaWrap'); if (!wrap) return;
+  const pr = await API.academyProgress();
+  const L = pr.learning || {}; const today = new Date().toISOString().slice(0, 10);
+  const isDue = m => { const p = L[m.id]; return p && p.nextReviewAt && p.nextReviewAt <= today; };
+  const done = m => { const p = L[m.id]; return p && p.status === 'completed' && !isDue(m); };
+  const todays = DRILLS.find(m => !done(m)) || DRILLS[0];
+  const head = `<div class="fo-card" style="padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span class="fo-chip">DAILY DRILL ・ 3分</span><span class="fo-chip">${pr.xp || 0} XP</span></div>
+    <div style="font-size:17px;font-weight:700;margin-top:10px;color:var(--text)">${todays.t}</div>
+    <div class="muted" style="font-size:12.5px;margin-top:4px">動画60秒 → 3問クイズ → 音声ロープレ</div>
+    <div style="margin-top:14px;display:flex;gap:8px"><button class="fo-btn" onclick="startDrill('${todays.id}','${todays.t}')">トレーニングを始める</button><button class="fo-btn ghost" onclick="nav('roleplay')">ロープレ道場</button></div>
+  </div>`;
+  const cards = DRILLS.map(x => {
+    const p = L[x.id], d = done(x), due = isDue(x);
+    return `<div class="fo-card" style="padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:start"><span class="fo-chip" style="font-size:11px">${x.tag}</span>
+        ${d ? '<span class="fo-chip" style="font-size:10px;background:var(--primary-soft)">✓ 完了</span>' : due ? '<span class="fo-chip" style="font-size:10px;background:transparent;color:var(--warning);border:1px solid var(--warning)">復習</span>' : ''}</div>
+      <div style="font-weight:700;margin-top:8px;color:var(--text)">${x.t}</div>
+      <div class="muted" style="font-size:12px;margin-top:3px">${x.d}</div>
+      ${p ? `<div class="muted" style="font-size:11px;margin-top:6px">${p.reps}回 ・ 次の復習 ${p.nextReviewAt}</div>` : ''}
+      <div style="margin-top:10px"><button class="fo-btn ${d && !due ? 'ghost' : ''}" style="padding:6px 12px;font-size:12px" onclick="startDrill('${x.id}','${x.t}')">${d && !due ? 'もう一度' : due ? '復習する' : '始める'}</button></div>
+    </div>`;
+  }).join('');
+  wrap.innerHTML = head + `<div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">${cards}</div>`;
 }
+/* 3問クイズの簡易フロー → 完了でXP＋間隔復習を記録 */
+function startDrill(id, title) {
+  const m = document.createElement('div'); m.id = 'drillModal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML = `<div class="fo-card" style="padding:20px;max-width:420px;width:100%">
+    <div class="fo-chip">DRILL</div>
+    <div style="font-size:16px;font-weight:700;margin-top:10px;color:var(--text)">${title}</div>
+    <div class="muted" style="font-size:12px;margin-top:4px">要点を確認して「完了」を押すと、XPが入り復習日が予約されます。</div>
+    <ul style="margin-top:12px;padding-left:18px;font-size:13px;color:var(--text);line-height:1.8">
+      <li>一言目で「電気の健康診断／明細／電気代」を出す</li>
+      <li>売り込まず、相手に課題を言わせる</li>
+      <li>断りは入口。最低1回は切り返す</li>
+    </ul>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end"><button class="fo-btn ghost" onclick="document.getElementById('drillModal').remove()">閉じる</button><button class="fo-btn" onclick="finishDrill('${id}')">完了（+XP）</button></div>
+  </div>`;
+  document.body.appendChild(m);
+}
+async function finishDrill(id) {
+  try { const r = await API.completeDrill(id, 100); const m = document.getElementById('drillModal'); if (m) m.remove(); loadAcademy(); loadRail(); }
+  catch (e) { alert(e.message); }
+}
+window.startDrill = startDrill; window.finishDrill = finishDrill;
 
 /* ---------- 右レール ---------- */
 async function loadRail() {
   const rail = document.getElementById('rail'); if (!rail) return;
   if (!window.__user) { rail.innerHTML = ''; return; }
-  let p = {}; try { p = await API.portalProfile(); } catch {}
-  const today = p.cyzenToday, cz = p.cyzen, tr = p.cyzenTrend, kpi = p.kpi;
-  const target = foGoalTarget();
+  const d = window.__dash || (await API.dashboard()) || {};
+  const today = d.today, mo = d.momentum, target = (d.goal && d.goal.visits) || 50;
   const tv = today ? today.visits : 0;
   const goalCard = `<div class="fo-card" style="padding:14px">
     <div class="muted" style="font-size:11px;font-weight:700">今日の目標進捗</div>
     <div style="display:flex;align-items:center;gap:12px;margin-top:8px">${ring(target ? tv / target * 100 : 0, 16)}
-      <div><div style="font-size:20px;font-weight:700;color:var(--text)" class="num">${tv}<span class="muted" style="font-size:12px"> / ${target}</span></div><div class="muted" style="font-size:11px">訪問</div></div></div>
+      <div><div style="font-size:20px;font-weight:700;color:var(--text)" class="num">${tv}<span class="muted" style="font-size:12px"> / ${target}</span></div><div class="muted" style="font-size:11px">訪問 ・ 連続${d.streak || 0}日</div></div></div>
   </div>`;
-  const leagueCard = kpi && (kpi.appointerRank || kpi.closerRank) ? `<div class="fo-card" style="padding:14px">
-    <div class="muted" style="font-size:11px;font-weight:700">現在の順位</div>
-    ${kpi.appointerRank ? `<div style="font-size:14px;margin-top:6px;color:var(--text)">アポインター <b class="num">${kpi.appointerRank}位</b></div>` : ''}
-    ${kpi.closerRank ? `<div style="font-size:14px;margin-top:2px;color:var(--text)">クローザー <b class="num">${kpi.closerRank}位</b></div>` : ''}
-    <div style="margin-top:8px"><span class="mx-more" onclick="nav('league')">すべて見る »</span></div>
+  const moCard = mo && mo.score != null ? `<div class="fo-card" style="padding:14px">
+    <div class="muted" style="font-size:11px;font-weight:700">Momentum</div>
+    <div style="font-size:24px;font-weight:700;color:var(--primary);margin-top:4px" class="num">${mo.score}<span class="muted" style="font-size:11px;font-weight:500"> / 1000</span></div>
+    <div style="margin-top:6px"><span class="mx-more" onclick="nav('me')">内訳を見る »</span></div>
   </div>` : '';
   const learnCard = `<div class="fo-card" style="padding:14px">
     <div class="muted" style="font-size:11px;font-weight:700">本日の学習</div>
-    <div style="font-size:13px;margin-top:6px;color:var(--text)">Daily Drill 未完了</div>
-    <div style="margin-top:8px"><button class="fo-btn ghost" style="padding:5px 12px;font-size:12px" onclick="nav('academy')">始める</button></div>
+    <div style="font-size:13px;margin-top:6px;color:var(--text)">XP ${d.xp || 0}${d.dueReviews ? ` ・ 復習${d.dueReviews}件` : ''}</div>
+    <div style="margin-top:8px"><button class="fo-btn ghost" style="padding:5px 12px;font-size:12px" onclick="nav('academy')">Academyへ</button></div>
   </div>`;
   let trendCard = '';
   try {
@@ -2193,7 +2368,7 @@ async function loadRail() {
       ${up.map(r => `<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:7px;color:var(--text)"><span>${r.name}</span><span class="num" style="color:var(--primary)">${r.recVpd}件/日</span></div>`).join('')}
     </div>`;
   } catch {}
-  rail.innerHTML = goalCard + leagueCard + trendCard + learnCard;
+  rail.innerHTML = goalCard + moCard + trendCard + learnCard;
 }
 
 /* 同期バッジ更新 */

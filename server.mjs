@@ -21,6 +21,7 @@ import * as cyzenApi from './lib/cyzen-api.mjs';
 import * as walk from './lib/walk.mjs';
 import * as reminders from './lib/reminders.mjs';
 import * as cyzenIngest from './lib/cyzen-ingest.mjs';
+import * as fieldos from './lib/fieldos.mjs';
 import { hashPassword, verifyPassword, signSession, verifySession, randomPassword } from './lib/auth.mjs';
 import { generateCritique, critiqueReady } from './lib/critique.mjs';
 import * as deepgram from './lib/deepgram.mjs';
@@ -239,6 +240,37 @@ function coachContext(user, sub) {
     message,
   };
 }
+// 本人のcyzenコードを解決（repId＝cyzenコード、無ければ氏名から）
+function myCyzenCode(user) {
+  if (!user) return null;
+  const u = getDb().users[user.username]; if (!u) return null;
+  let code = u.repId;
+  if (!code && cyzen.ready()) { code = cyzen.codeByName(u.name); if (code) { u.repId = code; save(); } }
+  return code || null;
+}
+// Today/Me ダッシュボード一式（cyzen＋目標＋Momentum＋学習）を1回で返す
+function myDashboard(user) {
+  const code = myCyzenCode(user);
+  const goal = fieldos.getGoal(user.username);
+  const learnRate = fieldos.learnRate(user.username);
+  const out = {
+    name: user.name, role: user.role,
+    goal: goal || { visits: 50, apo: null },
+    cyzen: null, today: null, trend: null, streak: 0,
+    momentum: null, xp: fieldos.totalXp(user.username), dueReviews: fieldos.dueReviews(user.username).length,
+  };
+  if (code && cyzen.ready()) {
+    const cz = cyzen.personSummary(code);
+    out.cyzen = cz && !cz.empty ? cz : null;
+    out.today = cyzen.personToday(code);
+    const tr = cyzen.trends({ recentDays: 7 });
+    out.trend = tr.ready ? (tr.rows.find(r => r.code === code) || null) : null;
+    out.streak = cyzen.personStreak(code, 1);
+    out.momentum = fieldos.momentum(out.cyzen, user.username, learnRate);
+  }
+  return out;
+}
+
 // 診断ログを永続化（1録音=1レコード。文字起こし全文・訪問明細・KPIを保存）
 function persistReport(id, result, userName) {
   const a = result.analysis || {};
@@ -539,6 +571,69 @@ const server = createServer(async (req, res) => {
           }
         }
         return json(res, 200, out);
+      }
+
+      /* ---------- Field OS：本人ダッシュボード ---------- */
+      if (path === '/api/me/dashboard' && req.method === 'GET') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        return json(res, 200, myDashboard(me));
+      }
+      // 目標設定（本人）
+      if (path === '/api/me/goal' && req.method === 'POST') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        const b = await readBody(req);
+        return json(res, 200, { goal: fieldos.setGoal(me.username, b) });
+      }
+      // Momentum の重み（GET=誰でも/POST=owner）
+      if (path === '/api/momentum/weights' && req.method === 'GET') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        return json(res, 200, { weights: fieldos.getWeights() });
+      }
+      if (path === '/api/momentum/weights' && req.method === 'POST') {
+        const me = currentUser(req); if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const r = fieldos.setWeights(await readBody(req));
+        return r.error ? json(res, 400, r) : json(res, 200, { weights: r });
+      }
+
+      /* ---------- Academy（学習） ---------- */
+      if (path === '/api/academy/complete' && req.method === 'POST') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        const b = await readBody(req);
+        if (!b.moduleId) return json(res, 400, { error: 'moduleId が必要です' });
+        return json(res, 200, { progress: fieldos.completeDrill(me.username, String(b.moduleId), b.score), xp: fieldos.totalXp(me.username) });
+      }
+      if (path === '/api/academy/progress' && req.method === 'GET') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        return json(res, 200, { learning: fieldos.getLearning(me.username), xp: fieldos.totalXp(me.username), due: fieldos.dueReviews(me.username) });
+      }
+
+      /* ---------- ソーシャル（上長投稿・リアクション・既読） ---------- */
+      if (path === '/api/posts' && req.method === 'GET') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        const posts = fieldos.listPosts(30).map(p => ({ ...p, reactions: fieldos.reactionsFor(p.id), myReaction: (getDb().fieldos.reactions.find(r => r.user === me.username && r.targetId === p.id) || {}).kind || null, readCount: me.role === 'owner' ? fieldos.readInfo(p.id).length : undefined }));
+        return json(res, 200, { posts });
+      }
+      if (path === '/api/posts' && req.method === 'POST') {
+        const me = currentUser(req); if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        const b = await readBody(req);
+        if (!b.title && !b.body) return json(res, 400, { error: '内容が必要です' });
+        return json(res, 200, { post: fieldos.addPost({ ...b, author: me.name }) });
+      }
+      const mPostDel = path.match(/^\/api\/posts\/(.+)$/);
+      if (mPostDel && req.method === 'DELETE') {
+        const me = currentUser(req); if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        fieldos.deletePost(decodeURIComponent(mPostDel[1])); return json(res, 200, { ok: true });
+      }
+      if (path === '/api/react' && req.method === 'POST') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        const b = await readBody(req);
+        if (!b.targetId || !b.kind) return json(res, 400, { error: 'targetId と kind が必要です' });
+        return json(res, 200, { result: fieldos.react(me.username, String(b.targetId), String(b.kind)), reactions: fieldos.reactionsFor(String(b.targetId)) });
+      }
+      if (path === '/api/read' && req.method === 'POST') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        const b = await readBody(req); if (b.postId) fieldos.markRead(me.username, String(b.postId));
+        return json(res, 200, { ok: true });
       }
 
       /* ---------- 録音・解析への同意 ---------- */
