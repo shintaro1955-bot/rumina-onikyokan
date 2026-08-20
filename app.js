@@ -7,10 +7,9 @@ const app = document.getElementById('app');
 let currentView = 'goal';
 
 /* ---------- 共通パーツ ---------- */
-function h1(title, sub) {
-  return `<div class="mb-6">
-    <h1 class="text-xl font-semibold text-neutral-900">${title}</h1>
-    ${sub ? `<p class="text-sm text-neutral-500 mt-1">${sub}</p>` : ''}</div>`;
+function h1(title) {
+  // 説明サブタイトルは表示しない（アプリ内の説明文は全面的に排除）
+  return `<div class="mb-6"><h1 class="text-xl font-semibold text-neutral-900">${title}</h1></div>`;
 }
 function card(inner, cls = '') { return `<div class="mx-card ${cls}">${inner}</div>`; }
 
@@ -45,10 +44,10 @@ function statCell(label, value, unit, sub, accent) {
     ${sub ? `<div class="text-[11px] text-neutral-500 mt-0.5">${sub}</div>` : ''}</div>`;
 }
 /* 見出し帯＋本文。直下がcardなら1枚の箱として繋がる（CSS: .mx-sec>.mx-card）。 */
-function section(title, body, sub) {
+function section(title, body) {
+  // 説明文（mx-sub）は表示しない
   return `<section class="mx-sec">
     <div class="mx-head"><span class="t">${title}</span></div>
-    ${sub ? `<div class="mx-sub">${sub}</div>` : ''}
     ${body}</section>`;
 }
 
@@ -253,6 +252,7 @@ function viewHome() {
         <a onclick="nav('submit')">上長へ提出書をつくる</a>
         <a onclick="nav('issues')">チームのイシュー</a>
         <a onclick="nav('reps')">営業マン一覧</a>
+        <a onclick="nav('terakoya')">寺子屋（Zoom研修）</a>
       </div>`)}
     </aside>
   </div>`;
@@ -1103,10 +1103,12 @@ const RANK_DEF = {
   visits: { label: '総訪問数', unit: '件', get: r => r.visits, sub: r => `${r.vpd}件/日 ・ ${r.days}日稼働` },
   vpd: { label: '訪問/日', unit: '件/日', get: r => r.vpd, sub: r => `総${r.visits}件 ・ ${r.days}日稼働` },
   apo: { label: 'アポ数', unit: '件', get: r => r.apo, sub: r => `訪問${r.visits}件 ・ アポ率${r.apoRate}%` },
-  // ここから歩行（GPS打刻から算出。訪問数と違い自動記録なので取りこぼしが少ない）
-  walkKm: { walk: true, label: '歩行距離', unit: 'km', get: r => r.walkKm, sub: r => `1日${r.walkPerDay}km ・ ${r.days}日 ・ 歩行比${r.walkRatio}%` },
-  walkPerDay: { walk: true, label: '歩行/日', unit: 'km/日', get: r => r.walkPerDay, sub: r => `総${r.walkKm}km ・ 車移動${r.rideKm}km` },
-  visitsPerKm: { walk: true, label: '歩行効率', unit: '件/km', get: r => r.visitsPerKm || 0, sub: r => `訪問${r.visits ?? '—'}件 ÷ 歩行${r.walkKm}km` },
+  apoRate: { label: 'アポ率', unit: '%', min: 5, get: r => r.apoRate, sub: r => `アポ${r.apo}件 ÷ 訪問${r.visits}件`, only: r => r.visits >= 20 },
+  seiyaku: { label: '成約数', unit: '件', get: r => r.seiyaku ?? 0, sub: r => `敗戦${r.haisen ?? 0}件 ・ 成約率${r.closeRate ?? '—'}%`, only: r => (r.seiyaku ?? 0) + (r.haisen ?? 0) > 0 },
+  closeRate: { label: '成約率', unit: '%', get: r => r.closeRate ?? 0, sub: r => `成約${r.seiyaku ?? 0} / 敗戦${r.haisen ?? 0}`, only: r => (r.seiyaku ?? 0) + (r.haisen ?? 0) >= 3 },
+  shodan: { label: '商談数', unit: '件', get: r => r.shodan ?? 0, sub: r => `提案中＋新規商談`, only: r => (r.shodan ?? 0) > 0 },
+  haisen: { label: '敗戦数', unit: '件', get: r => r.haisen ?? 0, sub: r => `成約${r.seiyaku ?? 0} / 敗戦${r.haisen ?? 0}`, only: r => (r.seiyaku ?? 0) + (r.haisen ?? 0) > 0 },
+  days: { label: '稼働日数', unit: '日', get: r => r.days, sub: r => `総訪問${r.visits}件` },
 };
 function setRankSort(k) { RANK_SORT = k; loadRanking(); }
 window.setRankSort = setRankSort;
@@ -1114,7 +1116,29 @@ window.setRankSort = setRankSort;
 function viewRanking() {
   return `
   ${h1('行動量ランキング', 'cyzenの行動データから、営業マン一人ひとりの「動いた量」を順位で可視化する。量が足りているかは、質を語る前の前提。')}
+  <div id="trendWrap" class="mb-4"></div>
   <div id="rankWrap" class="text-sm text-neutral-500">読み込み中…</div>`;
+}
+/* 伸びているスタッフ（今週 vs 先週）＋その人の到達オペレベル */
+async function loadTrends() {
+  const box = document.getElementById('trendWrap'); if (!box) return;
+  let t; try { t = await API.cyzenTrends(7); } catch { box.innerHTML = ''; return; }
+  if (!t.ready || !t.rows.length) { box.innerHTML = ''; return; }
+  // 伸びている人（直近の訪問/日が前週より増）を上位、かつ直近も動けている人
+  const up = t.rows.filter(r => r.deltaVpd > 0 && r.recVpd >= 8).slice(0, 5);
+  if (!up.length) { box.innerHTML = ''; return; }
+  const arrow = g => g == null ? '<span class="text-emerald-600">NEW</span>' : `<span class="text-emerald-600">+${g}%</span>`;
+  const cards = up.map((r, i) => `
+    <div class="px-4 py-3 border border-[#DDD8CC] rounded bg-white">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">${['🔥', '📈', '📈', '📈', '📈'][i]}</span>
+        <div class="text-[13px] font-bold text-neutral-900 truncate" title="${r.name}">${r.name || '—'}</div>
+      </div>
+      <div class="mt-1.5 text-[13px] text-neutral-800">今週 <b class="text-emerald-700 tabular-nums">${r.recVpd}</b> 件/日
+        <span class="text-[11px] text-neutral-500">（先週 ${r.priVpd} → ${arrow(r.growth)}）</span></div>
+      <div class="text-[11px] text-neutral-600 mt-0.5">アポ率 ${r.recApoRate}% ・ 直近${r.recDays}日で訪問${r.recVisits}件${r.recApo ? ` ・ アポ${r.recApo}件` : ''}</div>
+    </div>`).join('');
+  box.innerHTML = mxBox('🔥 伸びているスタッフ', `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">${cards}</div>`);
 }
 
 async function loadRanking() {
@@ -1122,17 +1146,12 @@ async function loadRanking() {
   let data;
   try { data = await API.cyzenRoster(); }
   catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
-  if (!data.ready) {
-    wrap.innerHTML = card(`<div class="p-8 text-center text-sm text-neutral-700">cyzenのデータがまだ取り込まれていません。
-      <div class="mt-3"><button onclick="nav('cyzen')" class="px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold">cyzenを取り込む</button></div></div>`);
-    return;
-  }
+  if (!data.ready) { wrap.innerHTML = card(`<div class="p-8 text-center text-sm text-neutral-500">データがありません。</div>`); return; }
   const def = RANK_DEF[RANK_SORT];
   const bench = (data.bench || {}).visitsPerDay || 31;
-  // 歩行タブなら別APIのデータで一覧を作る（全員分をそのまま出す）
-  if (def.walk) return renderWalkRanking(wrap, def);
   // 記録が無い人（判定E）は順位に含めない＝「動いていない」ではなく「測れていない」ため
-  const rows = (data.rows || []).filter(r => r.days > 0).sort((a, z) => def.get(z) - def.get(a) || z.visits - a.visits);
+  // 指標ごとの母集団条件(only)も適用（例：アポ率は訪問20件以上・成約率はクローザーのみ）
+  const rows = (data.rows || []).filter(r => r.days > 0 && (!def.only || def.only(r))).sort((a, z) => def.get(z) - def.get(a) || z.visits - a.visits);
   if (!rows.length) { wrap.innerHTML = card(`<div class="p-8 text-center text-sm text-neutral-600">期間内に稼働記録のある営業マンがいません。</div>`); return; }
 
   const max = def.get(rows[0]) || 1;
@@ -1167,34 +1186,11 @@ async function loadRanking() {
     </div>`;
   }).join('');
 
-  const totalVisits = rows.reduce((n, r) => n + r.visits, 0);
-  // 配信(digest)と物差しを揃える：母数は訪問実績のある人、代表値は中央値。
-  // クローザーや訪問0件を混ぜた平均は基準が下振れするため使わない。
-  const visiting = rows.filter(r => r.visits > 0);
-  const med = (xs => { if (!xs.length) return 0; const a = [...xs].sort((p, q) => p - q), m = a.length >> 1;
-    return +(a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2).toFixed(1); })(visiting.map(r => r.vpd));
-  const threshold = +(med * 0.7).toFixed(1);
-  const belowCnt = visiting.filter(r => r.vpd < threshold).length;
-  const overCnt = rows.filter(r => r.vpd >= bench).length;
-
   wrap.innerHTML = `
-    ${mxBox('集計の前提', `
-      ${mxRow('対象期間', `${data.summary.periodDays} 営業日`)}
-      ${mxRow('ランキング対象', `${rows.length} 名（稼働記録のある人のみ）`)}
-      ${mxRow('記録なしで除外', `${(data.summary.E || 0)} 名`, (data.summary.E || 0) > 0 ? 'neg' : '')}
-      ${mxRow('総訪問数', `${totalVisits.toLocaleString()} 件`)}
-      ${mxRow('中央値（訪問実績のある人）', `${med} 件/日 ・ ${visiting.length}名`)}
-      ${mxRow('指導の目安（中央値の70%）', `${threshold} 件/日 未満 ・ ${belowCnt}名`, belowCnt ? 'neg' : 'pos')}
-      ${mxRow(`あるべき水準(${bench}件/日)の到達`, `${overCnt} / ${rows.length} 名`, overCnt === 0 ? 'neg' : 'pos')}
-    `)}
     ${mxBox('上位3名', `<div class="grid grid-cols-3 gap-2">${podium}</div>`)}
-    ${mxBox(`ランキング（${def.label}順）`, `
+    ${mxBox(def.label, `
       <div class="flex flex-wrap gap-1.5 mb-3">${tabs}</div>
-      ${list}
-      <div class="text-[11px] text-neutral-500 mt-3 pt-2 border-t border-[#E3DED2]">
-        判定 S=量質とも基準クリア / A=活動量不足 / B=商談化不足 / C=クロージング不足 / D=稼働低下。
-        <b>記録なし(E)の${(data.summary.E || 0)}名は順位に含めていません</b>（動いていないのではなく、cyzenに記録が上がっていないため）。
-      </div>`)}`;
+      ${list}`)}`;
 }
 
 /* 歩行ランキング（GPS打刻から算出）。全員分をそのまま並べる。 */
@@ -1256,9 +1252,8 @@ async function renderWalkRanking(wrap, def) {
 
 function viewCyzen() {
   return `
-  ${h1('全営業KPI（cyzen）', 'cyzenの行動データから全営業の「量」を集計し、教育セグメントを自動判定。誰に何を教えるべきかがここで決まる。')}
-  <div id="cyzenWrap" class="text-sm text-neutral-500">読み込み中…</div>
-  <div id="cyzenUpload" class="mt-6"></div>`;
+  ${h1('全営業KPI（cyzen）')}
+  <div id="cyzenWrap" class="text-sm text-neutral-500">読み込み中…</div>`;
 }
 
 /* ---------- 入力コンプライアンス（未入力の名指し＋Rumina文面）owner専用 ---------- */
@@ -1305,7 +1300,7 @@ async function loadCompliance() {
   const wrap = document.getElementById('compWrap'); if (!wrap) return;
   let data;
   try { data = await API.cyzenCompliance(); } catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
-  if (data.needHistory) { wrap.innerHTML = `<div class="text-sm text-neutral-600 p-6 text-center border border-neutral-200 rounded-xl bg-white">この判定には <b>行動履歴CSV（GPS）</b> が必要です。「全営業KPI（cyzen）」の取り込み欄から行動履歴をアップロードしてください。</div>`; return; }
+  if (data.needHistory) { wrap.innerHTML = `<div class="text-sm text-neutral-500 p-6 text-center">GPS行動履歴が現在のデータに含まれていないため、この判定は利用できません。</div>`; return; }
   if (!data.ready || !data.rows.length) { wrap.innerHTML = `<div class="text-sm text-neutral-500 p-6 text-center border border-neutral-200 rounded-xl bg-white">未入力の該当者はいません。</div>`; return; }
   const s = data.summary;
   const badge = lv => lv === 'none' ? '<span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-600 text-white">完全未入力</span>'
@@ -1349,23 +1344,11 @@ function copyText(btn, jsonStr) {
 window.copyText = copyText;
 async function loadCyzen() {
   const wrap = document.getElementById('cyzenWrap');
-  const up = document.getElementById('cyzenUpload');
-  if (up) up.innerHTML = card(`<div class="p-4">
-    <div class="text-sm font-semibold text-neutral-700 mb-1">cyzen CSVを取り込む</div>
-    <div class="text-[12px] text-neutral-500 mb-3">cyzenの書き出しをそのままアップロード。サーバーの永続領域に保存され、即座に集計へ反映されます。</div>
-    <div class="grid sm:grid-cols-3 gap-3">
-      ${[['user', 'ユーザーマスター', '担当者の名簿'], ['report', '報告書（複数可）', '出勤/勤務終了/アポ獲得 等'], ['history', '行動履歴', 'GPS打刻（大容量・任意）']]
-      .map(([k, t, d]) => `<label class="block border border-dashed border-emerald-400/40 hover:border-emerald-400/70 rounded-lg p-3 text-center cursor-pointer transition">
-        <input type="file" accept=".csv" ${k === 'report' ? 'multiple' : ''} class="hidden" onchange="uploadCyzen(this,'${k}')">
-        <div class="text-[13px] text-neutral-800">${t}</div><div class="text-[11px] text-neutral-500 mt-0.5">${d}</div></label>`).join('')}
-    </div>
-    <div id="cyzenUpMsg" class="text-[12px] text-neutral-500 mt-2"></div>
-  </div>`);
   if (!wrap) return;
   let data;
   try { data = await API.cyzenRoster(); } catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
   if (!data.ready || !data.rows.length) {
-    wrap.innerHTML = `<div class="text-sm text-neutral-500 p-6 text-center border border-neutral-200 rounded-xl bg-white">cyzenデータが未取り込みです。下の「cyzen CSVを取り込む」からアップロードしてください。</div>`;
+    wrap.innerHTML = `<div class="text-sm text-neutral-500 p-6 text-center">データがありません。</div>`;
     return;
   }
   const s = data.summary, b = data.bench;
@@ -1541,8 +1524,61 @@ async function saveDiary() {
 }
 window.saveDiary = saveDiary;
 
-const VIEWS = { login: viewLogin, my: viewMy, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay };
-function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); if (v === 'compliance') { loadCompliance(); loadReminders(); } if (v === 'ranking') loadRanking(); if (v === 'my') { loadPortalProfile(); loadTerakoya(); } window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+/* ---------- 寺子屋（Zoom研修の専用ページ）----------
+ * ガバショの「応援動画BOX」と同じ発想で、入口をこの1ページに集約する。
+ * ZoomのURLは「参加する」を押した人にだけ返るので、必ずここを通る。 */
+function viewTerakoya() {
+  const t = window.__terakoya, d = window.__diary;
+  const s = t && t.session;
+  const hero = s ? `
+    <div class="p-5">
+      <div class="text-[11px] tracking-widest text-emerald-700 font-bold mb-1">TERAKOYA</div>
+      <div class="text-[22px] font-bold text-neutral-900 mb-1">${esc(s.title || '寺子屋')}</div>
+      <div class="text-[13px] text-neutral-600 mb-4">${esc(s.theme || '')}</div>
+      ${mxRow('日時', esc(s.startAt || '—'))}
+      ${mxRow('参加', t.joined ? '記録済み' : 'まだ')}
+      <div class="mt-4">
+        <button onclick="joinTerakoya()"
+          class="px-6 py-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[15px] font-bold">
+          ${t.joined ? 'もう一度ひらく' : 'Zoomをひらいて参加する'}</button>
+        <span id="tkMsg" class="ml-3 text-[12px] text-neutral-500"></span>
+      </div>
+      <div class="mt-3 text-[11px] text-neutral-500">
+        リンクは配られません。参加はこのページからだけです。押すと出欠が記録されます。
+      </div>
+    </div>` : `
+    <div class="p-8 text-center text-[13px] text-neutral-600">
+      いま予定されている寺子屋はありません。<br>開催が決まると、ここに出ます。
+    </div>`;
+
+  const past = (d && d.recent && d.recent.length)
+    ? d.recent.map((x) => `<div class="p-3 border-b border-dashed" style="border-color:#E3DED2">
+        <div class="text-[11px] text-neutral-500 mb-1">${esc(x.day)}</div>
+        <div class="text-[13px] text-neutral-800 whitespace-pre-wrap">${esc(x.body)}</div></div>`).join('')
+    : '<div class="p-5 text-center text-[12px] text-neutral-500">まだ記録がありません。</div>';
+
+  return `
+  ${h1('寺子屋', '研修はここから入ります')}
+  <div class="mx-2col">
+    <div class="min-w-0">
+      ${mxBox('次の開催', hero)}
+      <div id="diaryCard" class="mt-4"></div>
+    </div>
+    <aside class="min-w-0">
+      ${mxBox('これまでの学び', past)}
+      ${mxBox('メニュー', `<div class="mx-nav">
+        <a onclick="nav('my')">マイページへ戻る</a>
+        <a onclick="nav('upload')">録音を出稿する</a>
+        <a onclick="nav('roleplay')">ロープレ道場</a>
+        <a onclick="nav('terakoya')">寺子屋（Zoom研修）</a>
+      </div>`)}
+    </aside>
+  </div>`;
+}
+
+const VIEWS = { login: viewLogin, my: viewMy, terakoya: viewTerakoya, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay };
+function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); if (v === 'compliance') { loadCompliance(); loadReminders(); } if (v === 'ranking') { loadRanking(); loadTrends(); } if (v === 'my') { loadPortalProfile(); loadTerakoya(); } if (v === 'terakoya') loadTerakoya(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function render() {
   app.innerHTML = VIEWS[currentView]();
   document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('nav-active', el.dataset.nav === currentView));

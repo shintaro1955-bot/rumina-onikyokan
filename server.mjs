@@ -475,11 +475,20 @@ const server = createServer(async (req, res) => {
         const me = currentUser(req);
         if (!me) return json(res, 401, { error: 'ログインが必要です' });
         const data = cyzen.roster();
+        // 一般社員には「数えられる数」（訪問/アポ/成約/敗戦/商談…）は全部見せてよい。
+        // 伏せるのは弱点判定ラベル(seg/why)とセグメント分布だけ。
         if (me.role !== 'owner' && Array.isArray(data.rows)) {
-          data.rows = data.rows.map(({ seg, why, closeRate, seiyaku, haisen, ...rest }) => rest);
-          if (data.summary) data.summary = { periodDays: data.summary.periodDays, total: data.summary.total, evaluable: data.summary.evaluable };
+          data.rows = data.rows.map(({ seg, why, ...rest }) => rest);
+          if (data.summary) data.summary = { periodDays: data.summary.periodDays, total: data.summary.total, evaluable: data.summary.evaluable, E: data.summary.E };
         }
         return json(res, 200, data);
+      }
+
+      // 伸びているスタッフ（直近◯日 vs その前）。ログインで閲覧可。
+      if (path === '/api/cyzen/trends' && req.method === 'GET') {
+        const me = currentUser(req);
+        if (!me) return json(res, 401, { error: 'ログインが必要です' });
+        return json(res, 200, cyzen.trends({ recentDays: +(url.searchParams.get('days') || 7) }));
       }
 
       // 入力コンプライアンス：GPSで動いているのに勤務終了報告を出していない人（owner専用）
