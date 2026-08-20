@@ -1596,6 +1596,7 @@ function nav(v) {
   if (v === 'academy') loadAcademy();
   if (v === 'terakoya') loadTerakoya();
   loadRail();
+  try { API.track(v + '_viewed'); } catch {}
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function render() {
@@ -1991,6 +1992,8 @@ async function boot() {
   if (!allowed.includes(currentView) || currentView === 'login') currentView = 'today';   // 常にTodayから
   nav(currentView);
   updateSync();
+  updateBell();
+  if (!window.__bellTimer) window.__bellTimer = setInterval(updateBell, 60000);
 }
 /* ============================================================
    Rumina Field OS — Today / Field / Academy / League / 右レール / テーマ
@@ -2133,12 +2136,14 @@ async function loadPosts() {
         ${owner ? `<button class="tn-ico" style="width:26px;height:26px" onclick="delPost('${p.id}')" title="削除">✕</button>` : ''}</div>
       ${p.title ? `<div style="font-size:15px;font-weight:700;margin-top:8px;color:var(--text)">${(p.title || '').replace(/</g, '&lt;')}</div>` : ''}
       ${p.body ? `<div style="font-size:14px;margin-top:6px;line-height:1.6;color:var(--text);white-space:pre-wrap">${(p.body || '').replace(/</g, '&lt;')}</div>` : ''}
-      <div style="display:flex;gap:6px;margin-top:12px;border-top:1px solid var(--border);padding-top:10px;flex-wrap:wrap">${reacts}
+      <div style="display:flex;gap:6px;margin-top:12px;border-top:1px solid var(--border);padding-top:10px;flex-wrap:wrap;align-items:center">${reacts}
+        <button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="toggleComments('${p.id}')">コメント${p.commentCount ? ' ' + p.commentCount : ''}</button>
         ${owner && p.important ? `<span class="muted" style="font-size:11px;margin-left:auto;align-self:center">既読 ${p.readCount ?? 0}名</span>` : ''}</div>
+      <div id="cm-${p.id}" data-open="0"></div>
     </div>`;
   }).join('');
 }
-async function doReact(id, kind) { await API.react(id, kind); loadPosts(); }
+async function doReact(id, kind) { await API.react(id, kind); API.track('feed_reaction_added'); loadPosts(); }
 async function delPost(id) { if (confirm('この投稿を削除しますか？')) { await API.deletePost(id); loadPosts(); } }
 window.doReact = doReact; window.delPost = delPost;
 
@@ -2164,7 +2169,7 @@ function closeGoal() { const m = document.getElementById('goalModal'); if (m) m.
 async function saveGoal() {
   const visits = parseInt(document.getElementById('gVisits').value) || 50;
   const apoV = document.getElementById('gApo').value; const apo = apoV === '' ? null : parseInt(apoV);
-  try { await API.setGoal({ visits, apo }); closeGoal(); if (currentView === 'today') loadToday(); else if (currentView === 'me') loadMePerf(); loadRail(); } catch (e) { alert(e.message); }
+  try { await API.setGoal({ visits, apo }); API.track('goal_updated'); closeGoal(); if (currentView === 'today') loadToday(); else if (currentView === 'me') loadMePerf(); loadRail(); } catch (e) { alert(e.message); }
 }
 window.openGoal = openGoal; window.closeGoal = closeGoal; window.saveGoal = saveGoal;
 
@@ -2237,6 +2242,81 @@ async function saveWeights() {
   catch (e) { const el = document.getElementById('wMsg'); if (el) { el.textContent = e.message; el.style.color = 'var(--danger)'; } }
 }
 window.openWeights = openWeights; window.saveWeights = saveWeights;
+
+/* ---------- 通知 ---------- */
+const NOTIF_ICON = { post: '📣', comment: '💬', selfbest: '📈', morning: '🌅', review: '📚', info: '🔔' };
+async function updateBell() {
+  const badge = document.getElementById('bellBadge'); if (!badge) return;
+  if (!window.__user) { badge.style.display = 'none'; return; }
+  try { const n = await API.notifications(); window.__notifs = n; badge.textContent = n.unread > 9 ? '9+' : n.unread; badge.style.display = n.unread ? 'block' : 'none'; } catch {}
+}
+async function openNotifs(ev) {
+  if (ev) ev.stopPropagation();
+  const exist = document.getElementById('notifPanel'); if (exist) { exist.remove(); return; }
+  const n = window.__notifs || await API.notifications();
+  const panel = document.createElement('div'); panel.id = 'notifPanel';
+  panel.style.cssText = 'position:fixed;top:56px;right:12px;z-index:90;width:340px;max-width:calc(100vw - 24px);max-height:70vh;overflow:auto';
+  panel.className = 'fo-card';
+  const items = (n.notifs || []).length ? n.notifs.map(x => `<div style="display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);${x.read ? '' : 'background:var(--primary-soft)'}" ${x.link ? `onclick="nav('${x.link}');document.getElementById('notifPanel').remove()" role="button"` : ''}>
+      <div style="font-size:18px">${NOTIF_ICON[x.type] || '🔔'}</div>
+      <div style="min-width:0"><div style="font-size:13px;font-weight:700;color:var(--text)">${(x.title || '').replace(/</g, '&lt;')}</div>
+        <div class="muted" style="font-size:12px;margin-top:2px">${(x.body || '').replace(/</g, '&lt;')}</div>
+        <div class="muted" style="font-size:10px;margin-top:3px">${(x.at || '').replace('T', ' ').slice(5, 16)}</div></div></div>`).join('')
+    : '<div class="muted" style="padding:24px;text-align:center;font-size:13px">通知はありません</div>';
+  panel.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border)">
+      <div style="font-weight:700;color:var(--text)">通知</div><button class="fo-btn ghost" style="padding:4px 10px;font-size:11px" onclick="openNotifSettings()">設定</button></div>${items}`;
+  document.body.appendChild(panel);
+  setTimeout(() => document.addEventListener('click', closeNotifsOnce), 0);
+  await API.readNotifs(); updateBell();
+}
+function closeNotifsOnce(e) { const p = document.getElementById('notifPanel'); if (p && !p.contains(e.target) && e.target.id !== 'bellBtn') { p.remove(); document.removeEventListener('click', closeNotifsOnce); } }
+window.openNotifs = openNotifs;
+async function openNotifSettings() {
+  const p = document.getElementById('notifPanel'); if (p) p.remove();
+  const s = (window.__notifs && window.__notifs.settings) || { morning: true, pace: true, praise: true, review: true };
+  const L = { morning: '朝の目標・学習', pace: '自己ベスト・ペース', praise: '称賛・コメント', review: '復習期限' };
+  const m = document.createElement('div'); m.id = 'nsModal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML = `<div class="fo-card" style="padding:20px;max-width:320px;width:100%" onclick="event.stopPropagation()">
+    <div style="font-size:16px;font-weight:700;color:var(--text)">通知設定</div>
+    ${Object.keys(L).map(k => `<label style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:14px;color:var(--text)">${L[k]}<input type="checkbox" id="ns_${k}" ${s[k] ? 'checked' : ''}></label>`).join('')}
+    <div style="margin-top:16px;text-align:right"><button class="fo-btn" onclick="saveNotifSettings()">保存</button></div></div>`;
+  m.onclick = () => m.remove(); document.body.appendChild(m);
+}
+async function saveNotifSettings() {
+  const s = {}; ['morning', 'pace', 'praise', 'review'].forEach(k => s[k] = document.getElementById('ns_' + k).checked);
+  await API.setNotifSettings(s); const m = document.getElementById('nsModal'); if (m) m.remove();
+}
+window.openNotifSettings = openNotifSettings; window.saveNotifSettings = saveNotifSettings;
+
+/* ---------- コメント（投稿スレッド） ---------- */
+async function toggleComments(id) {
+  const box = document.getElementById('cm-' + id); if (!box) return;
+  if (box.dataset.open === '1') { box.dataset.open = '0'; box.innerHTML = ''; return; }
+  box.dataset.open = '1'; box.innerHTML = '<div class="muted" style="font-size:12px;padding:8px 0">読み込み中…</div>';
+  renderComments(id);
+}
+async function renderComments(id) {
+  const box = document.getElementById('cm-' + id); if (!box) return;
+  const cs = await API.getComments(id);
+  const owner = window.__user && window.__user.role === 'owner';
+  const meU = window.__user && window.__user.username;
+  const list = cs.map(c => `<div style="display:flex;gap:8px;padding:8px 0;border-top:1px solid var(--border)">
+      <div style="min-width:0;flex:1"><span style="font-size:12px;font-weight:700;color:var(--text)">${c.name}</span>
+        <span class="muted" style="font-size:10px;margin-left:6px">${(c.at || '').replace('T', ' ').slice(5, 16)}</span>
+        <div style="font-size:13px;color:var(--text);margin-top:2px;white-space:pre-wrap">${(c.text || '').replace(/</g, '&lt;')}</div></div>
+      ${(owner || c.user === meU) ? `<button class="tn-ico" style="width:24px;height:24px" onclick="delComment('${c.id}','${id}')" aria-label="削除">✕</button>` : ''}</div>`).join('');
+  box.innerHTML = `${list}
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="ci-${id}" placeholder="コメントを書く" style="flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;color:var(--text)" onkeydown="if(event.key==='Enter')sendComment('${id}')">
+      <button class="fo-btn" style="padding:6px 14px;font-size:12px" onclick="sendComment('${id}')">送信</button></div>`;
+}
+async function sendComment(id) {
+  const el = document.getElementById('ci-' + id); const t = el && el.value.trim(); if (!t) return;
+  try { await API.addComment(id, t); el.value = ''; renderComments(id); if (typeof track === 'function') API.track('feed_comment_added'); } catch (e) { alert(e.message); }
+}
+async function delComment(cid, pid) { await API.deleteComment(cid); renderComments(pid); }
+window.toggleComments = toggleComments; window.sendComment = sendComment; window.delComment = delComment;
 function foStat(label, val, unit) {
   return `<div><div class="muted" style="font-size:11px">${label}</div><div style="font-size:22px;font-weight:700;color:var(--text)" class="num">${val}<span class="muted" style="font-size:12px;font-weight:500;margin-left:2px">${unit || ''}</span></div></div>`;
 }
@@ -2332,7 +2412,7 @@ function startDrill(id, title) {
   document.body.appendChild(m);
 }
 async function finishDrill(id) {
-  try { const r = await API.completeDrill(id, 100); const m = document.getElementById('drillModal'); if (m) m.remove(); loadAcademy(); loadRail(); }
+  try { const r = await API.completeDrill(id, 100); API.track('daily_drill_completed',{id}); const m = document.getElementById('drillModal'); if (m) m.remove(); loadAcademy(); loadRail(); }
   catch (e) { alert(e.message); }
 }
 window.startDrill = startDrill; window.finishDrill = finishDrill;

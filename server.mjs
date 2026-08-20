@@ -267,6 +267,10 @@ function myDashboard(user) {
     out.trend = tr.ready ? (tr.rows.find(r => r.code === code) || null) : null;
     out.streak = cyzen.personStreak(code, 1);
     out.momentum = fieldos.momentum(out.cyzen, user.username, learnRate);
+    // 自己ベスト（今週の伸び）を1日1回だけ通知
+    if (out.trend && out.trend.deltaVpd >= 3 && fieldos.getNotifSettings(user.username).pace) {
+      fieldos.pushNotif(user.username, { type: 'selfbest', title: '今週、伸びています', body: `訪問/日 ${out.trend.recVpd}件（先週比 ${out.trend.growth == null ? 'NEW' : '+' + out.trend.growth + '%'}）`, link: 'league' }, 'selfbest');
+    }
   }
   return out;
 }
@@ -610,14 +614,58 @@ const server = createServer(async (req, res) => {
       /* ---------- ソーシャル（上長投稿・リアクション・既読） ---------- */
       if (path === '/api/posts' && req.method === 'GET') {
         const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
-        const posts = fieldos.listPosts(30).map(p => ({ ...p, reactions: fieldos.reactionsFor(p.id), myReaction: (getDb().fieldos.reactions.find(r => r.user === me.username && r.targetId === p.id) || {}).kind || null, readCount: me.role === 'owner' ? fieldos.readInfo(p.id).length : undefined }));
+        const posts = fieldos.listPosts(30).map(p => ({ ...p, reactions: fieldos.reactionsFor(p.id), myReaction: (getDb().fieldos.reactions.find(r => r.user === me.username && r.targetId === p.id) || {}).kind || null, commentCount: fieldos.commentCount(p.id), readCount: me.role === 'owner' ? fieldos.readInfo(p.id).length : undefined }));
         return json(res, 200, { posts });
       }
       if (path === '/api/posts' && req.method === 'POST') {
         const me = currentUser(req); if (!me || me.role !== 'owner') return json(res, 403, { error: '権限がありません' });
         const b = await readBody(req);
         if (!b.title && !b.body) return json(res, 400, { error: '内容が必要です' });
-        return json(res, 200, { post: fieldos.addPost({ ...b, author: me.name }) });
+        const post = fieldos.addPost({ ...b, author: me.name, authorUser: me.username });
+        if (post.important) fieldos.pushNotifAll(Object.keys(getDb().users), { type: 'post', title: '重要連絡', body: post.title || '本部からの連絡', link: 'today' }, me.username);
+        return json(res, 200, { post });
+      }
+      // コメント
+      if (path === '/api/comments' && req.method === 'GET') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        return json(res, 200, { comments: fieldos.listComments(url.searchParams.get('targetId') || '') });
+      }
+      if (path === '/api/comment' && req.method === 'POST') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        const b = await readBody(req);
+        const c = fieldos.addComment(me.username, me.name, b.targetId, b.text);
+        if (!c) return json(res, 400, { error: 'コメントが空です' });
+        const author = fieldos.postAuthorUser(b.targetId);
+        if (author && author !== me.username) fieldos.pushNotif(author, { type: 'comment', title: 'コメントが届きました', body: `${me.name}：${c.text.slice(0, 40)}`, link: 'today' });
+        return json(res, 200, { comment: c });
+      }
+      const mComDel = path.match(/^\/api\/comment\/(.+)$/);
+      if (mComDel && req.method === 'DELETE') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        return json(res, 200, { ok: fieldos.deleteComment(decodeURIComponent(mComDel[1]), me.username, me.role === 'owner') });
+      }
+      // 通知
+      if (path === '/api/notifications' && req.method === 'GET') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        // 派生通知（1日1回）：朝の目標・Daily Drill、復習期限
+        const s = fieldos.getNotifSettings(me.username);
+        if (s.morning) fieldos.pushNotif(me.username, { type: 'morning', title: '今日の目標とDaily Drill', body: '今日の一歩を確認しましょう。', link: 'today' }, 'morning');
+        const due = fieldos.dueReviews(me.username).length;
+        if (s.review && due) fieldos.pushNotif(me.username, { type: 'review', title: `復習が${due}件あります`, body: 'Academyで定着させましょう。', link: 'academy' }, 'review');
+        return json(res, 200, { notifs: fieldos.listNotifs(me.username), unread: fieldos.unreadCount(me.username), settings: s });
+      }
+      if (path === '/api/notifications/read' && req.method === 'POST') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        fieldos.markNotifsRead(me.username); return json(res, 200, { ok: true });
+      }
+      if (path === '/api/notifications/settings' && req.method === 'POST') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        return json(res, 200, { settings: fieldos.setNotifSettings(me.username, await readBody(req)) });
+      }
+      // 分析イベント（GPS座標は送らない）
+      if (path === '/api/track' && req.method === 'POST') {
+        const me = currentUser(req); const b = await readBody(req);
+        fieldos.track(me ? me.username : null, b.event, b.props); return json(res, 200, { ok: true });
       }
       const mPostDel = path.match(/^\/api\/posts\/(.+)$/);
       if (mPostDel && req.method === 'DELETE') {

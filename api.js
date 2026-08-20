@@ -113,6 +113,13 @@ window.API = (function () {
   async function deletePost(id) { await fetch('/api/posts/' + encodeURIComponent(id), { method: 'DELETE' }); }
   async function react(targetId, kind) { const r = await fetch('/api/react', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ targetId, kind }) }); const j = await r.json().catch(() => ({})); return j; }
   async function markRead(postId) { try { await fetch('/api/read', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ postId }) }); } catch {} }
+  async function getComments(targetId) { try { const r = await fetch('/api/comments?targetId=' + encodeURIComponent(targetId)); return r.ok ? (await r.json()).comments : []; } catch { return []; } }
+  async function addComment(targetId, text) { const r = await fetch('/api/comment', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ targetId, text }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'コメントに失敗しました'); return j.comment; }
+  async function deleteComment(id) { await fetch('/api/comment/' + encodeURIComponent(id), { method: 'DELETE' }); }
+  async function notifications() { try { const r = await fetch('/api/notifications'); return r.ok ? r.json() : { notifs: [], unread: 0 }; } catch { return { notifs: [], unread: 0 }; } }
+  async function readNotifs() { try { await fetch('/api/notifications/read', { method: 'POST' }); } catch {} }
+  async function setNotifSettings(s) { const r = await fetch('/api/notifications/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(s) }); return (await r.json().catch(() => ({}))).settings; }
+  function track(event, props) { try { navigator.sendBeacon ? navigator.sendBeacon('/api/track', new Blob([JSON.stringify({ event, props })], { type: 'application/json' })) : fetch('/api/track', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ event, props }) }); } catch {} }
   async function cyzenReminders() { const r = await fetch('/api/cyzen/reminders'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'リマインド情報の取得に失敗しました'); return j; }
   async function cyzenReminderRun(live) { const r = await fetch('/api/cyzen/reminders/run' + (live ? '?live=1' : ''), { method: 'POST' }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '実行に失敗しました'); return j; }
   async function cyzenUpload(file, kind) {
@@ -127,5 +134,6 @@ window.API = (function () {
   async function linkRep(username, repId) { const r = await fetch('/api/admin/link-rep', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, repId }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '紐付けに失敗しました'); return j; }
 
   return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenTrends, cyzenReminders, cyzenReminderRun, cyzenWalk, cyzenUpload, portalProfile,
-    dashboard, setGoal, getWeights, setWeights, completeDrill, academyProgress, getPosts, addPost, deletePost, react, markRead };
+    dashboard, setGoal, getWeights, setWeights, completeDrill, academyProgress, getPosts, addPost, deletePost, react, markRead,
+    getComments, addComment, deleteComment, notifications, readNotifs, setNotifSettings, track };
 })();
