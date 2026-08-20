@@ -626,6 +626,11 @@ const server = createServer(async (req, res) => {
         const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
         return json(res, 200, await todayPayload(me));
       }
+      // ブラウザ用Mapsキー（フラグON時のみ・HTTPリファラ制限前提で公開してよい鍵）
+      if (path === '/api/maps/key' && req.method === 'GET') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        return json(res, 200, { key: providers.mapsBrowserKey() });
+      }
       // 連携ステータス（cyzen/ポータル/Google各種）
       if (path === '/api/integrations/status' && req.method === 'GET') {
         const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
