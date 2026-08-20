@@ -2031,7 +2031,7 @@ function viewToday() {
 async function loadToday() {
   const wrap = document.getElementById('todayWrap'); if (!wrap) return;
   const u = window.__user || {};
-  const d = await API.dashboard() || {};
+  const d = await API.today() || {};
   window.__dash = d;
   const today = d.today, cz = d.cyzen, tr = d.trend, mo = d.momentum, streak = d.streak || 0;
   const target = (d.goal && d.goal.visits) || 50;
@@ -2061,22 +2061,28 @@ async function loadToday() {
       </div>
     </div>
     ${today ? (remain > 0
-      ? `<div class="fo-chip" style="margin-top:16px">あと ${remain} 訪問で今日の目標達成</div>`
+      ? `<div class="fo-chip" style="margin-top:16px">あと ${remain} 訪問で今日の目標達成</div>${d.forecast ? `<span class="muted" style="font-size:12px;margin-left:8px">現在ペースで ${d.forecast.etaText}</span>` : ''}`
       : `<div class="fo-chip" style="margin-top:16px">今日の訪問目標を達成しています</div>`)
       : `<div style="margin-top:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:13px">今日のcyzen記録がまだありません。</span><button class="fo-btn ghost" style="padding:6px 12px;font-size:13px" onclick="nav('goals')">目標を設定</button></div>`}
     <div class="muted" style="font-size:11px;margin-top:10px">${today && today.date ? today.date + ' の実績 ・ ' : ''}<span onclick="nav('goals')" style="color:var(--primary);cursor:pointer">目標を調整</span>${today ? ` ・ <span onclick="nav('field')" style="color:var(--primary);cursor:pointer">1日を振り返る →</span>` : ''}</div>
   </div>`;
 
-  let na;
-  if (!today) na = '今日の稼働記録がまだありません。まず1件目の訪問を記録しましょう。';
-  else if (remain > 0) { const now = new Date().getHours(); na = `${remain}訪問すると今日の目標に届きます。${now < 18 ? `${Math.min(19, now + 2)}時までに残り${Math.ceil(remain / 2)}件を目安に。` : '今日はあと少し、行けるところまで。'}`; }
-  else if (ta === 0) na = '訪問数は目標到達。次はアポ1件を狙って、刺さった家に一言添えましょう。';
-  else na = '今日は量・アポとも良いペース。この調子でクロージングまで丁寧に。';
+  const nbas = (d.nextBestActions && d.nextBestActions.length) ? d.nextBestActions : [{ title: '今日の一歩を確認', reason: '', action: 'field' }];
   const nextAction = `<div class="fo-card" style="padding:16px">
-    <span class="fo-chip">NEXT ACTION</span>
-    <div style="font-size:15px;margin-top:10px;line-height:1.6;color:var(--text)">${na}</div>
-    <div style="margin-top:12px;display:flex;gap:8px"><button class="fo-btn" style="padding:7px 14px;font-size:13px" onclick="nav('field')">今日を見る</button><button class="fo-btn ghost" style="padding:7px 14px;font-size:13px" onclick="this.closest('.fo-card').style.opacity=.5;this.textContent='完了'">完了にする</button></div>
+    <span class="fo-chip">NEXT BEST ACTION</span>
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+      ${nbas.map((a, i) => `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px">
+        <span style="width:22px;height:22px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">${i + 1}</span>
+        <div style="min-width:0;flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">${a.title}</div>${a.reason ? `<div class="muted" style="font-size:11px">${a.reason}</div>` : ''}</div>
+        <button class="fo-btn ${i === 0 ? '' : 'ghost'}" style="padding:6px 12px;font-size:12px" onclick="nav('${a.action || 'field'}')">開く</button></div>`).join('')}
+    </div>
   </div>`;
+  const coachCard = d.aiCoach ? `<div class="fo-card" style="padding:16px">
+    <div style="display:flex;gap:8px;align-items:center"><span class="fo-chip">AIコーチ</span><span class="muted" style="font-size:10px">${d.aiCoach.source === 'rule' ? '' : 'Vertex AI'}</span></div>
+    <div style="font-size:14px;margin-top:10px;line-height:1.6;color:var(--text)">${d.aiCoach.text}</div>
+    <div class="muted" style="font-size:11px;margin-top:6px">根拠：${d.aiCoach.evidence || ''}</div>
+    ${d.aiCoach.module ? `<div style="margin-top:10px"><button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="nav('academy')">推奨教材へ</button></div>` : ''}
+  </div>` : '';
 
   const missions = ['今日の必修', '第一声', '切り返し', '商品知識', '成功事例'];
   const stories = `<div class="fo-card" style="padding:14px 16px"><div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:2px">
@@ -2097,7 +2103,7 @@ async function loadToday() {
   if (tr && tr.deltaVpd > 0) perf = foPost('perf-' + (u.name || ''), `${u.name || 'あなた'}さん、今週は伸びています`, `今週の訪問/日 <b class="num">${tr.recVpd}</b> 件（先週 ${tr.priVpd} → ${tr.growth == null ? 'NEW' : '+' + tr.growth + '%'}）`, null);
   else if (cz) perf = foPost('perf-' + (u.name || ''), `直近${cz.periodDays}日の実績`, `訪問 <b class="num">${cz.visits}</b>件（${cz.visitsPerDay}件/日）・ アポ <b class="num">${cz.apo}</b>件 ・ 稼働 <b class="num">${cz.days}</b>日`, null);
 
-  wrap.innerHTML = hero + composerHtml() + nextAction + stories + drill + perf + '<div id="mgrPosts"></div>';
+  wrap.innerHTML = hero + composerHtml() + nextAction + coachCard + stories + drill + perf + '<div id="mgrPosts"></div>';
   loadPosts();
 }
 

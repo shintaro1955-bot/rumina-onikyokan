@@ -22,6 +22,8 @@ import * as walk from './lib/walk.mjs';
 import * as reminders from './lib/reminders.mjs';
 import * as cyzenIngest from './lib/cyzen-ingest.mjs';
 import * as fieldos from './lib/fieldos.mjs';
+import { flags } from './lib/flags.mjs';
+import * as providers from './lib/providers.mjs';
 import { hashPassword, verifyPassword, signSession, verifySession, randomPassword } from './lib/auth.mjs';
 import { generateCritique, critiqueReady } from './lib/critique.mjs';
 import * as deepgram from './lib/deepgram.mjs';
@@ -273,6 +275,32 @@ function myDashboard(user) {
     }
   }
   return out;
+}
+
+// Next Best Action（最大3件・理由つき）と Today集約
+async function todayPayload(user) {
+  const d = myDashboard(user);
+  const target = (d.goal && d.goal.visits) || 50;
+  const tv = d.today ? d.today.visits : 0;
+  const remain = Math.max(0, target - tv);
+  const nba = [];
+  if (!d.today) nba.push({ title: '今日の1件目を記録', reason: 'まだ稼働記録がありません', action: 'field', priority: 1 });
+  if (remain > 0) { const h = new Date().getHours(); nba.push({ title: `あと${remain}訪問で目標`, reason: h < 18 ? `${Math.min(19, h + 2)}時までに残り${Math.ceil(remain / 2)}件が目安` : '行けるところまで', action: 'field', priority: 2 }); }
+  if (d.dueReviews) nba.push({ title: `今日の学習（復習${d.dueReviews}件）`, reason: '3分で定着', action: 'academy', priority: 3 });
+  const unread = fieldos.unreadCount(user.username);
+  if (unread) nba.push({ title: `未読の通知が${unread}件`, reason: '上長の連絡・称賛を確認', action: 'today', priority: 4 });
+  if (!d.goal || !d.goal.why) nba.push({ title: '今日の目標を決める', reason: '数字を「次の行動」に変える', action: 'goals', priority: 5 });
+  nba.sort((a, b) => a.priority - b.priority);
+  // 達成予測（現在ペースの外挿・簡易）
+  let forecast = null;
+  if (d.today && d.today.workStart && tv > 0 && remain > 0) {
+    const startH = +d.today.workStart.slice(11, 13) + (+d.today.workStart.slice(14, 16)) / 60;
+    const nowH = new Date().getHours() + new Date().getMinutes() / 60;
+    const rate = tv / Math.max(0.5, nowH - startH);   // 件/時
+    if (rate > 0) { const eta = nowH + remain / rate; const eh = Math.floor(eta), em = Math.round((eta - eh) * 60); if (eh < 24) forecast = { etaText: `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}見込み`, rate: +rate.toFixed(1) }; }
+  }
+  const coach = d.cyzen ? await providers.aiCoach.coach({ visitsPerDay: d.cyzen.visitsPerDay, apoRate: d.cyzen.apoRate }) : null;
+  return { date: new Date().toISOString().slice(0, 10), ...d, nextBestActions: nba.slice(0, 3), forecast, aiCoach: coach, syncStatus: { source: cyzen.currentSource(), lastIngest: lastIngest.at || null } };
 }
 
 // 診断ログを永続化（1録音=1レコード。文字起こし全文・訪問明細・KPIを保存）
@@ -592,6 +620,21 @@ const server = createServer(async (req, res) => {
       if (path === '/api/me/dashboard' && req.method === 'GET') {
         const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
         return json(res, 200, myDashboard(me));
+      }
+      // Today集約（目標・実績・不足・達成予測・Next Best Action・学習・同期を1回で）
+      if (path === '/api/today' && req.method === 'GET') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        return json(res, 200, await todayPayload(me));
+      }
+      // 連携ステータス（cyzen/ポータル/Google各種）
+      if (path === '/api/integrations/status' && req.method === 'GET') {
+        const me = currentUser(req); if (!me) return json(res, 401, { error: '未ログイン' });
+        return json(res, 200, {
+          cyzen: { status: cyzen.currentSource() === 'api' ? 'connected' : (cyzen.ready() ? 'snapshot' : 'off'), lastSync: lastIngest.at || null, ok: lastIngest.ok },
+          portal: { status: PORTAL_URL && BOT_API_SECRET ? 'connected' : 'off' },
+          google: providers.integrationStatus(),
+          flags: flags(),
+        });
       }
       // 目標設定（本人）
       if (path === '/api/me/goal' && req.method === 'POST') {
