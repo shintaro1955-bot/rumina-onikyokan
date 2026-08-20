@@ -533,6 +533,9 @@ const server = createServer(async (req, res) => {
             if (!dbu.repId) { dbu.repId = code; save(); }
             const cz = cyzen.personSummary(code);
             if (cz && !cz.empty) out.cyzen = cz;
+            out.cyzenToday = cyzen.personToday(code);
+            const tr = cyzen.trends({ recentDays: 7 });
+            out.cyzenTrend = tr.ready ? (tr.rows.find(r => r.code === code) || null) : null;
           }
         }
         return json(res, 200, out);

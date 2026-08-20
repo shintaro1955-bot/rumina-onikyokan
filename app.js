@@ -1577,11 +1577,29 @@ function viewTerakoya() {
   </div>`;
 }
 
-const VIEWS = { login: viewLogin, my: viewMy, terakoya: viewTerakoya, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay };
-function nav(v) { if (v === 'roleplay' && window.RP) RP.reset(); currentView = v; render(); if (v === 'upload') bindUpload(); if (v === 'log') { loadLog(); loadConsents(); } if (v === 'linkrep') loadLinkRep(); if (v === 'cyzen') loadCyzen(); if (v === 'compliance') { loadCompliance(); loadReminders(); } if (v === 'ranking') { loadRanking(); loadTrends(); } if (v === 'my') { loadPortalProfile(); loadTerakoya(); } if (v === 'terakoya') loadTerakoya(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMy, my: viewMy, terakoya: viewTerakoya, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay };
+// 新IA(today/field/academy/league/me)は同一currentViewでnav-activeを共有させる別名解決
+const NAV_ALIAS = { ranking: 'league', my: 'me' };
+function nav(v) {
+  if (v === 'roleplay' && window.RP) RP.reset();
+  currentView = v; render();
+  if (v === 'today') loadToday();
+  if (v === 'field') loadField();
+  if (v === 'upload') bindUpload();
+  if (v === 'log') { loadLog(); loadConsents(); }
+  if (v === 'linkrep') loadLinkRep();
+  if (v === 'cyzen') loadCyzen();
+  if (v === 'compliance') { loadCompliance(); loadReminders(); }
+  if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
+  if (v === 'me' || v === 'my') { loadPortalProfile(); loadTerakoya(); }
+  if (v === 'terakoya') loadTerakoya();
+  loadRail();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 function render() {
-  app.innerHTML = VIEWS[currentView]();
-  document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('nav-active', el.dataset.nav === currentView));
+  app.innerHTML = (VIEWS[currentView] || viewToday)();
+  const active = NAV_ALIAS[currentView] || currentView;
+  document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('nav-active', el.dataset.nav === active));
 }
 
 /* ---------- アップロード挙動 ---------- */
@@ -1953,8 +1971,9 @@ async function issueRep(i) {
 function applyRole(user) {
   const owner = !!(user && user.role === 'owner');
   document.querySelectorAll('[data-owner]').forEach(el => { el.style.display = owner ? '' : 'none'; });
-  const badge = document.getElementById('userBadge');
-  if (badge) badge.innerHTML = user ? `<div class="text-xs text-neutral-700 font-medium">${user.name}</div><div class="text-[10px] text-neutral-400 mb-1">${owner ? '管理者（モデル）' : '営業'}</div><button onclick="doLogout()" class="text-[11px] text-neutral-500 hover:text-neutral-800 underline">ログアウト</button>` : '';
+  const nm = document.getElementById('lbName'), rl = document.getElementById('lbRole');
+  if (nm) nm.textContent = user ? (user.name || '') : '';
+  if (rl) rl.textContent = user ? (owner ? '管理者' : '営業') : '';
 }
 async function boot() {
   const { user } = await API.me(); window.__user = user;
@@ -1966,10 +1985,231 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  if (!['home', 'my', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay'].includes(currentView) || currentView === 'login') currentView = user.role === 'owner' ? 'home' : 'my';
-  render();
-  if (currentView === 'my') loadPortalProfile();
+  const allowed = ['today', 'field', 'academy', 'league', 'me', 'my', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya'];
+  if (!allowed.includes(currentView) || currentView === 'login') currentView = 'today';   // 常にTodayから
+  nav(currentView);
+  updateSync();
 }
+/* ============================================================
+   Rumina Field OS — Today / Field / Academy / League / 右レール / テーマ
+   ============================================================ */
+function initTheme() {
+  let t = null; try { t = localStorage.getItem('fo-theme'); } catch {}
+  if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', cur);
+  try { localStorage.setItem('fo-theme', cur); } catch {}
+}
+window.toggleTheme = toggleTheme;
+
+/* 円形プログレス（達成率） */
+function ring(pct, big) {
+  const p = Math.max(0, Math.min(100, Math.round(pct))), r = 34, c = 2 * Math.PI * r, off = c * (1 - p / 100);
+  return `<svg width="92" height="92" viewBox="0 0 92 92" style="flex:none">
+    <circle cx="46" cy="46" r="${r}" fill="none" stroke="var(--border)" stroke-width="8"/>
+    <circle cx="46" cy="46" r="${r}" fill="none" stroke="var(--primary)" stroke-width="8" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 46 46)"/>
+    <text x="46" y="50" text-anchor="middle" font-size="${big || 20}" font-weight="700" fill="var(--text)" class="num">${p}%</text>
+  </svg>`;
+}
+const foGreet = () => { const h = new Date().getHours(); return h < 11 ? 'GOOD MORNING' : h < 17 ? 'こんにちは' : 'お疲れさまです'; };
+function foGoalTarget() { try { if (window.GOALS && GOALS.current && GOALS.current.pings) return GOALS.current.pings; } catch {} return 50; }
+
+/* ---------- TODAY（中央フィード） ---------- */
+function viewToday() {
+  return `<div class="space-y-3.5" id="todayWrap"><div class="fo-card" style="padding:20px" class="muted">読み込み中…</div></div>`;
+}
+async function loadToday() {
+  const wrap = document.getElementById('todayWrap'); if (!wrap) return;
+  const u = window.__user || {};
+  let p = {}; try { p = await API.portalProfile(); } catch {}
+  const today = p.cyzenToday || null, cz = p.cyzen || null, tr = p.cyzenTrend || null;
+  const target = foGoalTarget();
+  const tv = today ? today.visits : 0, ta = today ? today.apo : 0;
+  const pct = target ? tv / target * 100 : 0;
+  const remain = Math.max(0, target - tv);
+  const workH = today && today.workStart && today.workEnd
+    ? ((Date.parse(today.workEnd.replace(' ', 'T')) - Date.parse(today.workStart.replace(' ', 'T'))) / 3600000) : null;
+
+  // Today Hero
+  const hero = `<div class="fo-card" style="padding:20px">
+    <div class="muted" style="font-size:12px;font-weight:700;letter-spacing:.04em">${foGreet()}, ${u.name || ''}さん</div>
+    <div style="font-size:14px;margin-top:2px;color:var(--text)">今日も、昨日の自分を超えよう。</div>
+    <div style="display:flex;gap:20px;align-items:center;margin-top:16px;flex-wrap:wrap">
+      ${ring(pct)}
+      <div style="display:grid;grid-template-columns:repeat(3,auto);gap:14px 22px">
+        ${foStat('訪問', `${tv}`, target ? `/ ${target}` : '')}
+        ${foStat('アポ', `${ta}`, '件')}
+        ${foStat('稼働', workH != null ? workH.toFixed(1) : '—', workH != null ? 'h' : '')}
+      </div>
+    </div>
+    ${today ? (remain > 0
+      ? `<div class="fo-chip" style="margin-top:16px">あと ${remain} 訪問で今日の目標達成</div>`
+      : `<div class="fo-chip" style="margin-top:16px;background:var(--primary-soft)">今日の訪問目標を達成しています</div>`)
+      : `<div style="margin-top:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:13px">今日のcyzen記録がまだありません。</span><button class="fo-btn ghost" style="padding:6px 12px;font-size:13px" onclick="nav('goal')">目標を設定</button></div>`}
+    ${today && today.date ? `<div class="muted" style="font-size:11px;margin-top:10px">${today.date} の実績 ・ <span onclick="nav('field')" style="color:var(--primary);cursor:pointer">1日を振り返る →</span></div>` : ''}
+  </div>`;
+
+  // AI Next Action（ルールベース）
+  let na;
+  if (!today) na = '今日の稼働記録がまだありません。まず1件目の訪問を記録しましょう。';
+  else if (remain > 0) { const now = new Date().getHours(); na = `${remain}訪問すると今日の目標に届きます。${now < 18 ? `${Math.min(19, now + 2)}時までに残り${Math.ceil(remain / 2)}件を目安に。` : '今日はあと少し、行けるところまで。'}`; }
+  else if (ta === 0) na = '訪問数は目標到達。次はアポ1件を狙って、刺さった家に一言添えましょう。';
+  else na = '今日は量・アポとも良いペース。この調子でクロージングまで丁寧に。';
+  const nextAction = `<div class="fo-card" style="padding:16px">
+    <div style="display:flex;align-items:center;gap:8px"><span class="fo-chip">NEXT ACTION</span></div>
+    <div style="font-size:15px;margin-top:10px;line-height:1.6;color:var(--text)">${na}</div>
+    <div style="margin-top:12px;display:flex;gap:8px"><button class="fo-btn" style="padding:7px 14px;font-size:13px" onclick="nav('field')">今日を見る</button><button class="fo-btn ghost" style="padding:7px 14px;font-size:13px" onclick="this.closest('.fo-card').style.opacity=.5;this.textContent='完了'">完了にする</button></div>
+  </div>`;
+
+  // Mission Stories（学習・現状はシード）
+  const missions = ['今日の必修', '第一声', '切り返し', '商品知識', '成功事例'];
+  const stories = `<div class="fo-card" style="padding:14px 16px">
+    <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:2px">
+      ${missions.map((m, i) => `<button onclick="nav('academy')" style="flex:none;width:76px;text-align:center;background:none;border:0;cursor:pointer">
+        <div style="width:66px;height:66px;border-radius:16px;margin:0 auto;display:flex;align-items:center;justify-content:center;
+          background:var(--primary-soft);border:2px solid ${i === 0 ? 'var(--primary)' : 'transparent'};color:var(--primary);font-weight:700;font-size:12px">${i === 0 ? 'MUST' : ''}</div>
+        <div style="font-size:11px;margin-top:5px;color:var(--text)">${m}</div></button>`).join('')}
+    </div>
+  </div>`;
+
+  // Daily Drill（シード）
+  const drill = `<div class="fo-card" style="padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span class="fo-chip">DAILY DRILL ・ 3分</span><span class="muted" style="font-size:11px">今日の学習</span></div>
+    <div style="font-size:16px;font-weight:700;margin-top:10px;color:var(--text)">玄関先10秒の第一声</div>
+    <div class="muted" style="font-size:12px;margin-top:4px">動画60秒 → 3問クイズ → 音声ロープレ</div>
+    <div style="margin-top:12px"><button class="fo-btn" style="padding:8px 16px;font-size:13.5px" onclick="nav('academy')">トレーニングを始める</button></div>
+  </div>`;
+
+  // Performance Feed（伸び自動投稿）
+  let feed = '';
+  if (tr && tr.deltaVpd > 0) {
+    feed = foPost(`${u.name || 'あなた'}さん、今週は伸びています`,
+      `今週の訪問/日 <b class="num">${tr.recVpd}</b> 件（先週 ${tr.priVpd} → ${tr.growth == null ? 'NEW' : '+' + tr.growth + '%'}）`);
+  } else if (cz) {
+    feed = foPost(`直近${cz.periodDays}日の実績`,
+      `訪問 <b class="num">${cz.visits}</b>件（${cz.visitsPerDay}件/日）・ アポ <b class="num">${cz.apo}</b>件 ・ 稼働 <b class="num">${cz.days}</b>日`);
+  }
+
+  wrap.innerHTML = hero + nextAction + stories + drill + feed;
+}
+function foStat(label, val, unit) {
+  return `<div><div class="muted" style="font-size:11px">${label}</div><div style="font-size:22px;font-weight:700;color:var(--text)" class="num">${val}<span class="muted" style="font-size:12px;font-weight:500;margin-left:2px">${unit || ''}</span></div></div>`;
+}
+function foPost(title, body) {
+  return `<div class="fo-card" style="padding:16px">
+    <div style="display:flex;gap:10px;align-items:center">
+      <img src="/assets/rumina.png" style="width:38px;height:38px;border-radius:50%;object-fit:cover;object-position:top;border:1px solid var(--border)">
+      <div style="font-size:14px;font-weight:700;color:var(--text)">${title}</div>
+    </div>
+    <div style="font-size:14px;margin-top:10px;line-height:1.6;color:var(--text)">${body}</div>
+    <div style="display:flex;gap:6px;margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+      ${['称賛', 'ナイスアクション', '学びになった'].map(r => `<button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="foReact(this,'${r}')">${r}</button>`).join('')}
+    </div>
+  </div>`;
+}
+function foReact(btn, kind) { btn.textContent = '✓ ' + kind; btn.style.color = 'var(--primary)'; btn.style.borderColor = 'var(--primary)'; }
+window.foReact = foReact;
+
+/* ---------- FIELD（1日の振り返り） ---------- */
+function viewField() { return `<div id="fieldWrap"><div class="fo-card muted" style="padding:20px">読み込み中…</div></div>`; }
+async function loadField() {
+  const wrap = document.getElementById('fieldWrap'); if (!wrap) return;
+  let p = {}; try { p = await API.portalProfile(); } catch {}
+  const t = p.cyzenToday, cz = p.cyzen;
+  const sub = window.__mySubmission;
+  const head = `<div class="fo-card" style="padding:20px">
+    <div class="fo-chip">FIELD REPLAY</div>
+    ${t ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px">
+      ${foStat('訪問', t.visits, '件')}${foStat('アポ', t.apo, '件')}${foStat('成約', t.seiyaku, '件')}</div>
+      <div class="muted" style="font-size:12px;margin-top:12px">${t.date}${t.workStart ? ' ・ ' + t.workStart.slice(11, 16) + '〜' + (t.workEnd ? t.workEnd.slice(11, 16) : '') : ''}</div>`
+      : `<div class="muted" style="margin-top:12px;font-size:13px">今日のcyzen記録がまだありません。</div>`}
+  </div>`;
+  const replay = sub && sub.analysis
+    ? `<div class="fo-card" style="padding:16px;margin-top:14px"><div style="font-weight:700;color:var(--text)">録音からの振り返り</div>
+        <div class="muted" style="font-size:12px;margin-top:4px">鬼教官スコア ${sub.analysis.coachScore}/100</div>
+        <div style="margin-top:12px"><button class="fo-btn" style="padding:8px 16px;font-size:13.5px" onclick="nav('report')">詳しいレポートを開く</button></div></div>`
+    : `<div class="fo-card" style="padding:16px;margin-top:14px"><div class="muted" style="font-size:13px">録音を出稿すると、会話の振り返り（鬼教官の講評）がここに出ます。</div>
+        <div style="margin-top:12px"><button class="fo-btn ghost" style="padding:8px 16px;font-size:13.5px" onclick="nav('upload')">録音を出稿</button></div></div>`;
+  wrap.innerHTML = head + replay;
+}
+
+/* ---------- ACADEMY（学習・現状はシード） ---------- */
+function viewAcademy() {
+  const drills = [
+    { t: '玄関先10秒の第一声', d: '警戒を解く入り方', tag: '必修' },
+    { t: '「間に合ってます」の切り返し', d: '断りを会話に戻す', tag: '切り返し' },
+    { t: '創蓄・補助金の"今だけ"', d: '価値提示の型', tag: '商品' },
+    { t: '2択クロージング', d: '日程を置いてくる', tag: 'クロージング' },
+  ];
+  return `${h1('Academy')}
+    <div class="fo-card" style="padding:16px">
+      <div class="fo-chip">DAILY DRILL ・ 3分</div>
+      <div style="font-size:17px;font-weight:700;margin-top:10px;color:var(--text)">${drills[0].t}</div>
+      <div class="muted" style="font-size:12.5px;margin-top:4px">動画60秒 → 3問クイズ → 音声ロープレ</div>
+      <div style="margin-top:14px"><button class="fo-btn" onclick="nav('roleplay')">トレーニングを始める</button></div>
+    </div>
+    <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+      ${drills.map(x => `<div class="fo-card" style="padding:14px"><span class="fo-chip" style="font-size:11px">${x.tag}</span>
+        <div style="font-weight:700;margin-top:8px;color:var(--text)">${x.t}</div>
+        <div class="muted" style="font-size:12px;margin-top:3px">${x.d}</div></div>`).join('')}
+    </div>
+    <div class="muted" style="font-size:11.5px;margin-top:14px">※ 教材コンテンツは順次追加します。ロープレは既存のロープレ道場に接続しています。</div>`;
+}
+
+/* ---------- 右レール ---------- */
+async function loadRail() {
+  const rail = document.getElementById('rail'); if (!rail) return;
+  if (!window.__user) { rail.innerHTML = ''; return; }
+  let p = {}; try { p = await API.portalProfile(); } catch {}
+  const today = p.cyzenToday, cz = p.cyzen, tr = p.cyzenTrend, kpi = p.kpi;
+  const target = foGoalTarget();
+  const tv = today ? today.visits : 0;
+  const goalCard = `<div class="fo-card" style="padding:14px">
+    <div class="muted" style="font-size:11px;font-weight:700">今日の目標進捗</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:8px">${ring(target ? tv / target * 100 : 0, 16)}
+      <div><div style="font-size:20px;font-weight:700;color:var(--text)" class="num">${tv}<span class="muted" style="font-size:12px"> / ${target}</span></div><div class="muted" style="font-size:11px">訪問</div></div></div>
+  </div>`;
+  const leagueCard = kpi && (kpi.appointerRank || kpi.closerRank) ? `<div class="fo-card" style="padding:14px">
+    <div class="muted" style="font-size:11px;font-weight:700">現在の順位</div>
+    ${kpi.appointerRank ? `<div style="font-size:14px;margin-top:6px;color:var(--text)">アポインター <b class="num">${kpi.appointerRank}位</b></div>` : ''}
+    ${kpi.closerRank ? `<div style="font-size:14px;margin-top:2px;color:var(--text)">クローザー <b class="num">${kpi.closerRank}位</b></div>` : ''}
+    <div style="margin-top:8px"><span class="mx-more" onclick="nav('league')">すべて見る »</span></div>
+  </div>` : '';
+  const learnCard = `<div class="fo-card" style="padding:14px">
+    <div class="muted" style="font-size:11px;font-weight:700">本日の学習</div>
+    <div style="font-size:13px;margin-top:6px;color:var(--text)">Daily Drill 未完了</div>
+    <div style="margin-top:8px"><button class="fo-btn ghost" style="padding:5px 12px;font-size:12px" onclick="nav('academy')">始める</button></div>
+  </div>`;
+  let trendCard = '';
+  try {
+    const t = await API.cyzenTrends(7);
+    const up = (t.rows || []).filter(r => r.deltaVpd > 0 && r.recVpd >= 8).slice(0, 3);
+    if (up.length) trendCard = `<div class="fo-card" style="padding:14px">
+      <div class="muted" style="font-size:11px;font-weight:700">今週伸びている仲間</div>
+      ${up.map(r => `<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:7px;color:var(--text)"><span>${r.name}</span><span class="num" style="color:var(--primary)">${r.recVpd}件/日</span></div>`).join('')}
+    </div>`;
+  } catch {}
+  rail.innerHTML = goalCard + leagueCard + trendCard + learnCard;
+}
+
+/* 同期バッジ更新 */
+async function updateSync() {
+  const txt = document.getElementById('syncTxt'), dot = document.querySelector('#syncBadge .sync-dot');
+  if (!txt) return;
+  try {
+    const h = await API.health();
+    if (h.cyzenSource === 'api' && h.cyzenLastIngest && h.cyzenLastIngest.at) {
+      const d = new Date(h.cyzenLastIngest.at); txt.textContent = '同期 ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+      if (dot) dot.className = 'sync-dot' + (h.cyzenLastIngest.ok ? '' : ' warn');
+    } else { txt.textContent = 'データ'; if (dot) dot.className = 'sync-dot'; }
+  } catch { txt.textContent = ''; }
+}
+
 window.doLogin = doLogin; window.doLogout = doLogout; window.issueRep = issueRep;
 window.nav = nav; window.startAnalyze = startAnalyze;
+initTheme();
 boot();
