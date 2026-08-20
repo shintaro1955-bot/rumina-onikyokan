@@ -299,7 +299,14 @@ async function todayPayload(user) {
     const rate = tv / Math.max(0.5, nowH - startH);   // 件/時
     if (rate > 0) { const eta = nowH + remain / rate; const eh = Math.floor(eta), em = Math.round((eta - eh) * 60); if (eh < 24) forecast = { etaText: `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}見込み`, rate: +rate.toFixed(1) }; }
   }
-  const coach = d.cyzen ? await providers.aiCoach.coach({ visitsPerDay: d.cyzen.visitsPerDay, apoRate: d.cyzen.apoRate }) : null;
+  // AIコーチは本人×日で1回だけ生成（キャッシュ）。Claude/Vertex呼び出しのコスト抑制。
+  let coach = null;
+  if (d.cyzen) {
+    const today = new Date().toISOString().slice(0, 10);
+    const cached = fieldos.getInsight(user.username);
+    if (cached && cached.day === today && cached.coach) coach = cached.coach;
+    else { coach = await providers.aiCoach.coach({ visitsPerDay: d.cyzen.visitsPerDay, apoRate: d.cyzen.apoRate, closeRate: d.cyzen.closeRate }); fieldos.setInsight(user.username, coach); }
+  }
   return { date: new Date().toISOString().slice(0, 10), ...d, nextBestActions: nba.slice(0, 3), forecast, aiCoach: coach, syncStatus: { source: cyzen.currentSource(), lastIngest: lastIngest.at || null } };
 }
 
