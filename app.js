@@ -2046,7 +2046,6 @@ async function loadToday() {
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
       <div>
         <div class="muted" style="font-size:12px;font-weight:700;letter-spacing:.04em">${foGreet()}, ${u.name || ''}さん</div>
-        <div style="font-size:14px;margin-top:2px;color:var(--text)">今日も、昨日の自分を超えよう。</div>
       </div>
       ${score != null ? `<div style="text-align:right"><div class="muted" style="font-size:10px;font-weight:700;letter-spacing:.06em">MOMENTUM</div>
         <div style="font-size:30px;font-weight:700;color:var(--primary);line-height:1" class="num">${score}</div>
@@ -2090,7 +2089,7 @@ async function loadToday() {
   const drill = `<div class="fo-card" style="padding:16px">
     <div style="display:flex;justify-content:space-between;align-items:center"><span class="fo-chip">DAILY DRILL ・ 3分</span><span class="muted" style="font-size:11px">今日の学習${drillDue}</span></div>
     <div style="font-size:16px;font-weight:700;margin-top:10px;color:var(--text)">玄関先10秒の第一声</div>
-    <div class="muted" style="font-size:12px;margin-top:4px">動画60秒 → 3問クイズ → 音声ロープレ</div>
+    
     <div style="margin-top:12px"><button class="fo-btn" style="padding:8px 16px;font-size:13.5px" onclick="nav('academy')">トレーニングを始める</button></div>
   </div>`;
 
@@ -2205,8 +2204,8 @@ async function loadGoalPage() {
       <label style="font-size:12px" class="muted">1日のアポ目標（件・任意）
         <input id="gpApo" type="number" value="${g.apo ?? ''}" placeholder="任意" style="display:block;width:100%;margin-top:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:16px;color:var(--text)"></label>
     </div>
-    <label style="font-size:12px;display:block;margin-top:12px" class="muted">なぜこの目標？（自分の言葉で）
-      <textarea id="gpWhy" rows="3" placeholder="例：月末までにアポ月20件。今月中に自分のトークを『武器化』する。" style="display:block;width:100%;margin-top:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:14px;color:var(--text);line-height:1.6">${(g.why || '').replace(/</g, '&lt;')}</textarea></label>
+    <label style="font-size:12px;display:block;margin-top:12px" class="muted">なぜこの目標？
+      <textarea id="gpWhy" rows="3" placeholder="自分の言葉で" style="display:block;width:100%;margin-top:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:14px;color:var(--text);line-height:1.6">${(g.why || '').replace(/</g, '&lt;')}</textarea></label>
     <div style="margin-top:14px;display:flex;gap:8px;align-items:center"><button class="fo-btn" onclick="saveGoalPage()">保存</button><span id="gpMsg" class="muted" style="font-size:12px"></span>
       ${g.updatedAt ? `<span class="muted" style="font-size:11px;margin-left:auto">更新 ${(g.updatedAt || '').slice(0, 10)}</span>` : ''}</div>
   </div>`;
@@ -2222,7 +2221,7 @@ async function loadGoalPage() {
 
   const contrib = mo && mo.parts ? `<div class="fo-card" style="padding:18px;margin-top:14px">
     <div style="font-weight:700;color:var(--text)">Momentum への寄与</div>
-    <div class="muted" style="font-size:12px;margin-top:6px">「行動目標達成」の達成度が Momentum に効きます（重み ${mo.weights.goal}%）。</div>
+    
     <div style="margin-top:10px">${goalBar('行動目標達成', Math.round(mo.parts.goal * 100), 100, '%')}</div>
     <div style="margin-top:8px"><span class="mx-more" onclick="nav('me')">Momentum内訳を見る »</span></div>
   </div>` : '';
@@ -2425,7 +2424,7 @@ async function loadField() {
     ? `<div class="fo-card" style="padding:16px;margin-top:14px"><div style="font-weight:700;color:var(--text)">録音からの振り返り</div>
         <div class="muted" style="font-size:12px;margin-top:4px">鬼教官スコア ${sub.analysis.coachScore}/100</div>
         <div style="margin-top:12px"><button class="fo-btn" style="padding:8px 16px;font-size:13.5px" onclick="nav('report')">詳しいレポートを開く</button></div></div>`
-    : `<div class="fo-card" style="padding:16px;margin-top:14px"><div class="muted" style="font-size:13px">録音を出稿すると、会話の振り返り（鬼教官の講評）がここに出ます。</div>
+    : `<div class="fo-card" style="padding:16px;margin-top:14px"><div class="muted" style="font-size:13px">録音の振り返りはここに出ます。</div>
         <div style="margin-top:12px"><button class="fo-btn ghost" style="padding:8px 16px;font-size:13.5px" onclick="nav('upload')">録音を出稿</button></div></div>`;
   wrap.innerHTML = head + replay;
 }
@@ -2450,7 +2449,7 @@ async function loadAcademy() {
   const head = `<div class="fo-card" style="padding:16px">
     <div style="display:flex;justify-content:space-between;align-items:center"><span class="fo-chip">DAILY DRILL ・ 3分</span><span class="fo-chip">${pr.xp || 0} XP</span></div>
     <div style="font-size:17px;font-weight:700;margin-top:10px;color:var(--text)">${todays.t}</div>
-    <div class="muted" style="font-size:12.5px;margin-top:4px">動画60秒 → 3問クイズ → 音声ロープレ</div>
+    
     <div style="margin-top:14px;display:flex;gap:8px"><button class="fo-btn" onclick="startDrill('${todays.id}','${todays.t}')">トレーニングを始める</button><button class="fo-btn ghost" onclick="nav('roleplay')">ロープレ道場</button></div>
   </div>`;
   const cards = DRILLS.map(x => {
@@ -2473,7 +2472,7 @@ function startDrill(id, title) {
   m.innerHTML = `<div class="fo-card" style="padding:20px;max-width:420px;width:100%">
     <div class="fo-chip">DRILL</div>
     <div style="font-size:16px;font-weight:700;margin-top:10px;color:var(--text)">${title}</div>
-    <div class="muted" style="font-size:12px;margin-top:4px">要点を確認して「完了」を押すと、XPが入り復習日が予約されます。</div>
+    
     <ul style="margin-top:12px;padding-left:18px;font-size:13px;color:var(--text);line-height:1.8">
       <li>一言目で「電気の健康診断／明細／電気代」を出す</li>
       <li>売り込まず、相手に課題を言わせる</li>

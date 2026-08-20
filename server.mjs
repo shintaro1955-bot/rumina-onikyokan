@@ -303,6 +303,17 @@ function persistReport(id, result, userName) {
   console.log(`✓ 初期オーナー作成：ユーザー名「${username}」／初期パスワード「${pw}」（本番はOWNER_PASSWORDで指定・変更を）`);
 })();
 
+// デモ/動作確認用アカウント test/test（無ければ作る）。DISABLE_TEST_USER=on で無効化。
+(function seedTest() {
+  if (/^(1|true|yes|on)$/i.test(process.env.DISABLE_TEST_USER || '')) return;
+  const db = getDb();
+  if (db.users['test']) return;
+  const { salt, hash } = hashPassword('test');
+  db.users['test'] = { username: 'test', name: 'テスト', role: 'owner', repId: null, salt, hash, isModel: false };
+  save();
+  console.log('✓ テストアカウント作成：test / test（デモ用・本番運用前に無効化推奨 DISABLE_TEST_USER=on）');
+})();
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const path = decodeURIComponent(url.pathname);
