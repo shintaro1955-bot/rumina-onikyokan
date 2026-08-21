@@ -33,6 +33,7 @@ import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/di
 import { buildPersonalMessages } from './lib/coachdm.mjs';
 import * as terakoya from './lib/terakoya.mjs';
 import { DATA_DIR as DATA_DIR_PATH } from './lib/store.mjs';
+import * as walkIngest from './lib/walk-ingest.mjs';
 
 /* 文字起こしエンジン：DEEPGRAM_API_KEY があれば話者分離つきのDeepgramを既定に。
    TRANSCRIBE_PROVIDER=whisper|deepgram で明示指定もできる。 */
@@ -372,7 +373,7 @@ const server = createServer(async (req, res) => {
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready(), ssoReady: !!SSO_SECRET,
+      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), ssoReady: !!SSO_SECRET,
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
@@ -545,10 +546,16 @@ const server = createServer(async (req, res) => {
         const meW = currentUser(req);
         const okW = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
         if (!okW && !meW) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
-        if (!walk.ready()) return json(res, 200, { ready: false, error: 'GPS行動履歴(action-history.csv)がありません' });
         const vmap = new Map((cyzen.ready() ? (cyzen.roster().rows || []) : [])
           .filter(r => r.days > 0).map(r => [r.code, { visits: r.visits }]));
-        return json(res, 200, walk.stats({ days: +(url.searchParams.get('days') || 30), visitsByCode: vmap }));
+        const daysW = +(url.searchParams.get('days') || 30);
+        // cyzen APIから貯めた集計を優先。無ければ従来のCSVから。
+        if (walkIngest.ready()) {
+          const st = walkIngest.stats({ days: daysW, visitsByCode: vmap });
+          if (st.ready) return json(res, 200, st);
+        }
+        if (!walk.ready()) return json(res, 200, { ready: false, error: 'GPSの行動履歴がまだ取り込まれていません' });
+        return json(res, 200, walk.stats({ days: daysW, visitsByCode: vmap }));
       }
 
       // 全営業KPI / 行動量ランキングの元データ（ログインで閲覧可）。
@@ -1222,5 +1229,18 @@ server.listen(PORT, () => {
     console.log(`✓ cyzenライブ更新スケジューラ起動（${MIN}分ごと）`);
     runLiveIngest();   // 起動直後に1回
     setInterval(() => { runLiveIngest().catch(e => console.error('[cyzen ingest]', e.message)); }, MIN * 60 * 1000);
+
+    // GPS履歴から歩行距離を貯める。件数が多いので報告書より間隔を空ける（既定60分）。
+    if (!/^(0|off|false)$/i.test(process.env.WALK_LIVE_REFRESH || '')) {
+      const WMIN = Math.max(10, Number(process.env.WALK_REFRESH_MINUTES || 60));
+      const runWalk = () => walkIngest.ingestWalk()
+        .then(r => console.log(r.ok
+          ? `✓ 歩行距離を取り込み：打刻${r.histories}件 / ${r.days}人日`
+          : `⚠ 歩行距離の取り込み見送り：${r.error}`))
+        .catch(e => console.error('[walk ingest]', e.message));
+      setTimeout(runWalk, 90 * 1000);          // 起動直後の負荷集中を避ける
+      setInterval(runWalk, WMIN * 60 * 1000);
+      console.log(`✓ 歩行距離の取り込みスケジューラ起動（${WMIN}分ごと）`);
+    }
   }
 });
