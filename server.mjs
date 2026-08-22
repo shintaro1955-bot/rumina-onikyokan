@@ -551,8 +551,15 @@ const server = createServer(async (req, res) => {
         const daysW = +(url.searchParams.get('days') || 30);
         // cyzen APIから貯めた集計を優先。無ければ従来のCSVから。
         if (walkIngest.ready()) {
+          // ym=YYYY-MM を指定すればその月だけ（月替わりでリセットされる集計）
+          const ymQ = String(url.searchParams.get('ym') || '').trim();
+          if (/^\d{4}-\d{2}$/.test(ymQ)) {
+            const ms = walkIngest.monthStats(ymQ, vmap);
+            ms.career = walkIngest.careerStats();      // 通算は月が替わっても消えない
+            return json(res, 200, ms);
+          }
           const st = walkIngest.stats({ days: daysW, visitsByCode: vmap });
-          if (st.ready) return json(res, 200, st);
+          if (st.ready) { st.career = walkIngest.careerStats(); return json(res, 200, st); }
         }
         if (!walk.ready()) return json(res, 200, { ready: false, error: 'GPSの行動履歴がまだ取り込まれていません' });
         return json(res, 200, walk.stats({ days: daysW, visitsByCode: vmap }));
