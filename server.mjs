@@ -568,7 +568,10 @@ const server = createServer(async (req, res) => {
       // 全営業KPI / 行動量ランキングの元データ（ログインで閲覧可）。
       // 一般社員には順位・行動量は見せるが、個人の弱点判定(seg/why/成約率)は伏せる。
       if (path === '/api/cyzen/roster' && req.method === 'GET') {
-        const me = currentUser(req);
+        // 合言葉でも取れるようにする（ポータルがGRAND PRIXのアポ数・成約率に使う）。
+        // digest / coach-dm と同じ方式。人ごとの数だけを返し、弱点判定は下で伏せる。
+        const okRosterSecret = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        const me = okRosterSecret ? { role: 'bot' } : currentUser(req);
         if (!me) return json(res, 401, { error: 'ログインが必要です' });
         const data = cyzen.roster();
         // 一般社員には「数えられる数」（訪問/アポ/成約/敗戦/商談…）は全部見せてよい。
