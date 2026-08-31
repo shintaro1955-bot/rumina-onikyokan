@@ -1263,7 +1263,8 @@ server.listen(PORT, () => {
       const runWalk = () => walkIngest.ingestWalk()
         .then(r => {
           lastWalkRun = { at: new Date().toISOString(), ok: !!r.ok,
-                          note: r.ok ? `打刻${r.histories}件 / ${r.days}人日 / ${r.users}名` : r.error };
+                          note: r.ok ? `打刻${r.histories}件 / ${r.days}人日 / ${r.users}名` : r.error,
+                          miss: r.miss || null, keys: r.keys || null };
           console.log(r.ok
             ? `✓ 歩行距離を取り込み：打刻${r.histories}件 / ${r.days}人日`
             : `⚠ 歩行距離の取り込み見送り：${r.error}`);
