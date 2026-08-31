@@ -350,6 +350,21 @@ function persistReport(id, result, userName) {
   console.log('✓ テストアカウント作成：test / test（デモ用・本番運用前に無効化推奨 DISABLE_TEST_USER=on）');
 })();
 
+/* 歩行集計が「ファイルはあるが中身が空」なのかを、healthから一目で分かるようにする。
+   walkReady は存在確認しかしていないので、実際に何名ぶん貯まっているかを添える。 */
+function walkStat() {
+  try {
+    if (!walkIngest.ready()) return null;
+    const jd = new Date(Date.now() + 9 * 3600 * 1000);
+    const ym = jd.getUTCFullYear() + '-' + String(jd.getUTCMonth() + 1).padStart(2, '0');
+    const m = walkIngest.monthStats(ym);
+    const c = walkIngest.careerStats();
+    return { ym, month: m.ready ? m.count : 0, monthKm: m.totalWalkKm || 0,
+             career: c.ready ? c.count : 0, careerKm: c.totalWalkKm || 0,
+             since: c.since || null, updatedAt: m.updatedAt || null };
+  } catch (e) { return { error: String(e.message || e).slice(0, 80) }; }
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const path = decodeURIComponent(url.pathname);
@@ -373,7 +388,7 @@ const server = createServer(async (req, res) => {
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), ssoReady: !!SSO_SECRET,
+      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), ssoReady: !!SSO_SECRET,
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
