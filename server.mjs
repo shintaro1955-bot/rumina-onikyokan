@@ -1259,7 +1259,7 @@ server.listen(PORT, () => {
 
     // GPS履歴から歩行距離を貯める。件数が多いので報告書より間隔を空ける（既定60分）。
     if (!/^(0|off|false)$/i.test(process.env.WALK_LIVE_REFRESH || '')) {
-      const WMIN = Math.max(10, Number(process.env.WALK_REFRESH_MINUTES || 60));
+      const WMIN = Math.max(10, Number(process.env.WALK_REFRESH_MINUTES || 15));
       // 取り込みは通常「直近2日」だけを見る。起動後の初回だけは窓を広げて、
       // 今月ぶんの穴（デプロイ中や不具合で落ちた日）を埋め戻す。
       const BACKFILL = Math.max(2, Number(process.env.WALK_BACKFILL_DAYS || 35));
