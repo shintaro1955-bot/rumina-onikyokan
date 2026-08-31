@@ -1269,7 +1269,7 @@ server.listen(PORT, () => {
         .then(r => {
           lastWalkRun = { at: new Date().toISOString(), ok: !!r.ok,
                           note: r.ok ? `打刻${r.histories}件 / ${r.days}人日 / ${r.users}名 / ${r.span || '-'}` : r.error,
-                          miss: r.miss || null, keys: r.keys || null };
+                          miss: r.miss || null, keys: r.keys || null, shape: r.shape || null };
           console.log(r.ok
             ? `✓ 歩行距離を取り込み：打刻${r.histories}件 / ${r.days}人日`
             : `⚠ 歩行距離の取り込み見送り：${r.error}`);
