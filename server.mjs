@@ -388,7 +388,7 @@ const server = createServer(async (req, res) => {
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), ssoReady: !!SSO_SECRET,
+      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, ssoReady: !!SSO_SECRET,
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
@@ -1225,6 +1225,8 @@ async function runPipeline(s) {
 
 /* ライブ取り込み1回分。安全弁：担当者50名未満なら（＝空/失敗）適用せず既存維持。 */
 let lastIngest = { at: null, ok: null, note: 'not-run' };
+// 歩行取り込みの直近結果。空のときに理由（打刻0件なのか未設定なのか）を追えるようにする。
+let lastWalkRun = { at: null, ok: null, note: 'not-run' };
 async function runLiveIngest() {
   if (!cyzenApi.ready()) { lastIngest = { at: new Date().toISOString(), ok: false, note: 'api未設定' }; return lastIngest; }
   try {
@@ -1259,10 +1261,15 @@ server.listen(PORT, () => {
     if (!/^(0|off|false)$/i.test(process.env.WALK_LIVE_REFRESH || '')) {
       const WMIN = Math.max(10, Number(process.env.WALK_REFRESH_MINUTES || 60));
       const runWalk = () => walkIngest.ingestWalk()
-        .then(r => console.log(r.ok
-          ? `✓ 歩行距離を取り込み：打刻${r.histories}件 / ${r.days}人日`
-          : `⚠ 歩行距離の取り込み見送り：${r.error}`))
-        .catch(e => console.error('[walk ingest]', e.message));
+        .then(r => {
+          lastWalkRun = { at: new Date().toISOString(), ok: !!r.ok,
+                          note: r.ok ? `打刻${r.histories}件 / ${r.days}人日 / ${r.users}名` : r.error };
+          console.log(r.ok
+            ? `✓ 歩行距離を取り込み：打刻${r.histories}件 / ${r.days}人日`
+            : `⚠ 歩行距離の取り込み見送り：${r.error}`);
+        })
+        .catch(e => { lastWalkRun = { at: new Date().toISOString(), ok: false, note: String(e.message || e).slice(0, 120) };
+                      console.error('[walk ingest]', e.message); });
       setTimeout(runWalk, 90 * 1000);          // 起動直後の負荷集中を避ける
       setInterval(runWalk, WMIN * 60 * 1000);
       console.log(`✓ 歩行距離の取り込みスケジューラ起動（${WMIN}分ごと）`);
