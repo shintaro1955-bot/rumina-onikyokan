@@ -580,6 +580,22 @@ const server = createServer(async (req, res) => {
         return json(res, 200, walk.stats({ days: daysW, visitsByCode: vmap }));
       }
 
+      /* 人ごとのエリア分布（どの市区町村で動いているか）。合言葉でも取れる。
+         ポータルのエリア別表示と、LINEでのエリア別ヒアリングに使う。
+         個人の移動経路は返さない。市区町村までに丸めた比率だけ。 */
+      if (path === '/api/cyzen/areas' && req.method === 'GET') {
+        const okA = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        const meA = okA ? { role: 'bot' } : currentUser(req);
+        if (!meA) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (!walkIngest.ready()) return json(res, 200, { ready: false, error: 'GPSの行動履歴がまだ取り込まれていません' });
+        const ymA = String(url.searchParams.get('ym') || '').trim();
+        return json(res, 200, walkIngest.areaStats({
+          ym: /^\d{4}-\d{2}$/.test(ymA) ? ymA : '',
+          days: +(url.searchParams.get('days') || 30),
+          top: +(url.searchParams.get('top') || 3),
+        }));
+      }
+
       // 全営業KPI / 行動量ランキングの元データ（ログインで閲覧可）。
       // 一般社員には順位・行動量は見せるが、個人の弱点判定(seg/why/成約率)は伏せる。
       if (path === '/api/cyzen/roster' && req.method === 'GET') {
