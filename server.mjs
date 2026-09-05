@@ -571,6 +571,9 @@ const server = createServer(async (req, res) => {
         const daysW = +(url.searchParams.get('days') || 30);
         // cyzen APIから貯めた集計を優先。無ければ従来のCSVから。
         if (walkIngest.ready()) {
+          // date=YYYY-MM-DD を指定すればその日だけ（夜の通知の「今日歩いた距離」）
+          const dateQ = String(url.searchParams.get('date') || '').trim();
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateQ)) return json(res, 200, walkIngest.dayStats(dateQ, vmap));
           // ym=YYYY-MM を指定すればその月だけ（月替わりでリセットされる集計）
           const ymQ = String(url.searchParams.get('ym') || '').trim();
           if (/^\d{4}-\d{2}$/.test(ymQ)) {
