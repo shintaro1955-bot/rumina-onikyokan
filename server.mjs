@@ -583,6 +583,19 @@ const server = createServer(async (req, res) => {
       /* 人ごとのエリア分布（どの市区町村で動いているか）。合言葉でも取れる。
          ポータルのエリア別表示と、LINEでのエリア別ヒアリングに使う。
          個人の移動経路は返さない。市区町村までに丸めた比率だけ。 */
+      /* アポ獲得報告が多く上がっているエリア（市区町村）。ポータルの夜のダイジェストで使う。 */
+      if (path === '/api/cyzen/hot-areas' && req.method === 'GET') {
+        const okH = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        const meH = okH ? { role: 'bot' } : currentUser(req);
+        if (!meH) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (!walkIngest.ready()) return json(res, 200, { ready: false, error: 'GPSの行動履歴がまだ取り込まれていません' });
+        const ymH = String(url.searchParams.get('ym') || '').trim();
+        return json(res, 200, walkIngest.hotAreas({
+          ym: /^\d{4}-\d{2}$/.test(ymH) ? ymH : '',
+          days: +(url.searchParams.get('days') || 30),
+          top: +(url.searchParams.get('top') || 5),
+        }));
+      }
       if (path === '/api/cyzen/areas' && req.method === 'GET') {
         const okA = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
         const meA = okA ? { role: 'bot' } : currentUser(req);
