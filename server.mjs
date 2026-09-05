@@ -352,6 +352,11 @@ function persistReport(id, result, userName) {
 
 /* 歩行集計が「ファイルはあるが中身が空」なのかを、healthから一目で分かるようにする。
    walkReady は存在確認しかしていないので、実際に何名ぶん貯まっているかを添える。 */
+// エリア別アポが貯まっているかを、エリア名を出さずに件数だけで示す
+function hotAreaStat() {
+  try { const h = walkIngest.hotAreas({ days: 30, top: 1 }); return { areas: h.count, apo30d: h.totalApo, topApo: h.rows[0] ? h.rows[0].apo : 0 }; }
+  catch (e) { return null; }
+}
 function walkStat() {
   try {
     if (!walkIngest.ready()) return null;
@@ -388,7 +393,7 @@ const server = createServer(async (req, res) => {
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, ssoReady: !!SSO_SECRET,
+      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET,
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
