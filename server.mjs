@@ -617,6 +617,28 @@ const server = createServer(async (req, res) => {
         }));
       }
 
+      /* 日ごとのアポ獲得件数（人ごと）。ポータルの朝の配信で
+         「昨日いちばんアポを取った人」と「その日の5位まで」を出すのに使う。
+         cyzenの「アポ獲得」報告を日付で数えたもの。合言葉でも取れる。 */
+      if (path === '/api/cyzen/apo-days' && req.method === 'GET') {
+        const okAD = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        const meAD = okAD ? { role: 'bot' } : currentUser(req);
+        if (!meAD) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (!cyzen.ready()) return json(res, 200, { ready: false, error: 'cyzenのデータがまだ取り込まれていません' });
+        const backAD = Math.max(1, Math.min(60, +(url.searchParams.get('days') || 10)));
+        const fromAD = new Date(Date.now() + 9 * 3600 * 1000 - backAD * 86400000).toISOString().slice(0, 10);
+        const namesAD = cyzen.usersMap();
+        const daysAD = {};
+        for (const rec of cyzen.records()) {
+          if (!rec || !rec.date || rec.date < fromAD || !(rec.apo > 0)) continue;
+          const u = namesAD.get(rec.code) || {};
+          if (u.suspended) continue;                       // 利用停止のユーザーは数えない
+          (daysAD[rec.date] || (daysAD[rec.date] = [])).push({ code: rec.code, name: u.name || '', apo: rec.apo });
+        }
+        Object.keys(daysAD).forEach((d) => { daysAD[d].sort((a, z) => z.apo - a.apo || String(a.name).localeCompare(String(z.name))); });
+        return json(res, 200, { ready: true, from: fromAD, days: daysAD });
+      }
+
       // 全営業KPI / 行動量ランキングの元データ（ログインで閲覧可）。
       // 一般社員には順位・行動量は見せるが、個人の弱点判定(seg/why/成約率)は伏せる。
       if (path === '/api/cyzen/roster' && req.method === 'GET') {
