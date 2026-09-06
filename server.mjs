@@ -28,9 +28,11 @@ import { hashPassword, verifyPassword, signSession, verifySession, randomPasswor
 import { generateCritique, critiqueReady } from './lib/critique.mjs';
 import * as deepgram from './lib/deepgram.mjs';
 import { scoreTalk, ready as scoreReady } from './lib/score.mjs';
+import * as persona from './lib/persona.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
 import { buildPersonalMessages } from './lib/coachdm.mjs';
+import { buildApoMessages } from './lib/coachapo.mjs';
 import * as terakoya from './lib/terakoya.mjs';
 import { DATA_DIR as DATA_DIR_PATH } from './lib/store.mjs';
 import * as walkIngest from './lib/walk-ingest.mjs';
@@ -397,6 +399,7 @@ const server = createServer(async (req, res) => {
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
+        roleplayReady: deepgram.ready() && persona.ready(), roleplayModel: persona.model(),
         // ポータルと同じ共有秘密かを、値を出さずに突き合わせるための指紋（固定文字列のHMAC先頭12桁）
         ssoFingerprint: SSO_SECRET ? createHmac('sha256', SSO_SECRET).update('rumina-sso-fingerprint-v1').digest('hex').slice(0, 12) : null });
 
@@ -470,6 +473,50 @@ const server = createServer(async (req, res) => {
         if (!okS && (!meC || meC.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
         if (!cyzen.ready()) return json(res, 200, { ok: false, error: 'cyzenのデータが未取込です' });
         return json(res, 200, buildPersonalMessages({ all: url.searchParams.get('all') === '1' }));
+      }
+
+      /* 個別コーチング文面：アポ版（訪問はあるのにアポが取れていない人向け）。owner または合言葉。
+         ここでは**生成のみ**。送信は上長の確認を経てから行う（自動送信しない）。 */
+      if (path === '/api/cyzen/coach-dm-apo' && req.method === 'GET') {
+        const meA2 = currentUser(req);
+        const okA2 = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        if (!okA2 && (!meA2 || meA2.role !== 'owner')) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (!cyzen.ready()) return json(res, 200, { ok: false, error: 'cyzenのデータが未取込です' });
+        return json(res, 200, buildApoMessages({ all: url.searchParams.get('all') === '1' }));
+      }
+
+      /* AIロープレ①：営業の1ターン音声を文字起こし（Deepgram）。ログイン必須。
+         音声はその場で一時ファイルにし、返したら即削除する（保存しない＝本人の練習）。 */
+      if (path === '/api/roleplay/stt' && req.method === 'POST') {
+        const meR = currentUser(req);
+        if (!meR) return json(res, 401, { error: 'ログインが必要です' });
+        if (!deepgram.ready()) return json(res, 200, { ok: false, error: '音声認識が未設定です' });
+        const body = await readJson(req);
+        if (!body || !body.audio) return json(res, 400, { error: 'audio が必要です' });
+        const ext = String(body.ext || 'webm').replace(/[^a-z0-9]/gi, '').slice(0, 5) || 'webm';
+        const dir = join(UPLOAD_DIR, 'roleplay'); await mkdir(dir, { recursive: true });
+        const p = join(dir, `rp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`);
+        try {
+          await writeFile(p, Buffer.from(body.audio, 'base64'));
+          const segs = await deepgram.transcribe({ path: p, offsetSec: 0 }, { lang: 'ja' });
+          const text = (segs || []).map(s => s.text).join(' ').replace(/\s+/g, ' ').trim();
+          return json(res, 200, { ok: true, text });
+        } catch (e) {
+          console.warn('[roleplay stt]', e.message);
+          return json(res, 200, { ok: false, error: '文字起こしに失敗しました' });
+        } finally { rm(p, { force: true }).catch(() => {}); }
+      }
+
+      /* AIロープレ②：お客様役（Claude）の返答。ログイン必須。採点は別（決定論）。 */
+      if (path === '/api/roleplay/reply' && req.method === 'POST') {
+        const meR2 = currentUser(req);
+        if (!meR2) return json(res, 401, { error: 'ログインが必要です' });
+        if (!persona.ready()) return json(res, 200, { ok: false, error: 'AIお客様が未設定です' });
+        const body = await readJson(req) || {};
+        const history = Array.isArray(body.history) ? body.history.slice(-20) : [];
+        const reply = await persona.customerReply({ ctype: body.ctype || '警戒', history, salesText: String(body.salesText || '').slice(0, 1000) }).catch(() => null);
+        if (!reply) return json(res, 200, { ok: false, error: '返答の生成に失敗しました' });
+        return json(res, 200, { ok: true, reply });
       }
 
       /* アポインター全員への個別案内（氏名＋トップ実績＋寺子屋）。owner または合言葉。 */

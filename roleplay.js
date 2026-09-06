@@ -80,7 +80,8 @@
 
   // ---- 状態・履歴 ----
   const KEY = 'onikyokan_roleplay_v1';
-  const S = { step: 'setup', rep: '', partner: '', ctype: '警戒', transcript: '', result: null, recSec: 0, timer: null };
+  const S = { step: 'setup', rep: '', partner: '', ctype: '警戒', transcript: '', result: null, recSec: 0, timer: null,
+    ai: { turns: [], recording: false, busy: false, note: '' } };
   function hist() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
 
   // ---- 部品（Tailwind・鬼教官native）----
@@ -105,7 +106,7 @@
         <div class="mb-3.5"><label class="block text-[12.5px] font-semibold text-neutral-600 mb-1.5">お客様タイプ（難易度の目安）</label>
           <div class="flex gap-2 flex-wrap">${Object.keys(SCENARIOS).map(t => `<button onclick="RP.setType('${t}')" class="px-3.5 py-2 rounded-full text-[13px] border ${S.ctype === t ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-neutral-200'}">${t}</button>`).join('')}</div></div>
         <div class="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3 text-[12.5px] text-neutral-700"><span class="font-semibold text-amber-700">お客様役へのシナリオカード</span><br>${SCENARIOS[S.ctype].map(x => '・' + x).join('<br>')}</div>
-        <div class="flex justify-end mt-4"><button onclick="RP.start()" class="${btnP}">録音してロープレ開始</button></div>
+        <div class="flex flex-wrap justify-end gap-2.5 mt-4"><button onclick="RP.startAi()" class="${btnP}">AIお客様とロープレ（話す）</button><button onclick="RP.start()" class="${btnG}">人ペアを録音して採点</button></div>
       </div>`)}
       <div class="mt-4">${card(`<div class="p-5"><div class="text-sm font-semibold mb-3">この局面で出す武器（台本レール）</div>${railHtml()}</div>`)}</div>
     </div>`;
@@ -162,9 +163,41 @@
       <div class="mt-3"><button onclick="RP.tab('setup')" class="${btnG}">練習に戻る</button></div></div>`;
   }
 
+  // ---- AIお客様とのロープレ（押して話す）----
+  function bubble(role, text) {
+    const mine = role === 'sales';
+    return `<div class="flex ${mine ? 'justify-end' : 'justify-start'} mb-2">
+      <div class="max-w-[78%] rounded-2xl px-3.5 py-2.5 text-[13.5px] ${mine ? 'bg-emerald-600 text-white' : 'bg-white border border-[#E3DED2] text-neutral-800'}">
+        <div class="text-[10.5px] mb-0.5 ${mine ? 'text-emerald-100' : 'text-neutral-400'}">${mine ? (S.rep || '営業') : 'お客様（' + S.ctype + '）'}</div>${text.replace(/</g, '&lt;')}</div></div>`;
+  }
+  function viewAi() {
+    const a = S.ai;
+    const label = a.busy ? '…考え中' : (a.recording ? '● 録音中（もう一度押して送信）' : '押して話す');
+    const bcls = a.recording ? 'bg-rose-600' : 'bg-emerald-600';
+    const log = a.turns.length
+      ? a.turns.map(t => bubble(t.role, t.text)).join('')
+      : `<div class="text-neutral-400 text-[13px] text-center py-6">「押して話す」を押して、玄関先の第一声から始めてください。<br>名乗り3点（社名・目的・商材）を忘れずに。</div>`;
+    return `<div class="max-w-[860px] mx-auto">
+      <h1 class="text-xl font-bold mb-1">AIお客様とロープレ</h1>
+      <p class="text-neutral-500 text-[13px] mb-4">${S.rep || '—'}（お客様＝${S.ctype}）／玄関〜診断の入口3局面。話し終えたらボタンをもう一度押すと、お客様が返します。</p>
+      ${card(`<div class="p-4"><div id="rp_ailog" class="max-h-[46vh] overflow-auto px-1">${log}</div></div>`)}
+      <div class="mt-3 flex items-center gap-2.5">
+        <button onclick="RP.talk()" ${a.busy ? 'disabled' : ''} class="flex-1 px-5 py-4 rounded-xl ${bcls} text-white font-bold text-base ${a.busy ? 'opacity-60' : ''}">${label}</button>
+        <button onclick="RP.endAi()" class="px-4 py-4 rounded-xl bg-white border border-neutral-200 text-emerald-700 font-semibold text-sm">終了して採点</button>
+      </div>
+      ${a.note ? `<div class="text-[12px] text-amber-700 mt-2">${a.note}</div>` : ''}
+      <div class="mt-3">${card(`<div class="p-4"><div class="text-[12.5px] font-semibold mb-1.5">マイクが使えないときは打ち込みで送れます</div>
+        <div class="flex gap-2"><input id="rp_aitype" placeholder="営業のセリフを入力" class="flex-1 border border-neutral-200 rounded-lg px-3 py-2.5 text-sm">
+        <button onclick="RP.talkText()" class="${btnG}">送る</button></div></div>`)}</div>
+      <div class="mt-3">${card(`<div class="p-4"><div class="text-sm font-semibold mb-2">台本レール</div>${railHtml()}</div>`)}</div>
+      <div class="mt-3"><button onclick="RP.tab('setup')" class="${btnG}">やめて戻る</button></div>
+    </div>`;
+  }
+
   // ---- ビュー本体（鬼教官の VIEWS.roleplay から呼ばれる）----
   window.viewRoleplay = function () {
     if (S.step === 'history') return viewHistory();
+    if (S.step === 'ai') return viewAi();
     if (S.step === 'rec') return viewRec();
     if (S.step === 'result') return viewResult();
     return viewSetup();
@@ -172,6 +205,11 @@
 
   // ---- 録音（MediaRecorderがあれば実録音・無ければ計測のみ）----
   let mediaRec = null, chunks = [];
+  // ---- AIロープレ用（1ターンごとに録音→送信）----
+  let aiStream = null, aiRec = null, aiChunks = [];
+  function blobB64(blob) { return new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1] || ''); fr.onerror = rej; fr.readAsDataURL(blob); }); }
+  function speak(text) { try { if (!window.speechSynthesis) return; const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.rate = 1.02; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); } catch (e) {} }
+  function scrollLog() { const el = document.getElementById('rp_ailog'); if (el) el.scrollTop = el.scrollHeight; }
   window.RP = {
     set(k, v) { S[k] = v; },
     setType(t) { S.ctype = t; render(); },
@@ -197,6 +235,66 @@
     scorePaste() { const el = document.getElementById('rp_tr'); const t = (el && el.value.trim()) || SAMPLE; S.transcript = t; S.result = score(t); S.step = 'result'; render(); window.scrollTo(0, 0); },
     save() { const h = hist(); h.push({ rep: S.rep, partner: S.partner, ctype: S.ctype, met: S.result.met, pass: S.result.pass }); localStorage.setItem(KEY, JSON.stringify(h)); S.step = 'history'; render(); window.scrollTo(0, 0); },
     reset() { S.step = 'setup'; },
+
+    // ---- AIお客様とのロープレ ----
+    async startAi() {
+      S.ai = { turns: [], recording: false, busy: false, note: '' };
+      S.step = 'ai'; render(); window.scrollTo(0, 0);
+      try { if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) aiStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+      catch (e) { aiStream = null; S.ai.note = 'マイクが使えないため、下の入力欄から打ち込みで進めてください。'; render(); }
+    },
+    talk() {
+      if (S.ai.busy) return;
+      if (!aiStream) { S.ai.note = 'マイクが使えません。下の入力欄から打ち込んでください。'; render(); return; }
+      if (!S.ai.recording) {
+        try {
+          aiRec = new MediaRecorder(aiStream); aiChunks = [];
+          aiRec.ondataavailable = e => { if (e.data && e.data.size) aiChunks.push(e.data); };
+          aiRec.onstop = () => { RP._sttThenReply(); };
+          aiRec.start(); S.ai.recording = true; S.ai.note = ''; render();
+        } catch (e) { S.ai.note = '録音を開始できませんでした。打ち込みで進めてください。'; render(); }
+      } else {
+        S.ai.recording = false; S.ai.busy = true; render();   // onstop → _sttThenReply
+        try { aiRec.stop(); } catch (e) { S.ai.busy = false; render(); }
+      }
+    },
+    async _sttThenReply() {
+      try {
+        const blob = new Blob(aiChunks, { type: 'audio/webm' });
+        const b64 = await blobB64(blob);
+        const r = await fetch('/api/roleplay/stt', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ audio: b64, ext: 'webm' }) });
+        const j = await r.json();
+        const text = ((j && j.ok && j.text) || '').trim();
+        if (!text) { S.ai.busy = false; S.ai.note = '聞き取れませんでした。もう一度話すか、打ち込んでください。'; render(); return; }
+        await RP._advance(text);
+      } catch (e) { S.ai.busy = false; S.ai.note = '通信に失敗しました。'; render(); }
+    },
+    talkText() {
+      const el = document.getElementById('rp_aitype'); const t = el && el.value.trim();
+      if (!t || S.ai.busy) return; if (el) el.value = '';
+      RP._advance(t);
+    },
+    async _advance(salesLine) {
+      S.ai.turns.push({ role: 'sales', text: salesLine }); S.ai.busy = true; S.ai.note = ''; render(); scrollLog();
+      try {
+        const history = S.ai.turns.slice(0, -1).map(t => ({ role: t.role, text: t.text }));
+        const r = await fetch('/api/roleplay/reply', { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ ctype: S.ctype, history, salesText: salesLine }) });
+        const j = await r.json();
+        const reply = ((j && j.ok && j.reply) || '').trim();
+        if (reply) { S.ai.turns.push({ role: 'customer', text: reply }); speak(reply); }
+        else S.ai.note = 'お客様の返答を作れませんでした（AIお客様が未設定かもしれません）。';
+      } catch (e) { S.ai.note = '通信に失敗しました。'; }
+      S.ai.busy = false; render(); scrollLog();
+    },
+    endAi() {
+      try { if (aiStream) aiStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+      aiStream = null;
+      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+      const t = S.ai.turns.map(x => (x.role === 'sales' ? '営業: ' : '客: ') + x.text).join('\n');
+      S.transcript = t || SAMPLE; S.result = score(S.transcript); S.step = 'result'; render(); window.scrollTo(0, 0);
+    },
+
     _score: score, // テスト用
   };
 })();
