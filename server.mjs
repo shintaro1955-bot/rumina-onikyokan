@@ -709,7 +709,8 @@ const server = createServer(async (req, res) => {
         const okRosterSecret = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
         const me = okRosterSecret ? { role: 'bot' } : currentUser(req);
         if (!me) return json(res, 401, { error: 'ログインが必要です' });
-        const data = cyzen.roster();
+        const ymR = String(url.searchParams.get('ym') || '').trim();   // ?ym=YYYY-MM でその月だけ（ポータルの今月ランキング用）
+        const data = cyzen.roster(/^\d{4}-\d{2}$/.test(ymR) ? { ym: ymR } : {});
         // 一般社員には「数えられる数」（訪問/アポ/成約/敗戦/商談…）は全部見せてよい。
         // 伏せるのは弱点判定ラベル(seg/why)とセグメント分布だけ。
         if (me.role !== 'owner' && Array.isArray(data.rows)) {
