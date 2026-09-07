@@ -485,6 +485,21 @@ const server = createServer(async (req, res) => {
         return json(res, 200, buildApoMessages({ all: url.searchParams.get('all') === '1' }));
       }
 
+      /* アポコーチ確認（owner専用）：kintone照合済みの最終リストをポータルから引いて返す。
+         成約照合はkintoneを持つポータルが正本。鬼教官はそれを表示するだけ。 */
+      if (path === '/api/cyzen/apo-coach-view' && req.method === 'GET') {
+        const meAV = currentUser(req);
+        if (!meAV || meAV.role !== 'owner') return json(res, 403, { error: '権限がありません' });
+        if (!PORTAL_URL || !BOT_API_SECRET) return json(res, 200, { ok: false, error: 'ポータル連携が未設定です' });
+        try {
+          const r = await fetch(`${PORTAL_URL}/api/cyzen/apo-coach?secret=${encodeURIComponent(BOT_API_SECRET)}`);
+          if (!r.ok) return json(res, 200, { ok: false, error: 'ポータルから取得できませんでした（' + r.status + '）' });
+          return json(res, 200, await r.json());
+        } catch (e) {
+          return json(res, 200, { ok: false, error: 'ポータルへの接続に失敗しました' });
+        }
+      }
+
       /* AIロープレ①：営業の1ターン音声を文字起こし（Deepgram）。ログイン必須。
          音声はその場で一時ファイルにし、返したら即削除する（保存しない＝本人の練習）。 */
       if (path === '/api/roleplay/stt' && req.method === 'POST') {

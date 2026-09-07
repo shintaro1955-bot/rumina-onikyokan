@@ -1577,7 +1577,45 @@ function viewTerakoya() {
   </div>`;
 }
 
-const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, goals: viewGoalPage, my: viewMy, terakoya: viewTerakoya, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay };
+/* ---------- アポコーチ確認（owner専用）：訪問はあるのにアポが取れていない人の名指しリスト ---------- */
+function viewApoCoach() {
+  return `<div class="max-w-[980px] mx-auto">
+    ${h1('アポコーチ（訪問はあるのにアポが取れていない人）', '源＝cyzenのアポ獲得、照合＝kintoneの成約。cyzenでアポ0でもkintoneに成約があれば「報告漏れ」として名指しから外しています。毎朝この"送る"の人へ本人LINEに個別コーチ（自動送信ONのときだけ）。')}
+    <div id="apocoachWrap"><div class="text-sm text-neutral-500 p-6 text-center">読み込み中…</div></div>
+  </div>`;
+}
+async function loadApoCoach() {
+  const wrap = document.getElementById('apocoachWrap');
+  if (!wrap) return;
+  let d; try { d = await API.apoCoachView(); } catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
+  if (!d || !d.ok) { wrap.innerHTML = `<div class="text-sm text-neutral-500 p-6 text-center">${(d && (d.error || d.reason)) || 'データがありません。'}</div>`; return; }
+  const ready = d.ready || [], sup = d.suppressedKintone || [], noline = d.noLine || [];
+  const win = d.window ? `${d.window.from}〜${d.window.to}（${d.window.days}日）` : '';
+  const badge = d.enabled
+    ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">毎朝の自動送信：ON</span>`
+    : `<span class="text-[11px] px-2 py-0.5 rounded-full bg-neutral-200 text-neutral-600">毎朝の自動送信：OFF（確認中）</span>`;
+  const readyRows = ready.map(r => `<tr class="border-t border-neutral-200 align-top">
+    <td class="px-3 py-2 text-neutral-800 whitespace-nowrap">${r.name || '—'}</td>
+    <td class="px-3 py-2 text-right tabular-nums">${r.visits}</td>
+    <td class="px-3 py-2 text-right tabular-nums text-rose-600">${r.apo}</td>
+    <td class="px-3 py-2 text-right tabular-nums text-neutral-500">${r.expected}</td>
+    <td class="px-3 py-2 text-[11px] text-neutral-500"><details><summary class="cursor-pointer text-emerald-700">文面を見る</summary><pre class="whitespace-pre-wrap mt-1 text-[11.5px] text-neutral-700">${(r.message || '').replace(/</g, '&lt;')}</pre></details></td>
+  </tr>`).join('');
+  wrap.innerHTML = `
+    <div class="flex items-center gap-2 mb-3 flex-wrap">${badge}<span class="text-[12px] text-neutral-500">対象期間 ${win} ・ トップ率 ${d.stdRate != null ? d.stdRate : '—'}件/訪問100件</span></div>
+    ${card(`<div class="p-0 overflow-x-auto">
+      <div class="px-4 py-3 text-sm font-semibold border-b border-neutral-200">送る（${ready.length}名）— 訪問はあるのにアポが取れていない</div>
+      ${ready.length ? `<table class="w-full text-[13px]"><thead class="text-[11px] text-neutral-500"><tr><th class="px-3 py-1.5 text-left">氏名</th><th class="px-3 py-1.5 text-right">訪問</th><th class="px-3 py-1.5 text-right">アポ</th><th class="px-3 py-1.5 text-right">期待</th><th class="px-3 py-1.5 text-left">本人への文面</th></tr></thead><tbody>${readyRows}</tbody></table>`
+      : `<div class="px-4 py-6 text-sm text-neutral-500 text-center">今は対象がいません。</div>`}
+    </div>`)}
+    <div class="mt-3 grid sm:grid-cols-2 gap-3">
+      ${card(`<div class="p-4"><div class="text-[13px] font-semibold mb-2">kintone照合で除外（${sup.length}名）</div><div class="text-[11.5px] text-neutral-500 mb-2">cyzenではアポ0でも、kintoneに成約があった＝報告漏れとみなし名指ししない。</div>${sup.length ? `<table class="w-full text-[12.5px]"><tbody>${sup.map(r => `<tr class="border-t border-neutral-100"><td class="py-1.5 pr-2">${r.name}</td><td class="py-1.5 text-right tabular-nums text-neutral-500">訪問${r.visits}</td><td class="py-1.5 text-right tabular-nums text-emerald-700">成約${r.kintoneDeals}</td></tr>`).join('')}</tbody></table>` : '<div class="text-[12px] text-neutral-400">なし</div>'}</div>`)}
+      ${card(`<div class="p-4"><div class="text-[13px] font-semibold mb-2">LINE未連携で送れない（${noline.length}名）</div><div class="text-[11.5px] text-neutral-500 mb-2">本人がポータルでLINEログイン＋本人選択をすると届くようになる。</div>${noline.length ? `<div class="text-[12.5px] text-neutral-700">${noline.map(r => r.name).join('、')}</div>` : '<div class="text-[12px] text-neutral-400">なし</div>'}</div>`)}
+    </div>
+    ${d.enabled ? '' : `<div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[12.5px] text-neutral-700">まだ自動送信はOFFです。上のリストで問題なければ、本番の環境変数 <b>APO_COACH_ON=1</b> を立てると翌朝から本人LINEへ届き始めます（1日1回・上限${d.dailyMax || 20}名）。</div>`}`;
+}
+
+const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, goals: viewGoalPage, my: viewMy, terakoya: viewTerakoya, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay, apocoach: viewApoCoach };
 // 新IA(today/field/academy/league/me)は同一currentViewでnav-activeを共有させる別名解決
 const NAV_ALIAS = { ranking: 'league', my: 'me' };
 function nav(v) {
@@ -1590,6 +1628,7 @@ function nav(v) {
   if (v === 'linkrep') loadLinkRep();
   if (v === 'cyzen') loadCyzen();
   if (v === 'compliance') { loadCompliance(); loadReminders(); }
+  if (v === 'apocoach') loadApoCoach();
   if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
   if (v === 'me') loadMePerf();
   if (v === 'goals') loadGoalPage();
@@ -1989,7 +2028,7 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  const allowed = ['today', 'field', 'academy', 'league', 'me', 'goals', 'my', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya'];
+  const allowed = ['today', 'field', 'academy', 'league', 'me', 'goals', 'my', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
   if (!allowed.includes(currentView) || currentView === 'login') currentView = 'today';   // 常にTodayから
   nav(currentView);
   updateSync();
