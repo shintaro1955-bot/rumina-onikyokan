@@ -395,7 +395,7 @@ const server = createServer(async (req, res) => {
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET,
+      if (path === '/api/health') return json(res, 200, { ok: true, cyzenUserKeys: globalThis.__cyzenUserKeys || null, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET,
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
