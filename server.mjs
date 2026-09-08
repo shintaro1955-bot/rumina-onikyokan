@@ -682,6 +682,28 @@ const server = createServer(async (req, res) => {
       /* 日ごとのアポ獲得件数（人ごと）。ポータルの朝の配信で
          「昨日いちばんアポを取った人」と「その日の5位まで」を出すのに使う。
          cyzenの「アポ獲得」報告を日付で数えたもの。合言葉でも取れる。 */
+      // 1日の実績（ポータルの朝ミッション／夕方の追い込み）。合言葉かログイン。
+      if (path === '/api/cyzen/day-facts' && req.method === 'GET') {
+        const okDF = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        if (!okDF && !currentUser(req)) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (!cyzen.ready()) return json(res, 200, { ready: false, rows: [] });
+        const dateDF = String(url.searchParams.get('date') || '').slice(0, 10) || new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+        return json(res, 200, { ready: true, date: dateDF, rows: cyzen.dayFacts(dateDF) });
+      }
+      // アポ報告の時間帯（直近N日・全員の合計）。
+      if (path === '/api/cyzen/apo-hours' && req.method === 'GET') {
+        const okAH = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        if (!okAH && !currentUser(req)) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (!cyzen.ready()) return json(res, 200, { ready: false, total: 0, hist: [] });
+        return json(res, 200, Object.assign({ ready: true }, cyzen.apoHours(Math.max(1, Math.min(90, +(url.searchParams.get('days') || 30))))));
+      }
+      // 連続アポ記録（稼働日ベース）。
+      if (path === '/api/cyzen/apo-streaks' && req.method === 'GET') {
+        const okAS = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        if (!okAS && !currentUser(req)) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (!cyzen.ready()) return json(res, 200, { ready: false, rows: [] });
+        return json(res, 200, { ready: true, rows: cyzen.apoStreaks() });
+      }
       if (path === '/api/cyzen/apo-days' && req.method === 'GET') {
         const okAD = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
         const meAD = okAD ? { role: 'bot' } : currentUser(req);
