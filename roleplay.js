@@ -81,7 +81,8 @@
   // ---- 状態・履歴 ----
   const KEY = 'onikyokan_roleplay_v1';
   const S = { step: 'setup', rep: '', partner: '', ctype: '警戒', transcript: '', result: null, recSec: 0, timer: null,
-    ai: { turns: [], recording: false, busy: false, note: '' } };
+    ai: { turns: [], recording: false, busy: false, note: '' },
+    av: { persona: 'shufu', turns: [], state: 'idle', note: '' } };
   function hist() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
 
   // ---- 部品（Tailwind・鬼教官native）----
@@ -106,7 +107,7 @@
         <div class="mb-3.5"><label class="block text-[12.5px] font-semibold text-neutral-600 mb-1.5">お客様タイプ（難易度の目安）</label>
           <div class="flex gap-2 flex-wrap">${Object.keys(SCENARIOS).map(t => `<button onclick="RP.setType('${t}')" class="px-3.5 py-2 rounded-full text-[13px] border ${S.ctype === t ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-neutral-200'}">${t}</button>`).join('')}</div></div>
         <div class="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3 text-[12.5px] text-neutral-700"><span class="font-semibold text-amber-700">お客様役へのシナリオカード</span><br>${SCENARIOS[S.ctype].map(x => '・' + x).join('<br>')}</div>
-        <div class="flex flex-wrap justify-end gap-2.5 mt-4"><button onclick="RP.startAi()" class="${btnP}">AIお客様とロープレ（話す）</button><button onclick="RP.start()" class="${btnG}">人ペアを録音して採点</button></div>
+        <div class="flex flex-wrap justify-end gap-2.5 mt-4"><button onclick="RP.startAvatar('shufu')" class="${btnP}">AIお客様と会話（顔つき・ハンズフリー）</button><button onclick="RP.startAi()" class="${btnG}">押して話す（顔なし）</button><button onclick="RP.start()" class="${btnG}">人ペアを録音</button></div>
       </div>`)}
       <div class="mt-4">${card(`<div class="p-5"><div class="text-sm font-semibold mb-3">この局面で出す武器（台本レール）</div>${railHtml()}</div>`)}</div>
     </div>`;
@@ -194,9 +195,36 @@
     </div>`;
   }
 
+  // ---- 顔つき・ハンズフリーのAI会話（アバター）----
+  function viewAvatar() {
+    const p = PERSONAS[S.av.persona] || PERSONAS.shufu;
+    const chips = Object.values(PERSONAS).map(x => `<button ${x.ready ? `onclick="RP.startAvatar('${x.key}')"` : 'disabled'} class="px-3 py-1.5 rounded-full text-[12.5px] border ${x.key === p.key ? 'bg-emerald-600 text-white border-emerald-600' : x.ready ? 'bg-white border-neutral-200 text-neutral-700' : 'bg-neutral-100 border-neutral-200 text-neutral-400'}">${x.label}</button>`).join('');
+    return `<div class="max-w-[860px] mx-auto">
+      <h1 class="text-xl font-bold mb-1">AIお客様と会話（顔つき）</h1>
+      <p class="text-neutral-500 text-[13px] mb-3">${p.label}／${p.hint}　玄関〜診断の入口3局面。<b>ボタンは不要</b>——話しかけて、黙ると相手が返します。</p>
+      <div class="flex gap-2 mb-3 flex-wrap">${chips}</div>
+      <div class="relative rounded-2xl overflow-hidden bg-black mx-auto" style="aspect-ratio:3/4;max-width:340px">
+        <video id="av_idle" src="${p.idle}" poster="${p.poster || ''}" muted loop playsinline autoplay preload="auto" class="absolute inset-0 w-full h-full object-cover"></video>
+        <video id="av_talk" src="${p.talking}" muted loop playsinline autoplay preload="auto" class="absolute inset-0 w-full h-full object-cover" style="opacity:0;transition:opacity .18s"></video>
+        <div id="av_status" class="absolute bottom-0 inset-x-0 text-center text-white text-[12.5px] py-2" style="background:linear-gradient(transparent,rgba(0,0,0,.65))">準備中…</div>
+      </div>
+      <div id="av_note" class="text-[12px] text-amber-700 mt-2 text-center">${S.av.note || ''}</div>
+      <div class="mt-3">${card(`<div class="p-4"><div id="av_log" class="max-h-[28vh] overflow-auto px-1"><div class="text-neutral-400 text-[13px] text-center py-4">玄関先の第一声からどうぞ。名乗り3点（社名・目的・商材）を忘れずに。</div></div></div>`)}</div>
+      <div class="mt-3">${card(`<div class="p-4"><div class="text-[12.5px] font-semibold mb-1.5">マイクが使えないときは打ち込みでも会話できます</div>
+        <div class="flex gap-2"><input id="av_type" placeholder="営業のセリフを入力" class="flex-1 border border-neutral-200 rounded-lg px-3 py-2.5 text-sm">
+        <button onclick="RP.avTalkText()" class="${btnG}">送る</button></div></div>`)}</div>
+      <div class="mt-3">${card(`<div class="p-4"><div class="text-sm font-semibold mb-2">台本レール</div>${railHtml()}</div>`)}</div>
+      <div class="mt-3 flex justify-between gap-3">
+        <button onclick="RP.avBack()" class="${btnG}">やめて戻る</button>
+        <button onclick="RP.endAvatar()" class="${btnP}">終了して採点</button>
+      </div>
+    </div>`;
+  }
+
   // ---- ビュー本体（鬼教官の VIEWS.roleplay から呼ばれる）----
   window.viewRoleplay = function () {
     if (S.step === 'history') return viewHistory();
+    if (S.step === 'avatar') return viewAvatar();
     if (S.step === 'ai') return viewAi();
     if (S.step === 'rec') return viewRec();
     if (S.step === 'result') return viewResult();
@@ -208,8 +236,40 @@
   // ---- AIロープレ用（1ターンごとに録音→送信）----
   let aiStream = null, aiRec = null, aiChunks = [];
   function blobB64(blob) { return new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1] || ''); fr.onerror = rej; fr.readAsDataURL(blob); }); }
-  function speak(text) { try { if (!window.speechSynthesis) return; const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.rate = 1.02; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); } catch (e) {} }
+  // ja-JP の声を性別ヒントで選ぶ（環境で名前が違うので当たれば使う・無ければ既定）。
+  function pickVoice(gender) {
+    try {
+      const all = window.speechSynthesis.getVoices() || [];
+      const vs = all.filter(v => /ja[-_]?JP|Japanese|日本/i.test(v.lang + ' ' + v.name));
+      if (!vs.length) return null;
+      const fem = /(Kyoko|Female|女性|Haruka|Ayumi|Nanami|Sayaka|Mizuki|O-ren|Otome)/i;
+      const mal = /(Otoya|Male|男性|Ichiro|Hattori|Daichi|Keita|Ryo)/i;
+      if (gender === 'female') { const f = vs.find(v => fem.test(v.name)); if (f) return f; const nm = vs.find(v => !mal.test(v.name)); if (nm) return nm; }
+      if (gender === 'male') { const m = vs.find(v => mal.test(v.name)); if (m) return m; }
+      return vs[0];
+    } catch (e) { return null; }
+  }
+  function speak(text, opts = {}) {
+    try {
+      if (!window.speechSynthesis) { if (opts.onend) setTimeout(opts.onend, 400); return; }
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ja-JP'; u.rate = opts.rate || 1.02;
+      const v = pickVoice(opts.gender); if (v) u.voice = v;
+      if (opts.onend) u.onend = opts.onend;
+      window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+    } catch (e) { if (opts.onend) setTimeout(opts.onend, 400); }
+  }
   function scrollLog() { const el = document.getElementById('rp_ailog'); if (el) el.scrollTop = el.scrollHeight; }
+
+  // ---- 顔つき・ハンズフリー（アバター）用 ----
+  const PERSONAS = {
+    shufu: { key: 'shufu', label: '主婦（30代）', hint: '昼間の在宅主婦。丁寧だが警戒気味。', ctype: '警戒', gender: 'female',
+      idle: '/assets/roleplay/shufu/idle.mp4', talking: '/assets/roleplay/shufu/talking.mp4', poster: '/assets/roleplay/shufu/poster.png', ready: true },
+    danna: { key: 'danna', label: '旦那（近日）', hint: '準備中', ctype: '多忙', gender: 'male', ready: false },
+  };
+  let avStream = null, avRec = null, avChunks = [], avCtx = null, avAnalyser = null, avBuf = null;
+  let avLoopOn = false, avRaf = null, avRecStart = 0, avLastLoud = 0;
+  const SPEAK_TH = 0.045, SILENCE_TH = 0.03, SILENCE_MS = 1200, REC_MAX_MS = 15000;
   window.RP = {
     set(k, v) { S[k] = v; },
     setType(t) { S.ctype = t; render(); },
@@ -234,7 +294,124 @@
     scoreSample() { S.transcript = SAMPLE; S.result = score(SAMPLE); S.step = 'result'; render(); window.scrollTo(0, 0); },
     scorePaste() { const el = document.getElementById('rp_tr'); const t = (el && el.value.trim()) || SAMPLE; S.transcript = t; S.result = score(t); S.step = 'result'; render(); window.scrollTo(0, 0); },
     save() { const h = hist(); h.push({ rep: S.rep, partner: S.partner, ctype: S.ctype, met: S.result.met, pass: S.result.pass }); localStorage.setItem(KEY, JSON.stringify(h)); S.step = 'history'; render(); window.scrollTo(0, 0); },
-    reset() { S.step = 'setup'; },
+    reset() { RP._avTeardown(); S.step = 'setup'; },
+
+    // ---- 顔つき・ハンズフリー会話（アバター）----
+    startAvatar(personaKey) {
+      RP._avTeardown();
+      const p = PERSONAS[personaKey] || PERSONAS.shufu;
+      if (!p.ready) return;
+      S.av = { persona: p.key, turns: [], state: 'idle', note: '' };
+      S.ctype = p.ctype;
+      S.step = 'avatar'; render(); window.scrollTo(0, 0);
+      // ユーザー操作の流れの中で両動画を先行再生（隠れた喋る動画の省電力一時停止を避ける）。
+      try { ['av_idle', 'av_talk'].forEach(id => { const v = document.getElementById(id); if (v) { v.muted = true; const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); } }); } catch (e) {}
+      try { window.speechSynthesis && window.speechSynthesis.getVoices(); } catch (e) {}
+      setTimeout(() => RP._avInit(), 250);
+    },
+    async _avInit() {
+      RP._avStatus();
+      if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { RP._avNote('この端末はマイクに対応していません。下の入力欄で会話できます。'); return; }
+      try { avStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+      catch (e) { RP._avNote('マイクが使えません。下の入力欄から打ち込みで会話できます。'); return; }
+      try {
+        avCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const src = avCtx.createMediaStreamSource(avStream);
+        avAnalyser = avCtx.createAnalyser(); avAnalyser.fftSize = 512;
+        src.connect(avAnalyser); avBuf = new Uint8Array(avAnalyser.fftSize);
+      } catch (e) { RP._avNote('音声の解析を開始できませんでした。打ち込みで会話できます。'); return; }
+      S.av.state = 'listening'; RP._avNote(''); RP._avStatus();
+      avLoopOn = true; RP._avLoop();
+    },
+    _avLoop() {
+      if (!avLoopOn) return;
+      let rms = 0;
+      try { avAnalyser.getByteTimeDomainData(avBuf); let s = 0; for (let i = 0; i < avBuf.length; i++) { const v = (avBuf[i] - 128) / 128; s += v * v; } rms = Math.sqrt(s / avBuf.length); } catch (e) {}
+      const now = Date.now();
+      if (S.av.state === 'listening') {
+        if (rms > SPEAK_TH) RP._avStartRec();
+      } else if (S.av.state === 'recording') {
+        if (rms > SILENCE_TH) avLastLoud = now;
+        if ((now - avRecStart > 600 && now - avLastLoud > SILENCE_MS) || now - avRecStart > REC_MAX_MS) RP._avStopRec();
+      }
+      avRaf = setTimeout(() => RP._avLoop(), 60);
+    },
+    _avStartRec() {
+      try {
+        avRec = new MediaRecorder(avStream); avChunks = [];
+        avRec.ondataavailable = e => { if (e.data && e.data.size) avChunks.push(e.data); };
+        avRec.onstop = () => RP._avProcess();
+        avRec.start(); S.av.state = 'recording'; avRecStart = Date.now(); avLastLoud = Date.now(); RP._avStatus();
+      } catch (e) { S.av.state = 'listening'; }
+    },
+    _avStopRec() {
+      if (S.av.state !== 'recording') return;
+      S.av.state = 'processing'; RP._avStatus();
+      try { avRec.stop(); } catch (e) { S.av.state = 'listening'; RP._avStatus(); }
+    },
+    async _avProcess() {
+      try {
+        const blob = new Blob(avChunks, { type: 'audio/webm' });
+        if (blob.size < 2500) { S.av.state = 'listening'; RP._avStatus(); return; }   // ノイズ/短すぎ
+        const b64 = await blobB64(blob);
+        const r = await fetch('/api/roleplay/stt', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ audio: b64, ext: 'webm' }) });
+        const j = await r.json();
+        const text = ((j && j.ok && j.text) || '').trim();
+        if (!text || text.length < 2) { S.av.state = 'listening'; RP._avStatus(); return; }
+        await RP._avReply(text);
+      } catch (e) { S.av.state = 'listening'; RP._avStatus(); }
+    },
+    async _avReply(salesLine) {
+      S.av.turns.push({ role: 'sales', text: salesLine }); RP._avRenderLog();
+      S.av.state = 'processing'; RP._avStatus();
+      let reply = '';
+      try {
+        const history = S.av.turns.slice(0, -1).map(t => ({ role: t.role, text: t.text }));
+        const r = await fetch('/api/roleplay/reply', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ctype: S.ctype, history, salesText: salesLine }) });
+        const j = await r.json();
+        reply = ((j && j.ok && j.reply) || '').trim();
+      } catch (e) {}
+      if (!reply) { S.av.note = 'お客様の返答を作れませんでした（AIお客様が未設定かも）。'; RP._avNote(S.av.note); S.av.state = 'listening'; RP._avStatus(); return; }
+      S.av.turns.push({ role: 'customer', text: reply }); RP._avRenderLog();
+      const p = PERSONAS[S.av.persona] || PERSONAS.shufu;
+      S.av.state = 'speaking'; RP._avShowTalking(true); RP._avStatus();
+      speak(reply, { gender: p.gender, onend: () => { RP._avShowTalking(false); if (S.av.state === 'speaking') { S.av.state = 'listening'; RP._avStatus(); } } });
+    },
+    avTalkText() {
+      const el = document.getElementById('av_type'); const t = el && el.value.trim();
+      if (!t || S.av.state === 'processing' || S.av.state === 'speaking') return; if (el) el.value = '';
+      RP._avReply(t);
+    },
+    _avShowTalking(on) {
+      const t = document.getElementById('av_talk'); if (!t) return;
+      t.style.opacity = on ? '1' : '0';
+      // 両動画は最初から再生しっぱなし（隠れている間もmutedループ）。表示時に頭出しだけする。
+      if (on) { try { t.currentTime = 0; const pr = t.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} }
+    },
+    _avStatus() {
+      const el = document.getElementById('av_status'); if (!el) return;
+      const m = { idle: '準備中…', listening: 'どうぞ話しかけてください（聞いています）', recording: '聞き取り中…', processing: '…考え中', speaking: 'お客様が話しています' };
+      el.textContent = m[S.av.state] || '';
+    },
+    _avNote(msg) { S.av.note = msg || ''; const el = document.getElementById('av_note'); if (el) el.textContent = S.av.note; },
+    _avRenderLog() {
+      const el = document.getElementById('av_log'); if (!el) return;
+      el.innerHTML = S.av.turns.length ? S.av.turns.map(t => bubble(t.role, t.text)).join('') : '';
+      el.scrollTop = el.scrollHeight;
+    },
+    _avTeardown() {
+      avLoopOn = false; try { clearTimeout(avRaf); } catch (e) {}
+      try { if (avRec && avRec.state !== 'inactive') avRec.stop(); } catch (e) {}
+      try { if (avStream) avStream.getTracks().forEach(t => t.stop()); } catch (e) {} avStream = null;
+      try { if (avCtx) avCtx.close(); } catch (e) {} avCtx = null;
+      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+    },
+    avBack() { RP._avTeardown(); S.step = 'setup'; render(); window.scrollTo(0, 0); },
+    endAvatar() {
+      RP._avTeardown();
+      const t = S.av.turns.map(x => (x.role === 'sales' ? '営業: ' : '客: ') + x.text).join('\n');
+      S.transcript = t || SAMPLE; S.result = score(S.transcript); S.step = 'result'; render(); window.scrollTo(0, 0);
+    },
 
     // ---- AIお客様とのロープレ ----
     async startAi() {
