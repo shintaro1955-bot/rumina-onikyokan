@@ -534,16 +534,17 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { ok: true, reply });
       }
 
-      /* AIロープレ③：お客様役の声（OpenAI TTS）。ブラウザ読み上げより自然な声にする。
-         音声(mp3)をそのまま返す。失敗時はok:falseで、フロントはブラウザ読み上げにフォールバック。 */
-      if (path === '/api/roleplay/tts' && req.method === 'POST') {
+      /* AIロープレ③：お客様役の声（OpenAI TTS）。ブラウザ読み上げより自然。
+         GETで <audio src> から直接叩ける。生成されたそばからストリーミング配信して、
+         声が鳴り出すまでの待ちを最小化する。失敗時はok:falseでフロントは読み上げにフォールバック。 */
+      if (path === '/api/roleplay/tts' && req.method === 'GET') {
         const meT = currentUser(req);
         if (!meT) return json(res, 401, { error: 'ログインが必要です' });
         if (!API_KEY) return json(res, 200, { ok: false, error: 'TTS未設定' });
-        const body = await readJson(req) || {};
-        const text = String(body.text || '').slice(0, 500).trim();
+        const text = String(url.searchParams.get('text') || '').slice(0, 500).trim();
         if (!text) return json(res, 400, { error: 'text が必要です' });
-        const voice = /^[a-z]{2,20}$/i.test(body.voice || '') ? body.voice : 'nova';
+        const vq = url.searchParams.get('voice') || '';
+        const voice = /^[a-z]{2,20}$/i.test(vq) ? vq : 'nova';
         const models = [...new Set([process.env.ROLEPLAY_TTS_MODEL || 'tts-1', 'gpt-4o-mini-tts'])];
         for (const model of models) {
           try {
@@ -552,12 +553,13 @@ const server = createServer(async (req, res) => {
               headers: { Authorization: `Bearer ${API_KEY}`, 'content-type': 'application/json' },
               body: JSON.stringify({ model, voice, input: text, response_format: 'mp3' }),
             });
-            if (!r.ok) { console.warn('[roleplay tts]', model, r.status); continue; }
-            const buf = Buffer.from(await r.arrayBuffer());
+            if (!r.ok || !r.body) { console.warn('[roleplay tts]', model, r.status); continue; }
             res.writeHead(200, { 'content-type': 'audio/mpeg', 'cache-control': 'no-store' });
-            res.end(buf);
+            const reader = r.body.getReader();
+            for (;;) { const { done, value } = await reader.read(); if (done) break; if (!res.write(Buffer.from(value))) await new Promise(rs => res.once('drain', rs)); }
+            res.end();
             return;
-          } catch (e) { console.warn('[roleplay tts]', model, e.message); }
+          } catch (e) { console.warn('[roleplay tts]', model, e.message); if (res.headersSent) { res.end(); return; } }
         }
         return json(res, 200, { ok: false, error: 'TTS生成に失敗しました' });
       }

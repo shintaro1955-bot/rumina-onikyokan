@@ -208,6 +208,7 @@
         <video id="av_talk" src="${p.talking}" muted loop playsinline autoplay preload="auto" class="absolute inset-0 w-full h-full object-cover" style="opacity:0;transition:opacity .18s"></video>
         <div id="av_status" class="absolute bottom-0 inset-x-0 text-center text-white text-[12.5px] py-2" style="background:linear-gradient(transparent,rgba(0,0,0,.65))">準備中…</div>
       </div>
+      <audio id="av_audio" playsinline preload="auto" style="display:none"></audio>
       <div id="av_note" class="text-[12px] text-amber-700 mt-2 text-center">${S.av.note || ''}</div>
       <div class="mt-3 text-center"><button id="av_talkbtn" onclick="RP.avManualToggle()" class="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold text-sm">話す（押して録音）</button>
         <div class="text-[11px] text-neutral-400 mt-1">自動でうまくいかない時はこのボタンで。押して話し、話し終わったらもう一度押す。</div></div>
@@ -285,35 +286,22 @@
   function extForMime(m) { m = m || ''; if (/mp4|m4a|aac/i.test(m)) return 'm4a'; if (/ogg/i.test(m)) return 'ogg'; if (/wav/i.test(m)) return 'wav'; return 'webm'; }
   // iOSは最初のユーザー操作の中で一度発話しないと以後の自動読み上げが無音になる。無音で解錠する。
   function primeSpeech() { try { if (!window.speechSynthesis) return; const u = new SpeechSynthesisUtterance(' '); u.volume = 0; u.lang = 'ja-JP'; window.speechSynthesis.speak(u); } catch (e) {} }
-  // 本物の声(OpenAI TTS)で喋らせる。取れたら、マイク用に用意したAudioContext経由で鳴らす(iOSでも確実)。
-  // 取れないときはブラウザ読み上げにフォールバック。onstartは実際に音が鳴り出す瞬間、onendは鳴り終わり。
-  async function speakServer(text, opts = {}) {
+  // 本物の声(OpenAI TTS)で喋らせる。<audio>にGETのストリーミングURLを差して、
+  // 生成されたそばから鳴らす（待ちを最小化）。iOSは _avInit で <audio> を AudioContext に繋いで解錠済み。
+  // 音声が取れないときはブラウザ読み上げにフォールバック。onstart=鳴り出し／onend=鳴り終わり。
+  function speakServer(text, opts = {}) {
+    const a = document.getElementById('av_audio');
+    if (!a) { if (opts.onstart) opts.onstart(); speak(text, { gender: opts.gender, onend: opts.onend }); return; }
+    let started = false, done = false;
+    const finish = () => { if (done) return; done = true; if (opts.onend) opts.onend(); };
+    const fallback = () => { if (started || done) return; if (opts.onstart) opts.onstart(); speak(text, { gender: opts.gender, onend: finish }); };
+    a.onplaying = () => { if (!started) { started = true; if (opts.onstart) opts.onstart(); } };
+    a.onended = finish;
+    a.onerror = () => { if (started) finish(); else fallback(); };
     try {
-      const r = await fetch('/api/roleplay/tts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, voice: opts.voice }) });
-      const ct = r.headers.get('content-type') || '';
-      if (r.ok && /audio/i.test(ct)) {
-        const ab = await r.arrayBuffer();
-        if (avCtx && avCtx.state !== 'closed') {
-          if (avCtx.state === 'suspended') { try { await avCtx.resume(); } catch (e) {} }
-          const buf = await avCtx.decodeAudioData(ab.slice(0));
-          try { if (avSrcNode) avSrcNode.stop(); } catch (e) {}
-          const node = avCtx.createBufferSource(); node.buffer = buf; node.connect(avCtx.destination);
-          node.onended = () => { if (opts.onend) opts.onend(); };
-          avSrcNode = node;
-          if (opts.onstart) opts.onstart();
-          node.start();
-          return;
-        }
-        const url = URL.createObjectURL(new Blob([ab], { type: 'audio/mpeg' }));
-        const a = new Audio(url);
-        a.onended = () => { try { URL.revokeObjectURL(url); } catch (e) {} if (opts.onend) opts.onend(); };
-        if (opts.onstart) opts.onstart();
-        const pr = a.play(); if (pr && pr.catch) pr.catch(() => { if (opts.onend) opts.onend(); });
-        return;
-      }
-    } catch (e) {}
-    if (opts.onstart) opts.onstart();
-    speak(text, { gender: opts.gender, onend: opts.onend });
+      a.src = '/api/roleplay/tts?voice=' + encodeURIComponent(opts.voice || 'nova') + '&text=' + encodeURIComponent(text);
+      const pr = a.play(); if (pr && pr.catch) pr.catch(() => fallback());
+    } catch (e) { fallback(); }
   }
   window.RP = {
     set(k, v) { S[k] = v; },
@@ -369,6 +357,8 @@
         const src = avCtx.createMediaStreamSource(avStream);
         avAnalyser = avCtx.createAnalyser(); avAnalyser.fftSize = 512;
         src.connect(avAnalyser); avBuf = new Uint8Array(avAnalyser.fftSize);
+        // <audio>を解錠済みのAudioContextに繋ぐ＝iOSでも後から自動再生できる（＆ストリーミング可）。
+        try { const a = document.getElementById('av_audio'); if (a && avCtx.createMediaElementSource) { avCtx.createMediaElementSource(a).connect(avCtx.destination); } } catch (e) {}
       } catch (e) { RP._avNote('音声の解析を開始できませんでした。「話す」ボタンで会話できます。'); }
       S.av.state = 'listening'; RP._avNote(''); RP._avStatus();
       avLoopOn = true; RP._avLoop();
@@ -473,6 +463,7 @@
     _avTeardown() {
       avLoopOn = false; avManual = false; try { clearTimeout(avRaf); } catch (e) {}
       try { if (avSrcNode) avSrcNode.stop(); } catch (e) {} avSrcNode = null;
+      try { const a = document.getElementById('av_audio'); if (a) { a.pause(); a.removeAttribute('src'); a.load(); } } catch (e) {}
       try { if (avRec && avRec.state !== 'inactive') avRec.stop(); } catch (e) {}
       try { if (avStream) avStream.getTracks().forEach(t => t.stop()); } catch (e) {} avStream = null;
       try { if (avCtx) avCtx.close(); } catch (e) {} avCtx = null;
