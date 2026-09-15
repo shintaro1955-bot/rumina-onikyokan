@@ -209,6 +209,8 @@
         <div id="av_status" class="absolute bottom-0 inset-x-0 text-center text-white text-[12.5px] py-2" style="background:linear-gradient(transparent,rgba(0,0,0,.65))">準備中…</div>
       </div>
       <div id="av_note" class="text-[12px] text-amber-700 mt-2 text-center">${S.av.note || ''}</div>
+      <div class="mt-3 text-center"><button id="av_talkbtn" onclick="RP.avManualToggle()" class="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold text-sm">話す（押して録音）</button>
+        <div class="text-[11px] text-neutral-400 mt-1">自動でうまくいかない時はこのボタンで。押して話し、話し終わったらもう一度押す。</div></div>
       <div class="mt-3">${card(`<div class="p-4"><div id="av_log" class="max-h-[28vh] overflow-auto px-1"><div class="text-neutral-400 text-[13px] text-center py-4">玄関先の第一声からどうぞ。名乗り3点（社名・目的・商材）を忘れずに。</div></div></div>`)}</div>
       <div class="mt-3">${card(`<div class="p-4"><div class="text-[12.5px] font-semibold mb-1.5">マイクが使えないときは打ち込みでも会話できます</div>
         <div class="flex gap-2"><input id="av_type" placeholder="営業のセリフを入力" class="flex-1 border border-neutral-200 rounded-lg px-3 py-2.5 text-sm">
@@ -268,8 +270,20 @@
     danna: { key: 'danna', label: '旦那（近日）', hint: '準備中', ctype: '多忙', gender: 'male', ready: false },
   };
   let avStream = null, avRec = null, avChunks = [], avCtx = null, avAnalyser = null, avBuf = null;
-  let avLoopOn = false, avRaf = null, avRecStart = 0, avLastLoud = 0;
+  let avLoopOn = false, avRaf = null, avRecStart = 0, avLastLoud = 0, avMime = '', avManual = false;
   const SPEAK_TH = 0.045, SILENCE_TH = 0.03, SILENCE_MS = 1200, REC_MAX_MS = 15000;
+  // 端末が録れる音声形式を選ぶ（iOS Safari は webm 非対応で mp4 になる。webm決め打ちだと文字起こしが失敗する）。
+  function pickRecMime() {
+    try {
+      const cands = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/mp4;codecs=mp4a.40.2', 'audio/aac', 'audio/ogg;codecs=opus', 'audio/ogg'];
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported) { for (const c of cands) { if (MediaRecorder.isTypeSupported(c)) return c; } }
+    } catch (e) {}
+    return '';
+  }
+  // サーバ(Deepgram)へ渡す拡張子。server.mjs/deepgram の MIME表に合わせる。
+  function extForMime(m) { m = m || ''; if (/mp4|m4a|aac/i.test(m)) return 'm4a'; if (/ogg/i.test(m)) return 'ogg'; if (/wav/i.test(m)) return 'wav'; return 'webm'; }
+  // iOSは最初のユーザー操作の中で一度発話しないと以後の自動読み上げが無音になる。無音で解錠する。
+  function primeSpeech() { try { if (!window.speechSynthesis) return; const u = new SpeechSynthesisUtterance(' '); u.volume = 0; u.lang = 'ja-JP'; window.speechSynthesis.speak(u); } catch (e) {} }
   window.RP = {
     set(k, v) { S[k] = v; },
     setType(t) { S.ctype = t; render(); },
@@ -307,19 +321,24 @@
       // ユーザー操作の流れの中で両動画を先行再生（隠れた喋る動画の省電力一時停止を避ける）。
       try { ['av_idle', 'av_talk'].forEach(id => { const v = document.getElementById(id); if (v) { v.muted = true; const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); } }); } catch (e) {}
       try { window.speechSynthesis && window.speechSynthesis.getVoices(); } catch (e) {}
+      primeSpeech();   // iOSの読み上げをユーザー操作中に解錠
       setTimeout(() => RP._avInit(), 250);
     },
     async _avInit() {
       RP._avStatus();
       if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { RP._avNote('この端末はマイクに対応していません。下の入力欄で会話できます。'); return; }
       try { avStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-      catch (e) { RP._avNote('マイクが使えません。下の入力欄から打ち込みで会話できます。'); return; }
+      catch (e) { RP._avNote('マイクが使えません。「話す」ボタンか下の入力欄で会話できます。'); return; }
+      if (!window.MediaRecorder) { RP._avNote('この端末は録音に対応していません。下の入力欄で会話できます。'); return; }
+      avMime = pickRecMime();
       try {
         avCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // スマホ/Chromeは新規AudioContextがsuspendedで始まる。resumeしないと無音判定のままになる。
+        if (avCtx.state === 'suspended') { try { await avCtx.resume(); } catch (e) {} }
         const src = avCtx.createMediaStreamSource(avStream);
         avAnalyser = avCtx.createAnalyser(); avAnalyser.fftSize = 512;
         src.connect(avAnalyser); avBuf = new Uint8Array(avAnalyser.fftSize);
-      } catch (e) { RP._avNote('音声の解析を開始できませんでした。打ち込みで会話できます。'); return; }
+      } catch (e) { RP._avNote('音声の解析を開始できませんでした。「話す」ボタンで会話できます。'); }
       S.av.state = 'listening'; RP._avNote(''); RP._avStatus();
       avLoopOn = true; RP._avLoop();
     },
@@ -332,13 +351,15 @@
         if (rms > SPEAK_TH) RP._avStartRec();
       } else if (S.av.state === 'recording') {
         if (rms > SILENCE_TH) avLastLoud = now;
-        if ((now - avRecStart > 600 && now - avLastLoud > SILENCE_MS) || now - avRecStart > REC_MAX_MS) RP._avStopRec();
+        if (!avManual && now - avRecStart > 600 && now - avLastLoud > SILENCE_MS) RP._avStopRec();
+        else if (now - avRecStart > REC_MAX_MS) RP._avStopRec();   // 手動でも安全上限で止める
       }
       avRaf = setTimeout(() => RP._avLoop(), 60);
     },
     _avStartRec() {
       try {
-        avRec = new MediaRecorder(avStream); avChunks = [];
+        avRec = avMime ? new MediaRecorder(avStream, { mimeType: avMime }) : new MediaRecorder(avStream);
+        avChunks = [];
         avRec.ondataavailable = e => { if (e.data && e.data.size) avChunks.push(e.data); };
         avRec.onstop = () => RP._avProcess();
         avRec.start(); S.av.state = 'recording'; avRecStart = Date.now(); avLastLoud = Date.now(); RP._avStatus();
@@ -349,12 +370,20 @@
       S.av.state = 'processing'; RP._avStatus();
       try { avRec.stop(); } catch (e) { S.av.state = 'listening'; RP._avStatus(); }
     },
+    avManualToggle() {
+      if (!avStream) { RP._avNote('マイクが使えません。下の入力欄で会話できます。'); return; }
+      if (S.av.state === 'speaking' || S.av.state === 'processing') return;
+      if (S.av.state === 'recording') { avManual = false; RP._avStopRec(); }
+      else { avManual = true; RP._avStartRec(); }
+    },
     async _avProcess() {
+      avManual = false;
       try {
-        const blob = new Blob(avChunks, { type: 'audio/webm' });
+        const mt = (avRec && avRec.mimeType) || avMime || 'audio/webm';
+        const blob = new Blob(avChunks, { type: mt });
         if (blob.size < 2500) { S.av.state = 'listening'; RP._avStatus(); return; }   // ノイズ/短すぎ
         const b64 = await blobB64(blob);
-        const r = await fetch('/api/roleplay/stt', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ audio: b64, ext: 'webm' }) });
+        const r = await fetch('/api/roleplay/stt', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ audio: b64, ext: extForMime(mt) }) });
         const j = await r.json();
         const text = ((j && j.ok && j.text) || '').trim();
         if (!text || text.length < 2) { S.av.state = 'listening'; RP._avStatus(); return; }
@@ -389,9 +418,16 @@
       if (on) { try { t.currentTime = 0; const pr = t.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} }
     },
     _avStatus() {
-      const el = document.getElementById('av_status'); if (!el) return;
-      const m = { idle: '準備中…', listening: 'どうぞ話しかけてください（聞いています）', recording: '聞き取り中…', processing: '…考え中', speaking: 'お客様が話しています' };
-      el.textContent = m[S.av.state] || '';
+      const el = document.getElementById('av_status');
+      const m = { idle: '準備中…', listening: 'どうぞ話しかけてください（聞いています）', recording: '聞き取り中…（話し終わったら少し待つ）', processing: '…考え中', speaking: 'お客様が話しています' };
+      if (el) el.textContent = m[S.av.state] || '';
+      const btn = document.getElementById('av_talkbtn');
+      if (btn) {
+        const rec = S.av.state === 'recording', busy = S.av.state === 'processing' || S.av.state === 'speaking';
+        btn.textContent = rec ? '■ 話し終わったらタップ' : '話す（押して録音）';
+        btn.className = 'px-6 py-3 rounded-xl ' + (rec ? 'bg-rose-600' : 'bg-emerald-600') + ' text-white font-bold text-sm' + (busy ? ' opacity-60' : '');
+        btn.disabled = busy;
+      }
     },
     _avNote(msg) { S.av.note = msg || ''; const el = document.getElementById('av_note'); if (el) el.textContent = S.av.note; },
     _avRenderLog() {
@@ -400,7 +436,7 @@
       el.scrollTop = el.scrollHeight;
     },
     _avTeardown() {
-      avLoopOn = false; try { clearTimeout(avRaf); } catch (e) {}
+      avLoopOn = false; avManual = false; try { clearTimeout(avRaf); } catch (e) {}
       try { if (avRec && avRec.state !== 'inactive') avRec.stop(); } catch (e) {}
       try { if (avStream) avStream.getTracks().forEach(t => t.stop()); } catch (e) {} avStream = null;
       try { if (avCtx) avCtx.close(); } catch (e) {} avCtx = null;
@@ -425,7 +461,7 @@
       if (!aiStream) { S.ai.note = 'マイクが使えません。下の入力欄から打ち込んでください。'; render(); return; }
       if (!S.ai.recording) {
         try {
-          aiRec = new MediaRecorder(aiStream); aiChunks = [];
+          { const m = pickRecMime(); aiRec = m ? new MediaRecorder(aiStream, { mimeType: m }) : new MediaRecorder(aiStream); } aiChunks = [];
           aiRec.ondataavailable = e => { if (e.data && e.data.size) aiChunks.push(e.data); };
           aiRec.onstop = () => { RP._sttThenReply(); };
           aiRec.start(); S.ai.recording = true; S.ai.note = ''; render();
@@ -437,9 +473,10 @@
     },
     async _sttThenReply() {
       try {
-        const blob = new Blob(aiChunks, { type: 'audio/webm' });
+        const mt = (aiRec && aiRec.mimeType) || 'audio/webm';
+        const blob = new Blob(aiChunks, { type: mt });
         const b64 = await blobB64(blob);
-        const r = await fetch('/api/roleplay/stt', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ audio: b64, ext: 'webm' }) });
+        const r = await fetch('/api/roleplay/stt', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ audio: b64, ext: extForMime(mt) }) });
         const j = await r.json();
         const text = ((j && j.ok && j.text) || '').trim();
         if (!text) { S.ai.busy = false; S.ai.note = '聞き取れませんでした。もう一度話すか、打ち込んでください。'; render(); return; }
