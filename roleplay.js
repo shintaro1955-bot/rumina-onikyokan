@@ -265,13 +265,14 @@
 
   // ---- 顔つき・ハンズフリー（アバター）用 ----
   const PERSONAS = {
-    shufu: { key: 'shufu', label: '主婦（30代）', hint: '昼間の在宅主婦。丁寧だが警戒気味。', ctype: '警戒', gender: 'female',
+    shufu: { key: 'shufu', label: '主婦（30代）', hint: '昼間の在宅主婦。丁寧だが警戒気味。', ctype: '警戒', gender: 'female', ttsVoice: 'nova',
       idle: '/assets/roleplay/shufu/idle.mp4', talking: '/assets/roleplay/shufu/talking.mp4', poster: '/assets/roleplay/shufu/poster.png', ready: true },
-    danna: { key: 'danna', label: '旦那（近日）', hint: '準備中', ctype: '多忙', gender: 'male', ready: false },
+    danna: { key: 'danna', label: '旦那（近日）', hint: '準備中', ctype: '多忙', gender: 'male', ttsVoice: 'onyx', ready: false },
   };
   let avStream = null, avRec = null, avChunks = [], avCtx = null, avAnalyser = null, avBuf = null;
   let avLoopOn = false, avRaf = null, avRecStart = 0, avLastLoud = 0, avMime = '', avManual = false;
-  const SPEAK_TH = 0.045, SILENCE_TH = 0.03, SILENCE_MS = 1200, REC_MAX_MS = 15000;
+  const SPEAK_TH = 0.045, SILENCE_TH = 0.03, SILENCE_MS = 900, REC_MAX_MS = 15000;
+  let avSrcNode = null;   // 現在再生中のTTS音源（WebAudio）。次の発話や終了で止める。
   // 端末が録れる音声形式を選ぶ（iOS Safari は webm 非対応で mp4 になる。webm決め打ちだと文字起こしが失敗する）。
   function pickRecMime() {
     try {
@@ -284,6 +285,36 @@
   function extForMime(m) { m = m || ''; if (/mp4|m4a|aac/i.test(m)) return 'm4a'; if (/ogg/i.test(m)) return 'ogg'; if (/wav/i.test(m)) return 'wav'; return 'webm'; }
   // iOSは最初のユーザー操作の中で一度発話しないと以後の自動読み上げが無音になる。無音で解錠する。
   function primeSpeech() { try { if (!window.speechSynthesis) return; const u = new SpeechSynthesisUtterance(' '); u.volume = 0; u.lang = 'ja-JP'; window.speechSynthesis.speak(u); } catch (e) {} }
+  // 本物の声(OpenAI TTS)で喋らせる。取れたら、マイク用に用意したAudioContext経由で鳴らす(iOSでも確実)。
+  // 取れないときはブラウザ読み上げにフォールバック。onstartは実際に音が鳴り出す瞬間、onendは鳴り終わり。
+  async function speakServer(text, opts = {}) {
+    try {
+      const r = await fetch('/api/roleplay/tts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, voice: opts.voice }) });
+      const ct = r.headers.get('content-type') || '';
+      if (r.ok && /audio/i.test(ct)) {
+        const ab = await r.arrayBuffer();
+        if (avCtx && avCtx.state !== 'closed') {
+          if (avCtx.state === 'suspended') { try { await avCtx.resume(); } catch (e) {} }
+          const buf = await avCtx.decodeAudioData(ab.slice(0));
+          try { if (avSrcNode) avSrcNode.stop(); } catch (e) {}
+          const node = avCtx.createBufferSource(); node.buffer = buf; node.connect(avCtx.destination);
+          node.onended = () => { if (opts.onend) opts.onend(); };
+          avSrcNode = node;
+          if (opts.onstart) opts.onstart();
+          node.start();
+          return;
+        }
+        const url = URL.createObjectURL(new Blob([ab], { type: 'audio/mpeg' }));
+        const a = new Audio(url);
+        a.onended = () => { try { URL.revokeObjectURL(url); } catch (e) {} if (opts.onend) opts.onend(); };
+        if (opts.onstart) opts.onstart();
+        const pr = a.play(); if (pr && pr.catch) pr.catch(() => { if (opts.onend) opts.onend(); });
+        return;
+      }
+    } catch (e) {}
+    if (opts.onstart) opts.onstart();
+    speak(text, { gender: opts.gender, onend: opts.onend });
+  }
   window.RP = {
     set(k, v) { S[k] = v; },
     setType(t) { S.ctype = t; render(); },
@@ -403,8 +434,12 @@
       if (!reply) { S.av.note = 'お客様の返答を作れませんでした（AIお客様が未設定かも）。'; RP._avNote(S.av.note); S.av.state = 'listening'; RP._avStatus(); return; }
       S.av.turns.push({ role: 'customer', text: reply }); RP._avRenderLog();
       const p = PERSONAS[S.av.persona] || PERSONAS.shufu;
-      S.av.state = 'speaking'; RP._avShowTalking(true); RP._avStatus();
-      speak(reply, { gender: p.gender, onend: () => { RP._avShowTalking(false); if (S.av.state === 'speaking') { S.av.state = 'listening'; RP._avStatus(); } } });
+      S.av.state = 'processing'; RP._avStatus();   // 声を用意する間は「考え中」
+      speakServer(reply, {
+        voice: p.ttsVoice, gender: p.gender,
+        onstart: () => { S.av.state = 'speaking'; RP._avShowTalking(true); RP._avStatus(); },
+        onend: () => { RP._avShowTalking(false); if (S.av.state === 'speaking') { S.av.state = 'listening'; RP._avStatus(); } },
+      });
     },
     avTalkText() {
       const el = document.getElementById('av_type'); const t = el && el.value.trim();
@@ -437,6 +472,7 @@
     },
     _avTeardown() {
       avLoopOn = false; avManual = false; try { clearTimeout(avRaf); } catch (e) {}
+      try { if (avSrcNode) avSrcNode.stop(); } catch (e) {} avSrcNode = null;
       try { if (avRec && avRec.state !== 'inactive') avRec.stop(); } catch (e) {}
       try { if (avStream) avStream.getTracks().forEach(t => t.stop()); } catch (e) {} avStream = null;
       try { if (avCtx) avCtx.close(); } catch (e) {} avCtx = null;
