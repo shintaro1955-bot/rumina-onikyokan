@@ -272,7 +272,7 @@
   };
   let avStream = null, avRec = null, avChunks = [], avCtx = null, avAnalyser = null, avBuf = null;
   let avLoopOn = false, avRaf = null, avRecStart = 0, avLastLoud = 0, avMime = '', avManual = false;
-  const SPEAK_TH = 0.045, SILENCE_TH = 0.03, SILENCE_MS = 900, REC_MAX_MS = 15000;
+  const SPEAK_TH = 0.045, SILENCE_TH = 0.03, SILENCE_MS = 700, REC_MAX_MS = 15000;
   let avSrcNode = null;   // 現在再生中のTTS音源（WebAudio）。次の発話や終了で止める。
   // 端末が録れる音声形式を選ぶ（iOS Safari は webm 非対応で mp4 になる。webm決め打ちだと文字起こしが失敗する）。
   function pickRecMime() {
