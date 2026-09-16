@@ -29,6 +29,7 @@ import { generateCritique, critiqueReady } from './lib/critique.mjs';
 import * as deepgram from './lib/deepgram.mjs';
 import { scoreTalk, ready as scoreReady } from './lib/score.mjs';
 import * as persona from './lib/persona.mjs';
+import { roleplayFeedback } from './lib/rpfeedback.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
 import { buildPersonalMessages } from './lib/coachdm.mjs';
@@ -538,6 +539,18 @@ const server = createServer(async (req, res) => {
         }).catch(() => null);
         if (!reply) return json(res, 200, { ok: false, error: '返答の生成に失敗しました' });
         return json(res, 200, { ok: true, reply });
+      }
+
+      /* AIロープレ：講評（録音の文字起こしから、できていない点/練習点/ヒアリング力を抜粋）。参考値。 */
+      if (path === '/api/roleplay/feedback' && req.method === 'POST') {
+        const meF = currentUser(req);
+        if (!meF) return json(res, 401, { error: 'ログインが必要です' });
+        const body = await readJson(req) || {};
+        const transcript = String(body.transcript || '').slice(0, 12000).trim();
+        if (!transcript) return json(res, 400, { error: 'transcript が必要です' });
+        const fb = await roleplayFeedback(transcript).catch(() => null);
+        if (!fb) return json(res, 200, { ok: false, error: '講評を生成できませんでした' });
+        return json(res, 200, { ok: true, ...fb });
       }
 
       /* AIロープレ③：お客様役の声。GETで <audio src> から直接叩け、生成chunkをそのまま

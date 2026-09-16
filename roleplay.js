@@ -138,6 +138,8 @@
       ${card(`<div class="p-5"><div class="flex items-baseline gap-2.5"><span class="text-3xl font-extrabold text-emerald-600">${r.met}/${r.total}</span><span class="text-neutral-500 text-[13px]">アセット提示（①必須／6つ以上で合格）</span></div>
         <div class="flex gap-2 flex-wrap mt-2.5">${r.kpis.map(k => `<span class="text-[11.5px] rounded-full px-2.5 py-1 border ${k.on ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200'}">${k.k} ${k.on ? '○' : '×'}</span>`).join('')}</div></div>`)}
       <div class="bg-neutral-900 text-neutral-100 rounded-xl px-4 py-3.5 text-[13.5px] my-4"><span class="font-semibold text-emerald-300">鬼教官</span>　${coach(r)}</div>
+      ${card(`<div class="p-5"><div class="text-sm font-semibold mb-2">録音からの講評（できていない点・練習ポイント・ヒアリング力）<span class="text-[10.5px] text-neutral-400 ml-1">参考</span></div>
+        <div id="rp_fb" class="text-[13px] text-neutral-500">録音を読み解いています…</div></div>`)}
       ${card(`<div class="p-5"><div class="text-sm font-semibold mb-2">チェック（①〜⑦）</div>
         ${r.items.map(i => `<div class="flex gap-2.5 py-2.5 border-b border-[#EEF3F0] last:border-0 text-[13.5px]"><div class="w-6 text-center font-extrabold ${i.ok ? 'text-emerald-600' : 'text-rose-600'}">${i.ok ? '✓' : '✕'}</div>
           <div><div class="font-semibold">${i.id}. ${i.t}${i.req ? '<span class="text-[10.5px] text-rose-600 border border-rose-200 rounded px-1.5 ml-1.5">必須</span>' : ''}</div>
@@ -209,7 +211,7 @@
     const p = PERSONAS[S.av.persona] || PERSONAS.shufu;
     return `<div class="max-w-[860px] mx-auto">
       <h1 class="text-xl font-bold mb-1">AIお客様と会話（顔つき）</h1>
-      <p class="text-neutral-500 text-[13px] mb-3"><b>ボタンは不要</b>——話しかけて、黙ると相手が返します。お客様・難易度・商材を選べます。</p>
+      <p class="text-neutral-500 text-[13px] mb-3">「会話をはじめる」を押したら、あとは<b>話しかけるだけ</b>——黙ると相手が返し、そのまま会話が続きます。お客様・難易度・商材を選べます。</p>
       <div id="av_sel" class="mb-3">${avRowsHtml()}</div>
       <div class="relative rounded-2xl overflow-hidden bg-black mx-auto" style="aspect-ratio:3/4;max-width:340px">
         <video id="av_idle" src="${p.idle}" poster="${p.poster || ''}" muted loop playsinline autoplay preload="auto" class="absolute inset-0 w-full h-full object-cover"></video>
@@ -218,12 +220,14 @@
       </div>
       <audio id="av_audio" playsinline preload="auto" style="display:none"></audio>
       <div id="av_note" class="text-[12px] text-amber-700 mt-2 text-center">${S.av.note || ''}</div>
-      <div class="mt-3 text-center"><button id="av_talkbtn" onclick="RP.avManualToggle()" class="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold text-sm">話す（押して録音）</button>
-        <div class="text-[11px] text-neutral-400 mt-1">自動でうまくいかない時はこのボタンで。押して話し、話し終わったらもう一度押す。</div></div>
-      <div class="mt-3">${card(`<div class="p-4"><div id="av_log" class="max-h-[28vh] overflow-auto px-1"><div class="text-neutral-400 text-[13px] text-center py-4">玄関先の第一声からどうぞ。名乗り3点（社名・目的・商材）を忘れずに。</div></div></div>`)}</div>
-      <div class="mt-3">${card(`<div class="p-4"><div class="text-[12.5px] font-semibold mb-1.5">マイクが使えないときは打ち込みでも会話できます</div>
+      ${!S.av.started
+        ? `<div class="mt-3 text-center"><button onclick="RP.avStart()" class="px-8 py-4 rounded-xl bg-emerald-600 text-white font-bold text-base">▶ 会話をはじめる</button>
+            <div class="text-[11px] text-neutral-400 mt-1.5">押すとマイクが始まり、あとは話しかけるだけで会話が続きます。</div></div>`
+        : `<div class="mt-3 text-center"><button id="av_talkbtn" onclick="RP.avManualToggle()" class="px-6 py-2.5 rounded-full bg-white border border-neutral-200 text-emerald-700 font-semibold text-[13px]">うまく拾わない時は押して話す</button></div>`}
+      <div class="mt-3">${card(`<div class="p-4"><div id="av_log" class="max-h-[28vh] overflow-auto px-1"><div class="text-neutral-400 text-[13px] text-center py-4">${S.av.started ? '話しかけてください。名乗り3点（社名・目的・商材）を忘れずに。' : '「会話をはじめる」を押してスタート。'}</div></div></div>`)}</div>
+      ${S.av.started ? `<div class="mt-3">${card(`<div class="p-4"><div class="text-[12.5px] font-semibold mb-1.5">打ち込みでも送れます</div>
         <div class="flex gap-2"><input id="av_type" placeholder="営業のセリフを入力" class="flex-1 border border-neutral-200 rounded-lg px-3 py-2.5 text-sm">
-        <button onclick="RP.avTalkText()" class="${btnG}">送る</button></div></div>`)}</div>
+        <button onclick="RP.avTalkText()" class="${btnG}">送る</button></div></div>`)}</div>` : ''}
       <div class="mt-3">${card(`<div class="p-4"><div class="text-sm font-semibold mb-2">台本レール</div>${railHtml()}</div>`)}</div>
       <div class="mt-3 flex justify-between gap-3">
         <button onclick="RP.avBack()" class="${btnG}">メニュー（他のモード）</button>
@@ -348,8 +352,8 @@
         <div class="flex gap-2.5 mt-2.5"><button onclick="RP.scoreSample()" class="${btnG}">サンプルで採点</button><button onclick="RP.scorePaste()" class="${btnP}">この文字起こしで採点</button></div></div>`;
       after && after.scrollIntoView({ behavior: 'smooth' });
     },
-    scoreSample() { S.transcript = SAMPLE; S.result = score(SAMPLE); S.step = 'result'; render(); window.scrollTo(0, 0); },
-    scorePaste() { const el = document.getElementById('rp_tr'); const t = (el && el.value.trim()) || SAMPLE; S.transcript = t; S.result = score(t); S.step = 'result'; render(); window.scrollTo(0, 0); },
+    scoreSample() { S.transcript = SAMPLE; S.result = score(SAMPLE); S.step = 'result'; render(); window.scrollTo(0, 0); RP._loadFeedback(); },
+    scorePaste() { const el = document.getElementById('rp_tr'); const t = (el && el.value.trim()) || SAMPLE; S.transcript = t; S.result = score(t); S.step = 'result'; render(); window.scrollTo(0, 0); RP._loadFeedback(); },
     save() { const h = hist(); h.push({ rep: S.rep, partner: S.partner, ctype: S.ctype, met: S.result.met, pass: S.result.pass }); localStorage.setItem(KEY, JSON.stringify(h)); S.step = 'history'; render(); window.scrollTo(0, 0); },
     // ロープレ道場を開いたら即・顔つき会話を開始する（設定画面を挟まない）。
     // マイク解錠は「ロープレ道場」タップのユーザー操作で成立する。他モードはメニューから。
@@ -357,11 +361,8 @@
       RP._avTeardown();
       const p = PERSONAS.shufu;
       const cur = S.av || {};
-      S.av = { persona: p.key, difficulty: cur.difficulty || 'normal', product: cur.product || 'solar', turns: [], state: 'idle', note: '' };
+      S.av = { persona: p.key, difficulty: cur.difficulty || 'normal', product: cur.product || 'solar', turns: [], state: 'idle', started: false, note: '' };
       S.step = 'avatar';
-      try { window.speechSynthesis && window.speechSynthesis.getVoices(); } catch (e) {}
-      primeSpeech();
-      setTimeout(() => RP._avInit(), 250);
     },
 
     // ---- 顔つき・ハンズフリー会話（アバター）----
@@ -370,13 +371,17 @@
       const p = PERSONAS[personaKey] || PERSONAS.shufu;
       if (!p.ready) { RP._avNote(p.label + 'は準備中です。'); return; }
       const cur = S.av || {};
-      S.av = { persona: p.key, difficulty: cur.difficulty || 'normal', product: cur.product || 'solar', turns: [], state: 'idle', note: '' };
+      S.av = { persona: p.key, difficulty: cur.difficulty || 'normal', product: cur.product || 'solar', turns: [], state: 'idle', started: false, note: '' };
       S.step = 'avatar'; render(); window.scrollTo(0, 0);
-      // ユーザー操作の流れの中で両動画を先行再生（隠れた喋る動画の省電力一時停止を避ける）。
+    },
+    // 1回押したら会話開始。この操作の中でマイク・音声を解錠し、以後はハンズフリーで続く。
+    avStart() {
+      if (S.av.started) return;
+      S.av.started = true; S.av.state = 'idle'; render(); window.scrollTo(0, 0);
       try { ['av_idle', 'av_talk'].forEach(id => { const v = document.getElementById(id); if (v) { v.muted = true; const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); } }); } catch (e) {}
       try { window.speechSynthesis && window.speechSynthesis.getVoices(); } catch (e) {}
-      primeSpeech();   // iOSの読み上げをユーザー操作中に解錠
-      setTimeout(() => RP._avInit(), 250);
+      primeSpeech();
+      setTimeout(() => RP._avInit(), 120);
     },
     setPersona(key) { RP.startAvatar(key); },   // 顔が変わるので作り直し
     setDifficulty(key) {
@@ -523,6 +528,7 @@
       RP._avTeardown();
       const t = S.av.turns.map(x => (x.role === 'sales' ? '営業: ' : '客: ') + x.text).join('\n');
       S.transcript = t || SAMPLE; S.result = score(S.transcript); S.step = 'result'; render(); window.scrollTo(0, 0);
+      RP._loadFeedback();
     },
 
     // ---- AIお客様とのロープレ ----
@@ -583,6 +589,24 @@
       try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
       const t = S.ai.turns.map(x => (x.role === 'sales' ? '営業: ' : '客: ') + x.text).join('\n');
       S.transcript = t || SAMPLE; S.result = score(S.transcript); S.step = 'result'; render(); window.scrollTo(0, 0);
+    },
+
+    // 録音の文字起こしから講評（できていない点/練習/ヒアリング力）を取得して結果画面に出す。参考値。
+    async _loadFeedback() {
+      const el = document.getElementById('rp_fb'); if (!el) return;
+      if (!S.transcript || S.transcript === SAMPLE) { el.innerHTML = '<span class="text-neutral-400">サンプルのため講評は省略します。実際の会話で出ます。</span>'; return; }
+      let d;
+      try { d = await (await fetch('/api/roleplay/feedback', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ transcript: S.transcript }) })).json(); }
+      catch (e) { el.innerHTML = '<span class="text-neutral-400">講評を取得できませんでした。</span>'; return; }
+      if (!d || !d.ok) { el.innerHTML = '<span class="text-neutral-400">' + ((d && d.error) || '講評を生成できませんでした。') + '</span>'; return; }
+      const list = (title, arr, cls) => (arr && arr.length) ? `<div class="mb-2.5"><div class="text-[12.5px] font-semibold ${cls} mb-1">${title}</div><ul class="list-disc pl-5 text-[13px] text-neutral-700 space-y-0.5">${arr.map(x => `<li>${String(x).replace(/</g, '&lt;')}</li>`).join('')}</ul></div>` : '';
+      el.innerHTML =
+        (d.summary ? `<div class="text-[13.5px] text-neutral-800 mb-3">${String(d.summary).replace(/</g, '&lt;')}</div>` : '')
+        + list('ヒアリング力で伸ばす', d.hearing, 'text-emerald-700')
+        + list('できていない・弱い点', d.notDone, 'text-rose-600')
+        + list('次に練習すること', d.practice, 'text-amber-700')
+        + list('できていた点', d.good, 'text-neutral-500')
+        + '<div class="text-[10.5px] text-neutral-400 mt-1">※ AIによる参考講評。合否の確定は上のチェックが正本です。</div>';
     },
 
     _score: score, // テスト用
