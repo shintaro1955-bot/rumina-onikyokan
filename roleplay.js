@@ -278,7 +278,7 @@
     shufu: { key: 'shufu', label: '主婦', hint: '昼間の在宅主婦', gender: 'female', ttsVoice: 'aura-2-izanami-ja',
       idle: '/assets/roleplay/shufu/idle.mp4', talking: '/assets/roleplay/shufu/talking.mp4', poster: '/assets/roleplay/shufu/poster.png', ready: true },
     danna: { key: 'danna', label: '旦那', hint: '休日在宅の夫', gender: 'male', ttsVoice: 'aura-2-fujin-ja',
-      idle: '/assets/roleplay/danna/idle.mp4', talking: '/assets/roleplay/danna/talking.mp4', poster: '/assets/roleplay/danna/poster.png', ready: false },
+      idle: '/assets/roleplay/danna/idle.mp4', talking: '/assets/roleplay/danna/talking.mp4', poster: '/assets/roleplay/danna/poster.png', ready: true },
   };
   // 難易度（"強いお客様"はここで選ぶ）
   const DIFFICULTIES = {
