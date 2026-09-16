@@ -1619,7 +1619,11 @@ const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: v
 // 新IA(today/field/academy/league/me)は同一currentViewでnav-activeを共有させる別名解決
 const NAV_ALIAS = { ranking: 'league', my: 'me' };
 function nav(v) {
+  // ロープレ道場を離れるときはマイク/音声を止める（付けっぱなし防止）。
+  if (currentView === 'roleplay' && v !== 'roleplay' && window.RP && RP._avTeardown) RP._avTeardown();
   if (v === 'roleplay' && window.RP) RP.reset();
+  // ロープレ道場だけ全画面の集中モード（メニュー等のUIを隠す）。
+  document.body.classList.toggle('rp-focus', v === 'roleplay');
   currentView = v; render();
   if (v === 'today') loadToday();
   if (v === 'field') loadField();

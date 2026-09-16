@@ -36,6 +36,12 @@
   }
   body.logged-out .app-chrome{display:none !important}
   body.logged-out #layout{display:block}
+  /* ロープレ道場だけ全画面の集中モード（メニュー等を隠す） */
+  body.rp-focus .app-chrome{display:none !important}
+  body.rp-focus #layout{display:block;max-width:none;padding:0}
+  body.rp-focus #feed{max-width:900px;padding:16px 14px 32px}
+  #rpClose{display:none}
+  body.rp-focus #rpClose{display:inline-flex;align-items:center;gap:6px}
 
   /* ===== 汎用カード/ボタン（新ビュー用） ===== */
   .fo-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--shadow)}
@@ -168,6 +174,7 @@
 </header>
 
 <!-- ===== 3カラム ===== -->
+<button id="rpClose" onclick="nav('today')" style="position:fixed;top:12px;right:14px;z-index:60;padding:8px 14px;border-radius:999px;border:1px solid var(--border,#dcdcdc);background:var(--surface-2,#fff);color:var(--text,#111);font-weight:600;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,.10);cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>閉じる</button>
 <div id="layout">
   <!-- 左サイドナビ -->
   <aside id="leftbar" class="app-chrome fo-card" style="padding:8px">
