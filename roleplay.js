@@ -218,7 +218,7 @@
         <button onclick="RP.avTalkText()" class="${btnG}">送る</button></div></div>`)}</div>
       <div class="mt-3">${card(`<div class="p-4"><div class="text-sm font-semibold mb-2">台本レール</div>${railHtml()}</div>`)}</div>
       <div class="mt-3 flex justify-between gap-3">
-        <button onclick="RP.avBack()" class="${btnG}">やめて戻る</button>
+        <button onclick="RP.avBack()" class="${btnG}">メニュー（他のモード）</button>
         <button onclick="RP.endAvatar()" class="${btnP}">終了して採点</button>
       </div>
     </div>`;
@@ -327,7 +327,18 @@
     scoreSample() { S.transcript = SAMPLE; S.result = score(SAMPLE); S.step = 'result'; render(); window.scrollTo(0, 0); },
     scorePaste() { const el = document.getElementById('rp_tr'); const t = (el && el.value.trim()) || SAMPLE; S.transcript = t; S.result = score(t); S.step = 'result'; render(); window.scrollTo(0, 0); },
     save() { const h = hist(); h.push({ rep: S.rep, partner: S.partner, ctype: S.ctype, met: S.result.met, pass: S.result.pass }); localStorage.setItem(KEY, JSON.stringify(h)); S.step = 'history'; render(); window.scrollTo(0, 0); },
-    reset() { RP._avTeardown(); S.step = 'setup'; },
+    // ロープレ道場を開いたら即・顔つき会話を開始する（設定画面を挟まない）。
+    // マイク解錠は「ロープレ道場」タップのユーザー操作で成立する。他モードはメニューから。
+    reset() {
+      RP._avTeardown();
+      const p = PERSONAS.shufu;
+      S.av = { persona: p.key, turns: [], state: 'idle', note: '' };
+      S.ctype = p.ctype;
+      S.step = 'avatar';
+      try { window.speechSynthesis && window.speechSynthesis.getVoices(); } catch (e) {}
+      primeSpeech();
+      setTimeout(() => RP._avInit(), 250);
+    },
 
     // ---- 顔つき・ハンズフリー会話（アバター）----
     startAvatar(personaKey) {
