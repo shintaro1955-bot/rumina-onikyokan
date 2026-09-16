@@ -82,7 +82,7 @@
   const KEY = 'onikyokan_roleplay_v1';
   const S = { step: 'setup', rep: '', partner: '', ctype: '警戒', transcript: '', result: null, recSec: 0, timer: null,
     ai: { turns: [], recording: false, busy: false, note: '' },
-    av: { persona: 'shufu', turns: [], state: 'idle', note: '' } };
+    av: { persona: 'shufu', difficulty: 'normal', product: 'solar', turns: [], state: 'idle', note: '' } };
   function hist() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
 
   // ---- 部品（Tailwind・鬼教官native）----
@@ -196,13 +196,21 @@
   }
 
   // ---- 顔つき・ハンズフリーのAI会話（アバター）----
+  // お客様・難易度・商材の3行セレクタ。難易度/商材の切替は動画・マイクを触らず #av_sel だけ更新。
+  function avRowsHtml() {
+    const a = S.av;
+    const row = (title, items, activeKey, fn) => `<div class="flex items-center gap-1.5 flex-wrap mb-1.5"><span class="text-[11px] text-neutral-400 w-11 shrink-0">${title}</span>${items.map(x => `<button ${x.disabled ? 'disabled' : `onclick="${fn}('${x.key}')"`} class="px-2.5 py-1 rounded-full text-[12px] border ${x.key === activeKey ? 'bg-emerald-600 text-white border-emerald-600' : x.disabled ? 'bg-neutral-100 border-neutral-200 text-neutral-400' : 'bg-white border-neutral-200 text-neutral-700'}">${x.label}${x.disabled ? '（近日）' : ''}</button>`).join('')}</div>`;
+    const personas = Object.values(PERSONAS).map(x => ({ key: x.key, label: x.label, disabled: !x.ready }));
+    return row('お客様', personas, a.persona, 'RP.setPersona')
+      + row('難易度', Object.values(DIFFICULTIES), a.difficulty, 'RP.setDifficulty')
+      + row('商材', Object.values(PRODUCTS), a.product, 'RP.setProduct');
+  }
   function viewAvatar() {
     const p = PERSONAS[S.av.persona] || PERSONAS.shufu;
-    const chips = Object.values(PERSONAS).map(x => `<button ${x.ready ? `onclick="RP.startAvatar('${x.key}')"` : 'disabled'} class="px-3 py-1.5 rounded-full text-[12.5px] border ${x.key === p.key ? 'bg-emerald-600 text-white border-emerald-600' : x.ready ? 'bg-white border-neutral-200 text-neutral-700' : 'bg-neutral-100 border-neutral-200 text-neutral-400'}">${x.label}</button>`).join('');
     return `<div class="max-w-[860px] mx-auto">
       <h1 class="text-xl font-bold mb-1">AIお客様と会話（顔つき）</h1>
-      <p class="text-neutral-500 text-[13px] mb-3">${p.label}／${p.hint}　玄関〜診断の入口3局面。<b>ボタンは不要</b>——話しかけて、黙ると相手が返します。</p>
-      <div class="flex gap-2 mb-3 flex-wrap">${chips}</div>
+      <p class="text-neutral-500 text-[13px] mb-3"><b>ボタンは不要</b>——話しかけて、黙ると相手が返します。お客様・難易度・商材を選べます。</p>
+      <div id="av_sel" class="mb-3">${avRowsHtml()}</div>
       <div class="relative rounded-2xl overflow-hidden bg-black mx-auto" style="aspect-ratio:3/4;max-width:340px">
         <video id="av_idle" src="${p.idle}" poster="${p.poster || ''}" muted loop playsinline autoplay preload="auto" class="absolute inset-0 w-full h-full object-cover"></video>
         <video id="av_talk" src="${p.talking}" muted loop playsinline autoplay preload="auto" class="absolute inset-0 w-full h-full object-cover" style="opacity:0;transition:opacity .18s"></video>
@@ -265,10 +273,24 @@
   function scrollLog() { const el = document.getElementById('rp_ailog'); if (el) el.scrollTop = el.scrollHeight; }
 
   // ---- 顔つき・ハンズフリー（アバター）用 ----
+  // お客様（顔・声・UI）。性格の中身はサーバ(persona.mjs)側。
   const PERSONAS = {
-    shufu: { key: 'shufu', label: '主婦（30代）', hint: '昼間の在宅主婦。丁寧だが警戒気味。', ctype: '警戒', gender: 'female', ttsVoice: 'aura-2-izanami-ja',
+    shufu: { key: 'shufu', label: '主婦', hint: '昼間の在宅主婦', gender: 'female', ttsVoice: 'aura-2-izanami-ja',
       idle: '/assets/roleplay/shufu/idle.mp4', talking: '/assets/roleplay/shufu/talking.mp4', poster: '/assets/roleplay/shufu/poster.png', ready: true },
-    danna: { key: 'danna', label: '旦那（近日）', hint: '準備中', ctype: '多忙', gender: 'male', ttsVoice: 'onyx', ready: false },
+    danna: { key: 'danna', label: '旦那', hint: '休日在宅の夫', gender: 'male', ttsVoice: 'aura-2-fujin-ja',
+      idle: '/assets/roleplay/danna/idle.mp4', talking: '/assets/roleplay/danna/talking.mp4', poster: '/assets/roleplay/danna/poster.png', ready: false },
+  };
+  // 難易度（"強いお客様"はここで選ぶ）
+  const DIFFICULTIES = {
+    normal: { key: 'normal', label: 'ふつう' },
+    hard: { key: 'hard', label: '手強い' },
+    boss: { key: 'boss', label: '門前払い' },
+  };
+  // 商材（シナリオ）
+  const PRODUCTS = {
+    solar: { key: 'solar', label: '太陽光・蓄電池' },
+    ecocute: { key: 'ecocute', label: 'エコキュート・オール電化' },
+    shindan: { key: 'shindan', label: '電気の無料診断' },
   };
   let avStream = null, avRec = null, avChunks = [], avCtx = null, avAnalyser = null, avBuf = null;
   let avLoopOn = false, avRaf = null, avRecStart = 0, avLastLoud = 0, avMime = '', avManual = false;
@@ -332,8 +354,8 @@
     reset() {
       RP._avTeardown();
       const p = PERSONAS.shufu;
-      S.av = { persona: p.key, turns: [], state: 'idle', note: '' };
-      S.ctype = p.ctype;
+      const cur = S.av || {};
+      S.av = { persona: p.key, difficulty: cur.difficulty || 'normal', product: cur.product || 'solar', turns: [], state: 'idle', note: '' };
       S.step = 'avatar';
       try { window.speechSynthesis && window.speechSynthesis.getVoices(); } catch (e) {}
       primeSpeech();
@@ -344,9 +366,9 @@
     startAvatar(personaKey) {
       RP._avTeardown();
       const p = PERSONAS[personaKey] || PERSONAS.shufu;
-      if (!p.ready) return;
-      S.av = { persona: p.key, turns: [], state: 'idle', note: '' };
-      S.ctype = p.ctype;
+      if (!p.ready) { RP._avNote(p.label + 'は準備中です。'); return; }
+      const cur = S.av || {};
+      S.av = { persona: p.key, difficulty: cur.difficulty || 'normal', product: cur.product || 'solar', turns: [], state: 'idle', note: '' };
       S.step = 'avatar'; render(); window.scrollTo(0, 0);
       // ユーザー操作の流れの中で両動画を先行再生（隠れた喋る動画の省電力一時停止を避ける）。
       try { ['av_idle', 'av_talk'].forEach(id => { const v = document.getElementById(id); if (v) { v.muted = true; const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); } }); } catch (e) {}
@@ -354,6 +376,18 @@
       primeSpeech();   // iOSの読み上げをユーザー操作中に解錠
       setTimeout(() => RP._avInit(), 250);
     },
+    setPersona(key) { RP.startAvatar(key); },   // 顔が変わるので作り直し
+    setDifficulty(key) {
+      if (!DIFFICULTIES[key] || S.av.difficulty === key) return;
+      S.av.difficulty = key; S.av.turns = [];
+      RP._avRenderChips(); RP._avRenderLog(); RP._avNote('難易度：' + DIFFICULTIES[key].label + '（会話をリセット）');
+    },
+    setProduct(key) {
+      if (!PRODUCTS[key] || S.av.product === key) return;
+      S.av.product = key; S.av.turns = [];
+      RP._avRenderChips(); RP._avRenderLog(); RP._avNote('商材：' + PRODUCTS[key].label + '（会話をリセット）');
+    },
+    _avRenderChips() { const el = document.getElementById('av_sel'); if (el) el.innerHTML = avRowsHtml(); },
     async _avInit() {
       RP._avStatus();
       if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { RP._avNote('この端末はマイクに対応していません。下の入力欄で会話できます。'); return; }
@@ -428,7 +462,8 @@
       let reply = '';
       try {
         const history = S.av.turns.slice(0, -1).map(t => ({ role: t.role, text: t.text }));
-        const r = await fetch('/api/roleplay/reply', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ctype: S.ctype, history, salesText: salesLine }) });
+        const r = await fetch('/api/roleplay/reply', { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ persona: S.av.persona, difficulty: S.av.difficulty, product: S.av.product, history, salesText: salesLine }) });
         const j = await r.json();
         reply = ((j && j.ok && j.reply) || '').trim();
       } catch (e) {}
@@ -468,7 +503,8 @@
     _avNote(msg) { S.av.note = msg || ''; const el = document.getElementById('av_note'); if (el) el.textContent = S.av.note; },
     _avRenderLog() {
       const el = document.getElementById('av_log'); if (!el) return;
-      el.innerHTML = S.av.turns.length ? S.av.turns.map(t => bubble(t.role, t.text)).join('') : '';
+      el.innerHTML = S.av.turns.length ? S.av.turns.map(t => bubble(t.role, t.text)).join('')
+        : '<div class="text-neutral-400 text-[13px] text-center py-4">玄関先の第一声からどうぞ。名乗り3点（社名・目的・商材）を忘れずに。</div>';
       el.scrollTop = el.scrollHeight;
     },
     _avTeardown() {

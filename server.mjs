@@ -529,7 +529,13 @@ const server = createServer(async (req, res) => {
         if (!persona.ready()) return json(res, 200, { ok: false, error: 'AIお客様が未設定です' });
         const body = await readJson(req) || {};
         const history = Array.isArray(body.history) ? body.history.slice(-20) : [];
-        const reply = await persona.customerReply({ ctype: body.ctype || '警戒', history, salesText: String(body.salesText || '').slice(0, 1000) }).catch(() => null);
+        const reply = await persona.customerReply({
+          ctype: body.ctype || '警戒',
+          persona: typeof body.persona === 'string' ? body.persona : undefined,
+          difficulty: typeof body.difficulty === 'string' ? body.difficulty : undefined,
+          product: typeof body.product === 'string' ? body.product : undefined,
+          history, salesText: String(body.salesText || '').slice(0, 1000),
+        }).catch(() => null);
         if (!reply) return json(res, 200, { ok: false, error: '返答の生成に失敗しました' });
         return json(res, 200, { ok: true, reply });
       }
