@@ -266,7 +266,7 @@
 
   // ---- 顔つき・ハンズフリー（アバター）用 ----
   const PERSONAS = {
-    shufu: { key: 'shufu', label: '主婦（30代）', hint: '昼間の在宅主婦。丁寧だが警戒気味。', ctype: '警戒', gender: 'female', ttsVoice: 'nova',
+    shufu: { key: 'shufu', label: '主婦（30代）', hint: '昼間の在宅主婦。丁寧だが警戒気味。', ctype: '警戒', gender: 'female', ttsVoice: 'aura-2-izanami-ja',
       idle: '/assets/roleplay/shufu/idle.mp4', talking: '/assets/roleplay/shufu/talking.mp4', poster: '/assets/roleplay/shufu/poster.png', ready: true },
     danna: { key: 'danna', label: '旦那（近日）', hint: '準備中', ctype: '多忙', gender: 'male', ttsVoice: 'onyx', ready: false },
   };
@@ -299,7 +299,7 @@
     a.onended = finish;
     a.onerror = () => { if (started) finish(); else fallback(); };
     try {
-      a.src = '/api/roleplay/tts?voice=' + encodeURIComponent(opts.voice || 'nova') + '&text=' + encodeURIComponent(text);
+      a.src = '/api/roleplay/tts?voice=' + encodeURIComponent(opts.voice || 'aura-2-izanami-ja') + '&text=' + encodeURIComponent(text);
       const pr = a.play(); if (pr && pr.catch) pr.catch(() => fallback());
     } catch (e) { fallback(); }
   }

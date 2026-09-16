@@ -534,32 +534,47 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { ok: true, reply });
       }
 
-      /* AIロープレ③：お客様役の声（OpenAI TTS）。ブラウザ読み上げより自然。
-         GETで <audio src> から直接叩ける。生成されたそばからストリーミング配信して、
-         声が鳴り出すまでの待ちを最小化する。失敗時はok:falseでフロントは読み上げにフォールバック。 */
+      /* AIロープレ③：お客様役の声。GETで <audio src> から直接叩け、生成chunkをそのまま
+         ストリーミング配信して鳴り出しまでの待ちを最小化する。
+         主＝Deepgram Aura（低遅延・日本語ネイティブ・aura-2-*-ja）、フォールバック＝OpenAI TTS。
+         どちらも失敗ならok:falseでフロントはブラウザ読み上げにフォールバック。 */
       if (path === '/api/roleplay/tts' && req.method === 'GET') {
         const meT = currentUser(req);
         if (!meT) return json(res, 401, { error: 'ログインが必要です' });
-        if (!API_KEY) return json(res, 200, { ok: false, error: 'TTS未設定' });
         const text = String(url.searchParams.get('text') || '').slice(0, 500).trim();
         if (!text) return json(res, 400, { error: 'text が必要です' });
         const vq = url.searchParams.get('voice') || '';
-        const voice = /^[a-z]{2,20}$/i.test(vq) ? vq : 'nova';
-        const models = [...new Set([process.env.ROLEPLAY_TTS_MODEL || 'tts-1', 'gpt-4o-mini-tts'])];
-        for (const model of models) {
+        const voice = /^[a-z0-9-]{2,40}$/i.test(vq) ? vq : 'aura-2-izanami-ja';
+        const dgKey = process.env.DEEPGRAM_API_KEY || '';
+        const streamOut = async (r) => {
+          res.writeHead(200, { 'content-type': 'audio/mpeg', 'cache-control': 'no-store' });
+          const reader = r.body.getReader();
+          for (;;) { const { done, value } = await reader.read(); if (done) break; if (!res.write(Buffer.from(value))) await new Promise(rs => res.once('drain', rs)); }
+          res.end();
+        };
+        // ① Deepgram Aura（低遅延・日本語ネイティブ）
+        if (/^aura/i.test(voice) && dgKey) {
           try {
-            const r = await fetch('https://api.openai.com/v1/audio/speech', {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${API_KEY}`, 'content-type': 'application/json' },
-              body: JSON.stringify({ model, voice, input: text, response_format: 'mp3' }),
+            const r = await fetch(`https://api.deepgram.com/v1/speak?model=${encodeURIComponent(voice)}&encoding=mp3`, {
+              method: 'POST', headers: { Authorization: `Token ${dgKey}`, 'content-type': 'application/json' }, body: JSON.stringify({ text }),
             });
-            if (!r.ok || !r.body) { console.warn('[roleplay tts]', model, r.status); continue; }
-            res.writeHead(200, { 'content-type': 'audio/mpeg', 'cache-control': 'no-store' });
-            const reader = r.body.getReader();
-            for (;;) { const { done, value } = await reader.read(); if (done) break; if (!res.write(Buffer.from(value))) await new Promise(rs => res.once('drain', rs)); }
-            res.end();
-            return;
-          } catch (e) { console.warn('[roleplay tts]', model, e.message); if (res.headersSent) { res.end(); return; } }
+            if (r.ok && r.body) { await streamOut(r); return; }
+            console.warn('[roleplay tts] deepgram', r.status, (await r.text().catch(() => '')).slice(0, 120));
+          } catch (e) { console.warn('[roleplay tts] deepgram', e.message); if (res.headersSent) { res.end(); return; } }
+        }
+        // ② OpenAI TTS フォールバック
+        if (API_KEY) {
+          const ov = /^aura/i.test(voice) ? 'nova' : voice;
+          for (const model of [...new Set([process.env.ROLEPLAY_TTS_MODEL || 'tts-1', 'gpt-4o-mini-tts'])]) {
+            try {
+              const r = await fetch('https://api.openai.com/v1/audio/speech', {
+                method: 'POST', headers: { Authorization: `Bearer ${API_KEY}`, 'content-type': 'application/json' },
+                body: JSON.stringify({ model, voice: ov, input: text, response_format: 'mp3' }),
+              });
+              if (!r.ok || !r.body) { console.warn('[roleplay tts] openai', model, r.status); continue; }
+              await streamOut(r); return;
+            } catch (e) { console.warn('[roleplay tts] openai', model, e.message); if (res.headersSent) { res.end(); return; } }
+          }
         }
         return json(res, 200, { ok: false, error: 'TTS生成に失敗しました' });
       }
