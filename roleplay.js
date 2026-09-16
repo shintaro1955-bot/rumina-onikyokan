@@ -314,12 +314,14 @@
   function speakServer(text, opts = {}) {
     const a = document.getElementById('av_audio');
     if (!a) { if (opts.onstart) opts.onstart(); speak(text, { gender: opts.gender, onend: opts.onend }); return; }
-    let started = false, done = false;
-    const finish = () => { if (done) return; done = true; if (opts.onend) opts.onend(); };
-    const fallback = () => { if (started || done) return; if (opts.onstart) opts.onstart(); speak(text, { gender: opts.gender, onend: finish }); };
-    a.onplaying = () => { if (!started) { started = true; if (opts.onstart) opts.onstart(); } };
+    let started = false, done = false, guard = null;
+    const finish = () => { if (done) return; done = true; if (guard) clearTimeout(guard); if (opts.onend) opts.onend(); };
+    const fallback = () => { if (started || done) return; if (guard) clearTimeout(guard); if (opts.onstart) opts.onstart(); speak(text, { gender: opts.gender, onend: finish }); };
+    a.onplaying = () => { if (!started) { started = true; if (guard) clearTimeout(guard); if (opts.onstart) opts.onstart(); } };
     a.onended = finish;
     a.onerror = () => { if (started) finish(); else fallback(); };
+    // 保険：音声が鳴り出しも失敗もせず固まった時、会話を止めないでブラウザ読み上げに切替える。
+    guard = setTimeout(() => { if (!started && !done) fallback(); }, 4500);
     try {
       a.src = '/api/roleplay/tts?voice=' + encodeURIComponent(opts.voice || 'aura-2-izanami-ja') + '&text=' + encodeURIComponent(text);
       const pr = a.play(); if (pr && pr.catch) pr.catch(() => fallback());
