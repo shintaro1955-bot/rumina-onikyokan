@@ -762,6 +762,15 @@ const server = createServer(async (req, res) => {
         if (!cyzen.ready()) return json(res, 200, { ready: false, total: 0, hist: [] });
         return json(res, 200, Object.assign({ ready: true }, cyzen.apoHours(Math.max(1, Math.min(90, +(url.searchParams.get('days') || 30))))));
       }
+      // 本人の1か月（セクター＝アポ報告の時刻帯、スティント＝日ごとの稼働）。ポータルのマイページ用。
+      if (path === '/api/cyzen/driver-month' && req.method === 'GET') {
+        const okDM = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        if (!okDM && !currentUser(req)) return json(res, 401, { error: 'ログイン、または合言葉(secret)が必要です' });
+        if (!cyzen.ready()) return json(res, 200, { ready: false });
+        const ymDM = String(url.searchParams.get('ym') || '').slice(0, 7) || new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 7);
+        const rDM = cyzen.driverMonth(String(url.searchParams.get('name') || ''), ymDM);
+        return json(res, 200, rDM ? Object.assign({ ready: true }, rDM) : { ready: true, found: false });
+      }
       // 連続アポ記録（稼働日ベース）。
       if (path === '/api/cyzen/apo-streaks' && req.method === 'GET') {
         const okAS = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
