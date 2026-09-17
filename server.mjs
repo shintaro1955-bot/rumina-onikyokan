@@ -514,7 +514,8 @@ const server = createServer(async (req, res) => {
         const p = join(dir, `rp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`);
         try {
           await writeFile(p, Buffer.from(body.audio, 'base64'));
-          const segs = await deepgram.transcribe({ path: p, offsetSec: 0 }, { lang: 'ja' });
+          // ロープレは単一話者の短い一言。話者分離・発話まとめを外して速く＆短文の精度を上げる（用語ブーストは残す）。
+          const segs = await deepgram.transcribe({ path: p, offsetSec: 0 }, { lang: 'ja', diarize: false, utterances: false });
           const text = (segs || []).map(s => s.text).join(' ').replace(/\s+/g, ' ').trim();
           return json(res, 200, { ok: true, text });
         } catch (e) {
