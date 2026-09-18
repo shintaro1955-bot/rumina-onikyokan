@@ -299,7 +299,9 @@
   };
   let avStream = null, avRec = null, avChunks = [], avCtx = null, avAnalyser = null, avBuf = null;
   let avLoopOn = false, avRaf = null, avRecStart = 0, avLastLoud = 0, avMime = '', avManual = false;
-  const SPEAK_TH = 0.045, SILENCE_TH = 0.03, SILENCE_MS = 1200, REC_MAX_MS = 15000;
+  // 感度は開始時に周囲の雑音を測って自動調整する（固定だと騒音で"まだ喋ってる"と誤認して録りっぱなしになる）。
+  let avSpeakTh = 0.05, avSilenceTh = 0.03;
+  const SILENCE_MS = 800, REC_MAX_MS = 12000, MIN_REC_MS = 400;
   let avSrcNode = null;   // 現在再生中のTTS音源（WebAudio）。次の発話や終了で止める。
   // 端末が録れる音声形式を選ぶ（iOS Safari は webm 非対応で mp4 になる。webm決め打ちだと文字起こしが失敗する）。
   function pickRecMime() {
@@ -413,6 +415,22 @@
         // <audio>を解錠済みのAudioContextに繋ぐ＝iOSでも後から自動再生できる（＆ストリーミング可）。
         try { const a = document.getElementById('av_audio'); if (a && avCtx.createMediaElementSource) { avCtx.createMediaElementSource(a).connect(avCtx.destination); } } catch (e) {}
       } catch (e) { RP._avNote('音声の解析を開始できませんでした。「話す」ボタンで会話できます。'); }
+      // 周囲の雑音レベルを約0.4秒測り、感度をその環境に合わせる（騒音でも話し終わりを検知できるように）。
+      try {
+        if (avAnalyser) {
+          const samples = []; const t0 = Date.now();
+          while (Date.now() - t0 < 420) {
+            avAnalyser.getByteTimeDomainData(avBuf);
+            let s = 0; for (let i = 0; i < avBuf.length; i++) { const v = (avBuf[i] - 128) / 128; s += v * v; }
+            samples.push(Math.sqrt(s / avBuf.length));
+            await new Promise(r => setTimeout(r, 25));
+          }
+          samples.sort((a, b) => a - b);
+          const noise = samples[Math.floor(samples.length / 2)] || 0.01;   // 中央値＝環境ノイズ
+          avSpeakTh = Math.min(0.12, Math.max(0.03, noise * 3));           // 雑音の3倍で"喋り出し"
+          avSilenceTh = Math.min(0.08, Math.max(0.018, noise * 1.8));      // 1.8倍を"まだ喋ってる"境界
+        }
+      } catch (e) {}
       S.av.state = 'listening'; RP._avNote(''); RP._avStatus();
       avLoopOn = true; RP._avLoop();
     },
@@ -422,10 +440,10 @@
       try { avAnalyser.getByteTimeDomainData(avBuf); let s = 0; for (let i = 0; i < avBuf.length; i++) { const v = (avBuf[i] - 128) / 128; s += v * v; } rms = Math.sqrt(s / avBuf.length); } catch (e) {}
       const now = Date.now();
       if (S.av.state === 'listening') {
-        if (rms > SPEAK_TH) RP._avStartRec();
+        if (rms > avSpeakTh) RP._avStartRec();
       } else if (S.av.state === 'recording') {
-        if (rms > SILENCE_TH) avLastLoud = now;
-        if (!avManual && now - avRecStart > 600 && now - avLastLoud > SILENCE_MS) RP._avStopRec();
+        if (rms > avSilenceTh) avLastLoud = now;
+        if (!avManual && now - avRecStart > MIN_REC_MS && now - avLastLoud > SILENCE_MS) RP._avStopRec();
         else if (now - avRecStart > REC_MAX_MS) RP._avStopRec();   // 手動でも安全上限で止める
       }
       avRaf = setTimeout(() => RP._avLoop(), 60);
