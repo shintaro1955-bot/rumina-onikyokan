@@ -302,6 +302,9 @@
   // 感度は開始時に周囲の雑音を測って自動調整する（固定だと騒音で"まだ喋ってる"と誤認して録りっぱなしになる）。
   let avSpeakTh = 0.05, avSilenceTh = 0.03;
   const SILENCE_MS = 800, REC_MAX_MS = 12000, MIN_REC_MS = 400;
+  // ---- ストリーミング文字起こし（Deepgram live）。話しながら認識→止めた瞬間に即返答。失敗時はVADにフォールバック ----
+  let dgWs = null, dgProc = null, dgSrc = null, dgGain = null, dgActive = false, dgFinal = '', dgKeepAlive = null;
+  const DG_ENDPOINT_MS = 600, DG_UTT_MS = 1000;
   let avSrcNode = null;   // 現在再生中のTTS音源（WebAudio）。次の発話や終了で止める。
   // 端末が録れる音声形式を選ぶ（iOS Safari は webm 非対応で mp4 になる。webm決め打ちだと文字起こしが失敗する）。
   function pickRecMime() {
@@ -402,20 +405,25 @@
       RP._avStatus();
       if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { RP._avNote('この端末はマイクに対応していません。下の入力欄で会話できます。'); return; }
       try { avStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-      catch (e) { RP._avNote('マイクが使えません。「話す」ボタンか下の入力欄で会話できます。'); return; }
+      catch (e) { RP._avNote('マイクが使えません。下の入力欄で会話できます。'); return; }
+      // AudioContext（マイク解析＋<audio>再生の解錠に共用）
+      try {
+        avCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (avCtx.state === 'suspended') { try { await avCtx.resume(); } catch (e) {} }
+        try { const a = document.getElementById('av_audio'); if (a && avCtx.createMediaElementSource) { avCtx.createMediaElementSource(a).connect(avCtx.destination); } } catch (e) {}
+      } catch (e) {}
+      // まずストリーミング（話しながら認識→止めた瞬間に返答）を試す。繋がればそれで進む。
+      const streamOk = await RP._startStream();
+      if (streamOk) { S.av.state = 'listening'; RP._avNote(''); RP._avStatus(); return; }
+      // フォールバック：VAD＋録音バッチ（周囲雑音で感度を自動調整）。
       if (!window.MediaRecorder) { RP._avNote('この端末は録音に対応していません。下の入力欄で会話できます。'); return; }
       avMime = pickRecMime();
       try {
-        avCtx = new (window.AudioContext || window.webkitAudioContext)();
-        // スマホ/Chromeは新規AudioContextがsuspendedで始まる。resumeしないと無音判定のままになる。
-        if (avCtx.state === 'suspended') { try { await avCtx.resume(); } catch (e) {} }
+        if (!avCtx) { avCtx = new (window.AudioContext || window.webkitAudioContext)(); if (avCtx.state === 'suspended') { try { await avCtx.resume(); } catch (e) {} } }
         const src = avCtx.createMediaStreamSource(avStream);
         avAnalyser = avCtx.createAnalyser(); avAnalyser.fftSize = 512;
         src.connect(avAnalyser); avBuf = new Uint8Array(avAnalyser.fftSize);
-        // <audio>を解錠済みのAudioContextに繋ぐ＝iOSでも後から自動再生できる（＆ストリーミング可）。
-        try { const a = document.getElementById('av_audio'); if (a && avCtx.createMediaElementSource) { avCtx.createMediaElementSource(a).connect(avCtx.destination); } } catch (e) {}
       } catch (e) { RP._avNote('音声の解析を開始できませんでした。「話す」ボタンで会話できます。'); }
-      // 周囲の雑音レベルを約0.4秒測り、感度をその環境に合わせる（騒音でも話し終わりを検知できるように）。
       try {
         if (avAnalyser) {
           const samples = []; const t0 = Date.now();
@@ -427,12 +435,84 @@
           }
           samples.sort((a, b) => a - b);
           const noise = samples[Math.floor(samples.length / 2)] || 0.01;   // 中央値＝環境ノイズ
-          avSpeakTh = Math.min(0.12, Math.max(0.03, noise * 3));           // 雑音の3倍で"喋り出し"
-          avSilenceTh = Math.min(0.08, Math.max(0.018, noise * 1.8));      // 1.8倍を"まだ喋ってる"境界
+          avSpeakTh = Math.min(0.12, Math.max(0.03, noise * 3));
+          avSilenceTh = Math.min(0.08, Math.max(0.018, noise * 1.8));
         }
       } catch (e) {}
       S.av.state = 'listening'; RP._avNote(''); RP._avStatus();
       avLoopOn = true; RP._avLoop();
+    },
+    // ---- ストリーミング（Deepgram live）----
+    async _startStream() {
+      try {
+        if (!window.WebSocket || !avCtx || !avStream) return false;
+        const tj = await (await fetch('/api/roleplay/stt-token', { method: 'POST' })).json().catch(() => null);
+        if (!tj || !tj.ok || !tj.access_token) return false;
+        const rate = Math.round(avCtx.sampleRate || 48000);
+        const qp = 'model=nova-2&language=ja&encoding=linear16&sample_rate=' + rate + '&channels=1&interim_results=true&smart_format=true&punctuate=true&endpointing=' + DG_ENDPOINT_MS + '&utterance_end_ms=' + DG_UTT_MS + '&vad_events=true';
+        const url = 'wss://api.deepgram.com/v1/listen?' + qp + '&access_token=' + encodeURIComponent(tj.access_token);
+        const ws = new WebSocket(url); ws.binaryType = 'arraybuffer';
+        dgFinal = '';
+        const opened = await new Promise(resolve => {
+          let settled = false;
+          const to = setTimeout(() => { if (!settled) { settled = true; resolve(false); } }, 4000);
+          ws.onopen = () => { if (settled) return; settled = true; clearTimeout(to); resolve(true); };
+          ws.onerror = () => { if (settled) return; settled = true; clearTimeout(to); resolve(false); };
+          ws.onclose = () => { if (settled) return; settled = true; clearTimeout(to); resolve(false); };
+        });
+        if (!opened) { try { ws.close(); } catch (e) {} return false; }
+        dgWs = ws; dgActive = true;
+        ws.onmessage = ev => RP._dgOnMessage(ev);
+        ws.onerror = () => {};
+        ws.onclose = () => { dgActive = false; };
+        RP._dgStartCapture();
+        // 客が喋っている間などは音声を送らないので、切れないようKeepAliveを送る。
+        dgKeepAlive = setInterval(() => { try { if (dgWs && dgWs.readyState === 1 && S.av.state !== 'listening') dgWs.send(JSON.stringify({ type: 'KeepAlive' })); } catch (e) {} }, 5000);
+        return true;
+      } catch (e) { return false; }
+    },
+    _dgStartCapture() {
+      try {
+        dgSrc = avCtx.createMediaStreamSource(avStream);
+        dgProc = avCtx.createScriptProcessor ? avCtx.createScriptProcessor(4096, 1, 1) : avCtx.createJavaScriptNode(4096, 1, 1);
+        dgGain = avCtx.createGain(); dgGain.gain.value = 0;   // 無音でdestinationへ（processorを動かすため）
+        dgProc.onaudioprocess = (e) => {
+          if (!dgWs || dgWs.readyState !== 1) return;
+          if (S.av.state !== 'listening') return;             // 考え中/客の発話中は送らない＝エコー防止
+          const f32 = e.inputBuffer.getChannelData(0);
+          const i16 = new Int16Array(f32.length);
+          for (let i = 0; i < f32.length; i++) { let s = f32[i]; s = s < -1 ? -1 : s > 1 ? 1 : s; i16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF; }
+          try { dgWs.send(i16.buffer); } catch (er) {}
+        };
+        dgSrc.connect(dgProc); dgProc.connect(dgGain); dgGain.connect(avCtx.destination);
+      } catch (e) {}
+    },
+    _dgOnMessage(ev) {
+      let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.type === 'Results') {
+        if (S.av.state !== 'listening') return;               // 処理中/発話中の結果は無視
+        const alt = m.channel && m.channel.alternatives && m.channel.alternatives[0];
+        const tr = (alt && alt.transcript || '').trim();
+        if (m.is_final) { if (tr) dgFinal = (dgFinal + ' ' + tr).trim(); RP._dgLive(dgFinal); }
+        else { RP._dgLive((dgFinal + ' ' + tr).trim()); }
+        if (m.speech_final) RP._dgTurnEnd();
+      } else if (m.type === 'UtteranceEnd') {
+        if (S.av.state === 'listening') RP._dgTurnEnd();
+      }
+    },
+    _dgLive(t) { const el = document.getElementById('av_status'); if (el && S.av.state === 'listening') el.textContent = t ? ('聞き取り中… ' + t.slice(-40)) : 'どうぞ話しかけてください（聞いています）'; },
+    _dgTurnEnd() {
+      const text = (dgFinal || '').trim(); dgFinal = '';
+      if (!text || text.length < 2) { RP._dgLive(''); return; }
+      RP._avReply(text);   // processing→speaking→listening。listening外では音声を送らない。
+    },
+    _dgTeardown() {
+      try { if (dgKeepAlive) clearInterval(dgKeepAlive); } catch (e) {} dgKeepAlive = null;
+      try { if (dgProc) { dgProc.disconnect(); dgProc.onaudioprocess = null; } } catch (e) {} dgProc = null;
+      try { if (dgGain) dgGain.disconnect(); } catch (e) {} dgGain = null;
+      try { if (dgSrc) dgSrc.disconnect(); } catch (e) {} dgSrc = null;
+      try { if (dgWs) { if (dgWs.readyState === 1) dgWs.send(JSON.stringify({ type: 'CloseStream' })); dgWs.close(); } } catch (e) {} dgWs = null;
+      dgActive = false; dgFinal = '';
     },
     _avLoop() {
       if (!avLoopOn) return;
@@ -463,6 +543,7 @@
       try { avRec.stop(); } catch (e) { S.av.state = 'listening'; RP._avStatus(); }
     },
     avManualToggle() {
+      if (dgActive) { RP._avNote('そのまま話しかけてください（自動で聞き取っています）。'); return; }
       if (!avStream) { RP._avNote('マイクが使えません。下の入力欄で会話できます。'); return; }
       if (S.av.state === 'speaking' || S.av.state === 'processing') return;
       if (S.av.state === 'recording') { avManual = false; RP._avStopRec(); }
@@ -536,6 +617,7 @@
     },
     _avTeardown() {
       avLoopOn = false; avManual = false; try { clearTimeout(avRaf); } catch (e) {}
+      RP._dgTeardown();
       try { if (avSrcNode) avSrcNode.stop(); } catch (e) {} avSrcNode = null;
       try { const a = document.getElementById('av_audio'); if (a) { a.pause(); a.removeAttribute('src'); a.load(); } } catch (e) {}
       try { if (avRec && avRec.state !== 'inactive') avRec.stop(); } catch (e) {}
