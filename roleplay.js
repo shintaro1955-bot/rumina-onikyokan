@@ -898,7 +898,7 @@
       const outsHtml = (d.outs && d.outs.length)
         ? `<div class="mb-3"><div class="text-[12.5px] font-semibold text-neutral-700 mb-1.5">アウト（断り）の扱い</div>
             ${d.outs.map(o => `<div class="rounded-xl border ${vcls[o.verdict] || vcls['粘る余地あり']} px-3 py-2 mb-1.5">
-              <div class="text-[12px] font-semibold mb-0.5">${esc(o.type)}<span class="ml-1.5 font-bold">［${esc(o.verdict)}］</span>${o.handled ? '' : '<span class="ml-1.5 text-[11px]">切り返しなし</span>'}</div>
+              <div class="text-[12px] font-semibold mb-0.5">${esc(o.type)}<span class="ml-1.5 font-bold">［${esc(o.verdict)}］</span>${o.handled ? '' : `<span class="ml-1.5 text-[11px]">${o.verdict === '引くべき' ? '引けていない' : '切り返せていない'}</span>`}</div>
               <div class="text-[11.5px] mb-1" style="opacity:.85">客：「${esc(o.quote)}」</div>
               <div class="text-[12.5px]"><b>${o.verdict === '引くべき' ? 'ここは' : '言うべきだった'}：</b>${esc(o.better)}</div>
             </div>`).join('')}
