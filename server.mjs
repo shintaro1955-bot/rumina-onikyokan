@@ -542,6 +542,82 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { ok: true, reply });
       }
 
+      /* AIロープレ：返答生成と音声合成を1本のストリームで返す（会話のテンポ用）。
+         返答を最後まで待たず、1文できた瞬間からその文の声を流し始める。往復も1回で済む。
+         形式＝[1byte種別][4byte長さ(BE)][中身] の繰り返し。
+           1=文字(JSON {sentence})  2=音声(PCM 16bit LE 24kHz mono)  3=異常(JSON {error})  4=終了(JSON {text,audio}) */
+      if (path === '/api/roleplay/say' && req.method === 'POST') {
+        const meSay = currentUser(req);
+        if (!meSay) return json(res, 401, { error: 'ログインが必要です' });
+        if (!persona.ready()) return json(res, 200, { ok: false, error: 'AIお客様が未設定です' });
+        const b = await readJson(req) || {};
+        const vqS = String(b.voice || '');
+        const voiceS = /^[a-z0-9-]{2,40}$/i.test(vqS) ? vqS : 'aura-2-izanami-ja';
+        const dgKeyS = process.env.DEEPGRAM_API_KEY || '';
+
+        res.writeHead(200, { 'content-type': 'application/octet-stream', 'cache-control': 'no-store', 'x-accel-buffering': 'no' });
+        const writeBuf = async (buf) => { if (!res.write(buf)) await new Promise(rs => res.once('drain', rs)); };
+        const frame = async (type, payload) => {
+          const head = Buffer.alloc(5); head[0] = type; head.writeUInt32BE(payload.length, 1);
+          await writeBuf(head); await writeBuf(payload);
+        };
+        const frameJson = (type, obj) => frame(type, Buffer.from(JSON.stringify(obj)));
+        // 1文ぶんの声を作って、届いたそばから流す（PCMなのでブラウザ側の復号待ちが無い）。
+        const speakPcm = async (text) => {
+          if (!dgKeyS) return false;
+          try {
+            const r = await fetch(`https://api.deepgram.com/v1/speak?model=${encodeURIComponent(voiceS)}&encoding=linear16&sample_rate=24000&container=none`, {
+              method: 'POST', headers: { Authorization: `Token ${dgKeyS}`, 'content-type': 'application/json' }, body: JSON.stringify({ text }),
+            });
+            if (!r.ok || !r.body) { console.warn('[roleplay say] tts', r.status, (await r.text().catch(() => '')).slice(0, 120)); return false; }
+            const rd = r.body.getReader();
+            for (;;) { const { done, value } = await rd.read(); if (done) break; if (value && value.length) await frame(2, Buffer.from(value)); }
+            return true;
+          } catch (e) { console.warn('[roleplay say] tts', e.message); return false; }
+        };
+
+        // 生成（書けたそばから文に切り出す）と 読み上げ（順番に流す）を並行させる。
+        const queue = []; let llmDone = false, wake = null, full = '';
+        const push = (s) => { queue.push(s); if (wake) { wake(); wake = null; } };
+        const gen = (async () => {
+          let acc = '';
+          try {
+            for await (const d of persona.customerReplyStream({
+              ctype: b.ctype || '警戒',
+              persona: typeof b.persona === 'string' ? b.persona : undefined,
+              difficulty: typeof b.difficulty === 'string' ? b.difficulty : undefined,
+              product: typeof b.product === 'string' ? b.product : undefined,
+              history: Array.isArray(b.history) ? b.history.slice(-20) : [],
+              salesText: String(b.salesText || '').slice(0, 1000),
+            })) {
+              acc += d; full += d;
+              let m;
+              while ((m = acc.match(/^[\s\S]*?[。．！？!?…]+/))) { const s = m[0]; acc = acc.slice(s.length); if (s.trim()) push(s.trim()); }
+            }
+          } catch (e) { console.warn('[roleplay say] gen', e.message); }
+          if (acc.trim()) push(acc.trim());
+          llmDone = true; if (wake) { wake(); wake = null; }
+        })();
+
+        let first = true, audioOk = false, said = '';
+        try {
+          for (;;) {
+            if (!queue.length) { if (llmDone) break; await new Promise(rs => { wake = rs; }); continue; }
+            let s = queue.shift();
+            // 先頭にラベルや(ト書き)が付くことがあるので落とす。customerReply と同じ後始末。
+            if (first) { s = s.replace(/^(客|お客様|customer)\s*[:：]\s*/i, '').replace(/^（[^）]*）\s*/, '').trim(); first = false; }
+            if (!s) continue;
+            said += s;
+            await frameJson(1, { sentence: s });
+            if (await speakPcm(s)) audioOk = true;
+          }
+          await gen;
+          if (!said.trim()) await frameJson(3, { error: '返答の生成に失敗しました' });
+          await frameJson(4, { text: said.trim(), audio: audioOk });
+        } catch (e) { console.warn('[roleplay say]', e.message); }
+        res.end(); return;
+      }
+
       /* AIロープレ：ストリーミング文字起こし用の短命トークン。
          ブラウザが直接 Deepgram の live WS に繋ぐための30秒トークンを発行（鍵は露出しない）。 */
       if (path === '/api/roleplay/stt-token' && (req.method === 'POST' || req.method === 'GET')) {

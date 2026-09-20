@@ -304,8 +304,48 @@
   const SILENCE_MS = 800, REC_MAX_MS = 12000, MIN_REC_MS = 400;
   // ---- ストリーミング文字起こし（Deepgram live）。話しながら認識→止めた瞬間に即返答。失敗時はVADにフォールバック ----
   let dgWs = null, dgProc = null, dgSrc = null, dgGain = null, dgActive = false, dgFinal = '', dgKeepAlive = null;
-  const DG_ENDPOINT_MS = 600, DG_UTT_MS = 1000;
+  // 話し終わりと見なす無音の長さ。短いほど返しが速いが、短すぎると言い切る前に割り込む。
+  const DG_ENDPOINT_MS = 400, DG_UTT_MS = 900;
   let avSrcNode = null;   // 現在再生中のTTS音源（WebAudio）。次の発話や終了で止める。
+  // ---- 客の声の再生（PCMを届いたそばからWebAudioに並べる）----
+  // <audio>+mp3 は「ある程度たまるまで鳴らない」ので、生PCMを直接鳴らして鳴り出しを最速にする。
+  // あわせて通りの良い音にする補正（低域カット＋2.8kHz持ち上げ＋音量そろえ）を通す。
+  let ttsChainIn = null, ttsCursor = 0, ttsSrcs = [], ttsTail = null, ttsEndTimer = null;
+  const TTS_RATE = 24000;
+  function ttsChain() {
+    if (ttsChainIn && ttsChainIn.context === avCtx) return ttsChainIn;
+    const hp = avCtx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 95;          // こもり・ノイズの元を落とす
+    const pres = avCtx.createBiquadFilter(); pres.type = 'peaking'; pres.frequency.value = 2800; pres.Q.value = 0.9; pres.gain.value = 4.5;  // 子音の抜け＝声の通り
+    const comp = avCtx.createDynamicsCompressor();                                                   // 小声/大声の差をならす（スマホでも聞き取れる）
+    comp.threshold.value = -21; comp.knee.value = 18; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.18;
+    const g = avCtx.createGain(); g.gain.value = 1.3;
+    hp.connect(pres); pres.connect(comp); comp.connect(g); g.connect(avCtx.destination);
+    ttsChainIn = hp; return hp;
+  }
+  function ttsReset() {
+    try { for (const s of ttsSrcs) { try { s.stop(); } catch (e) {} } } catch (e) {}
+    ttsSrcs = []; ttsCursor = 0; ttsTail = null;
+    if (ttsEndTimer) { clearTimeout(ttsEndTimer); ttsEndTimer = null; }
+  }
+  // 受け取ったPCMの断片を並べて鳴らす。断片の境目で16bitが割れるので余りは持ち越す。
+  function ttsPush(bytes) {
+    if (!avCtx || !bytes || !bytes.length) return 0;
+    let buf = bytes;
+    if (ttsTail && ttsTail.length) { const j = new Uint8Array(ttsTail.length + bytes.length); j.set(ttsTail, 0); j.set(bytes, ttsTail.length); buf = j; ttsTail = null; }
+    const usable = buf.length - (buf.length % 2);
+    if (usable < buf.length) ttsTail = buf.slice(usable);
+    if (usable <= 0) return 0;
+    const dv = new DataView(buf.buffer, buf.byteOffset, usable);
+    const n = usable / 2; const f32 = new Float32Array(n);
+    for (let i = 0; i < n; i++) f32[i] = dv.getInt16(i * 2, true) / 32768;
+    const ab = avCtx.createBuffer(1, n, TTS_RATE); ab.getChannelData(0).set(f32);
+    const src = avCtx.createBufferSource(); src.buffer = ab; src.connect(ttsChain());
+    const now = avCtx.currentTime;
+    if (ttsCursor < now + 0.06) ttsCursor = now + 0.06;   // 足りなくなった時の途切れ防止に少しだけ先を取る
+    src.start(ttsCursor); ttsCursor += ab.duration;
+    ttsSrcs.push(src); src.onended = () => { const i = ttsSrcs.indexOf(src); if (i >= 0) ttsSrcs.splice(i, 1); };
+    return ab.duration;
+  }
   // 端末が録れる音声形式を選ぶ（iOS Safari は webm 非対応で mp4 になる。webm決め打ちだと文字起こしが失敗する）。
   function pickRecMime() {
     try {
@@ -567,9 +607,12 @@
     async _avReply(salesLine) {
       S.av.turns.push({ role: 'sales', text: salesLine }); RP._avRenderLog();
       S.av.state = 'processing'; RP._avStatus();
+      const history = S.av.turns.slice(0, -1).map(t => ({ role: t.role, text: t.text }));
+      const pv = PERSONAS[S.av.persona] || PERSONAS.shufu;
+      // まず1往復版（返答と声が同じストリームで来る＝待ちが最短）。使えなければ従来の2往復へ。
+      if (await RP._avSayStream(pv, history, salesLine)) return;
       let reply = '';
       try {
-        const history = S.av.turns.slice(0, -1).map(t => ({ role: t.role, text: t.text }));
         const r = await fetch('/api/roleplay/reply', { method: 'POST', headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ persona: S.av.persona, difficulty: S.av.difficulty, product: S.av.product, history, salesText: salesLine }) });
         const j = await r.json();
@@ -584,6 +627,58 @@
         onstart: () => { S.av.state = 'speaking'; RP._avShowTalking(true); RP._avStatus(); },
         onend: () => { RP._avShowTalking(false); if (S.av.state === 'speaking') { S.av.state = 'listening'; RP._avStatus(); } },
       });
+    },
+    /* 返答生成と声を1本のストリームで受ける。1文できた時点で鳴り始めるので待ちが短い。
+       枠組み＝[1byte種別][4byte長さ][中身]。使えない時は false を返して従来経路に任せる。 */
+    async _avSayStream(p, history, salesLine) {
+      if (!avCtx || !window.fetch || !window.TextDecoder) return false;
+      let r;
+      try {
+        r = await fetch('/api/roleplay/say', { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ persona: S.av.persona, difficulty: S.av.difficulty, product: S.av.product, history, salesText: salesLine, voice: p.ttsVoice }) });
+      } catch (e) { return false; }
+      if (!r.ok || !r.body || !r.body.getReader) return false;
+      if ((r.headers.get('content-type') || '').indexOf('octet-stream') < 0) return false;   // JSONで返ってきた＝未設定など
+      ttsReset();
+      const reader = r.body.getReader(), dec = new TextDecoder();
+      let buf = new Uint8Array(0), text = '', audioAny = false, started = false, tIdx = -1;
+      try {
+        for (;;) {
+          const { done, value } = await reader.read(); if (done) break;
+          if (value && value.length) { const j = new Uint8Array(buf.length + value.length); j.set(buf, 0); j.set(value, buf.length); buf = j; }
+          for (;;) {
+            if (buf.length < 5) break;
+            const type = buf[0], len = ((buf[1] << 24) | (buf[2] << 16) | (buf[3] << 8) | buf[4]) >>> 0;
+            if (buf.length < 5 + len) break;
+            const payload = buf.slice(5, 5 + len); buf = buf.slice(5 + len);
+            if (type === 2) {
+              if (ttsPush(payload) > 0 && !started) { started = audioAny = true; S.av.state = 'speaking'; RP._avShowTalking(true); RP._avStatus(); }
+              else if (started) audioAny = true;
+            } else if (type === 1) {
+              let o = null; try { o = JSON.parse(dec.decode(payload)); } catch (e) {}
+              const s = (o && o.sentence) || '';
+              if (s) {
+                text += s;
+                if (tIdx < 0) { S.av.turns.push({ role: 'customer', text: s }); tIdx = S.av.turns.length - 1; }
+                else S.av.turns[tIdx].text = text;
+                RP._avRenderLog();
+              }
+            }
+          }
+        }
+      } catch (e) {}
+      text = text.trim();
+      if (!text) { ttsReset(); if (tIdx >= 0) S.av.turns.splice(tIdx, 1); return false; }
+      if (!audioAny) {   // 文字は出たが声が作れなかった。会話を止めずブラウザ読み上げでつなぐ。
+        S.av.state = 'speaking'; RP._avShowTalking(true); RP._avStatus();
+        speak(text, { gender: p.gender, onend: () => { RP._avShowTalking(false); if (S.av.state === 'speaking') { S.av.state = 'listening'; RP._avStatus(); } } });
+        return true;
+      }
+      // 鳴り終わる時刻はスケジュール済みなので、そこに合わせて聞き取りへ戻す。
+      const wait = Math.max(0, (ttsCursor - avCtx.currentTime) * 1000) + 140;
+      if (ttsEndTimer) clearTimeout(ttsEndTimer);
+      ttsEndTimer = setTimeout(() => { RP._avShowTalking(false); if (S.av.state === 'speaking') { S.av.state = 'listening'; RP._avStatus(); } }, wait);
+      return true;
     },
     avTalkText() {
       const el = document.getElementById('av_type'); const t = el && el.value.trim();
@@ -618,6 +713,7 @@
     _avTeardown() {
       avLoopOn = false; avManual = false; try { clearTimeout(avRaf); } catch (e) {}
       RP._dgTeardown();
+      ttsReset(); ttsChainIn = null;
       try { if (avSrcNode) avSrcNode.stop(); } catch (e) {} avSrcNode = null;
       try { const a = document.getElementById('av_audio'); if (a) { a.pause(); a.removeAttribute('src'); a.load(); } } catch (e) {}
       try { if (avRec && avRec.state !== 'inactive') avRec.stop(); } catch (e) {}
