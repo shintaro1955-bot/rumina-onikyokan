@@ -542,6 +542,23 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { ok: true, reply });
       }
 
+      /* AIロープレ：ストリーミング文字起こし用の短命トークン。
+         ブラウザが直接 Deepgram の live WS に繋ぐための30秒トークンを発行（鍵は露出しない）。 */
+      if (path === '/api/roleplay/stt-token' && (req.method === 'POST' || req.method === 'GET')) {
+        const meST = currentUser(req);
+        if (!meST) return json(res, 401, { error: 'ログインが必要です' });
+        const dgKey = process.env.DEEPGRAM_API_KEY || '';
+        if (!dgKey) return json(res, 200, { ok: false, error: '音声認識が未設定です' });
+        try {
+          const r = await fetch('https://api.deepgram.com/v1/auth/grant', {
+            method: 'POST', headers: { Authorization: `Token ${dgKey}`, 'content-type': 'application/json' }, body: JSON.stringify({ ttl_seconds: 30 }),
+          });
+          if (!r.ok) { console.warn('[roleplay stt-token]', r.status); return json(res, 200, { ok: false, error: 'トークン発行に失敗しました' }); }
+          const j = await r.json();
+          return json(res, 200, { ok: true, access_token: j.access_token, expires_in: j.expires_in });
+        } catch (e) { console.warn('[roleplay stt-token]', e.message); return json(res, 200, { ok: false, error: 'トークン発行に失敗しました' }); }
+      }
+
       /* AIロープレ：講評（録音の文字起こしから、できていない点/練習点/ヒアリング力を抜粋）。参考値。 */
       if (path === '/api/roleplay/feedback' && req.method === 'POST') {
         const meF = currentUser(req);
