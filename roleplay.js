@@ -34,6 +34,72 @@
     { ph: '⑤ 切り返し', time: '断りの度に', say: '「ちなみに電気代だけ確認しても？見るだけで大丈夫です。」', weapon: '粘りのひとターン', ng: '断られて即引く' },
     { ph: '⑥ 2択クロージング', time: '締め', say: '「明日の夕方と明後日の昼、どちらがご都合いいですか？」', weapon: '二択で日程確定', ng: '「行っていいですか？」の一択' },
   ];
+  /* ---- アウト（断り）の型 ----
+     断りは入口だが、「粘ってよい断り」と「引くべき断り」がある。ここを取り違えるのが一番の時間のロス。
+     判定はAIに聞かず決定論の辞書で行う（会話の速度を落とさない／鬼教官の物差しと同じ思想）。
+     worth: press=まだ粘れる / once=1回だけ試して引く / stop=引く
+     ※ stop の「明確な拒絶」は効率の話だけでなく、特定商取引法が再勧誘を禁じている領域。粘ること自体が誤り。 */
+  const OUTS = [
+    // 強い拒絶（文脈によらず引く）。「訪問販売はお断り」より先に当てる。
+    { key: 'hard', label: '明確な拒絶', worth: 'stop',
+      re: /(帰|かえ)って|二度と|来ないで|こないで|通報|警察|訴え|しつこい|迷惑/,
+      why: '契約しない意思がはっきり示されている。特定商取引法で再勧誘は禁止。ここで粘るのは誤り。',
+      rail: '「失礼しました、ありがとうございます」で下がる。次の家へ。' },
+    { key: 'rent', label: '賃貸・持ち家でない', worth: 'stop',
+      re: /賃貸|借り(てる|ている|てます)|社宅|アパート|マンション(なので|だから|で)|持ち家(じゃ|では)な|大家/,
+      why: '設置の条件を満たさない。粘っても数字にならないので、時間を次の家に使う。',
+      rail: '「失礼しました」で切り上げる。ここは粘らないのが正解。' },
+    // 「訪問販売はお断り」は手段への拒否。単独なら1回だけ試す（強い拒絶が混ざっていれば上で stop 済み）。
+    { key: 'houmon', label: '訪問販売お断り', worth: 'once',
+      re: /訪問販売|飛び込み|セールス|勧誘(は)?(お断り|結構|けっこう)|営業(は)?(お断り|結構|けっこう)/,
+      why: '手段への拒否。名乗り直して「売りに来ていない」を1回だけ。変わらなければ引く。',
+      rail: '「契約の話ではなくて、この地域の電気代の確認で回っています」' },
+    // 手段の話が無い「お断りします」は契約しない意思表示とみなす。
+    { key: 'hard', label: '明確な拒絶', worth: 'stop',
+      re: /お断り|おことわり/,
+      why: '契約しない意思がはっきり示されている。特定商取引法で再勧誘は禁止。ここで粘るのは誤り。',
+      rail: '「失礼しました、ありがとうございます」で下がる。次の家へ。' },
+    { key: 'owner', label: '決裁者が不在', worth: 'press',
+      re: /(主人|旦那|夫|妻|家内|嫁|親|父|母)(に|が|は)|留守|いない|いません|相談して|相談しない/,
+      why: '断りではなく「今は決められない」。日程さえ置ければ次につながる。',
+      rail: '「ご在宅の時に5分だけ。土日だと午前と午後、どちらがご都合いいですか」（2択で置く）' },
+    { key: 'have', label: 'もう付いている・他社と契約済み', worth: 'press',
+      re: /(もう|既に|すでに)(付|つ|入|い)れ|付いてる|ついてる|付けてる|契約(して|済|ずみ)|他社|他で|別の会社/,
+      why: '持っている人ほど明細で差が出る。断りではなく比較の切り口に変えられる。',
+      rail: '「それなら尚更です。効果が出ているか、明細で一緒に見ませんか」' },
+    { key: 'busy', label: '時間がない', worth: 'press',
+      re: /忙し|いそが|今から|これから出|出かけ|手が離せ|時間(が)?な|後に|あとに|また今度/,
+      why: '用件の長さを警戒しているだけ。短さを約束すれば通ることが多い。',
+      rail: '「30秒だけです。検針票の数字を見るだけで終わります」' },
+    { key: 'money', label: 'お金がない・高い', worth: 'press',
+      re: /お金(が)?な|余裕(が)?な|高い|高く|払えな|ローン|借金/,
+      why: '金額の話が先に出ている＝まだ価値が見えていない。明細に戻せばやり直せる。',
+      rail: '「費用の話の前に、今いくら払っているかだけ見せてください」' },
+    { key: 'reflex', label: '反射の断り', worth: 'press',
+      re: /間に合って|結構です|けっこうです|いりません|要りません|必要な|うち(は)?いい|大丈夫です/,
+      why: '中身を聞く前の反射。まだ用件が伝わっていない＝ここで引くのが一番もったいない。',
+      rail: '「売りに来たんじゃないんです。電気代が上がっていないか、明細だけ見せてください」' },
+    { key: 'nointerest', label: '興味がない', worth: 'once',
+      re: /興味(が)?な|関心(が)?な|考えてな|どうでもい/,
+      why: 'メリットが自分事になっていない。気づきを1つ渡して反応を見る。',
+      rail: '「この辺り、去年より電気代が上がっている家が多いんです。お宅はどうですか」' },
+  ];
+  const WORTH = {
+    press: { label: '粘れる', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    once:  { label: '1回だけ', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+    stop:  { label: '引く', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+  };
+  // 客のセリフから断りの型を1つ返す（上から順に当てる＝引くべき断りを最優先で拾う）。無ければ null。
+  // 切り返しヒントの表示可否（端末に保存。既定=ON＝練習用の補助輪）。
+  const HINT_KEY = 'rp_out_hint';
+  function hintOn() { try { return localStorage.getItem(HINT_KEY) !== 'off'; } catch (e) { return true; } }
+
+  function detectOut(text) {
+    const t = String(text || '');
+    for (const o of OUTS) { if (o.re.test(t)) return o; }
+    return null;
+  }
+
   const SCENARIOS = {
     '警戒': ['「間に合ってます」と即断りから入る', '「どちら様？」と身分を確認してくる'],
     '多忙': ['「今忙しいので手短に」と急かす', 'ドアを半分だけ開けて対応'],
@@ -83,7 +149,7 @@
   const KEY = 'onikyokan_roleplay_v1';
   const S = { step: 'setup', rep: '', partner: '', ctype: '警戒', transcript: '', result: null, recSec: 0, timer: null,
     ai: { turns: [], recording: false, busy: false, note: '' },
-    av: { persona: 'shufu', difficulty: 'normal', product: 'solar', turns: [], state: 'idle', note: '' } };
+    av: { persona: 'shufu', difficulty: 'normal', product: 'solar', turns: [], state: 'idle', note: '', hint: hintOn() } };
   function hist() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
 
   // ---- 部品（Tailwind・鬼教官native）----
@@ -221,10 +287,12 @@
       </div>
       <audio id="av_audio" playsinline preload="auto" style="display:none"></audio>
       <div id="av_note" class="text-[12px] text-amber-700 mt-2 text-center">${S.av.note || ''}</div>
+      <div id="av_hint" class="mt-2 mx-auto" style="max-width:340px"></div>
       ${!S.av.started
         ? `<div class="mt-3 text-center"><button onclick="RP.avStart()" class="px-8 py-4 rounded-xl bg-emerald-600 text-white font-bold text-base">▶ 会話をはじめる</button>
             <div class="text-[11px] text-neutral-400 mt-1.5">押すとマイクが始まり、あとは話しかけるだけで会話が続きます。</div></div>`
-        : `<div class="mt-3 text-center"><button id="av_talkbtn" onclick="RP.avManualToggle()" class="px-6 py-2.5 rounded-full bg-white border border-neutral-200 text-emerald-700 font-semibold text-[13px]">うまく拾わない時は押して話す</button></div>`}
+        : `<div class="mt-3 flex items-center justify-center gap-2 flex-wrap"><button id="av_talkbtn" onclick="RP.avManualToggle()" class="px-6 py-2.5 rounded-full bg-white border border-neutral-200 text-emerald-700 font-semibold text-[13px]">うまく拾わない時は押して話す</button>
+            <button id="av_hintbtn" onclick="RP.avToggleHint()" class="px-4 py-2.5 rounded-full bg-white border border-neutral-200 text-neutral-600 font-semibold text-[12.5px]">${S.av.hint ? '切り返しヒント：ON' : '切り返しヒント：OFF'}</button></div>`}
       <div class="mt-3">${card(`<div class="p-4"><div id="av_log" class="max-h-[28vh] overflow-auto px-1"><div class="text-neutral-400 text-[13px] text-center py-4">${S.av.started ? '話しかけてください。名乗り3点（社名・目的・商材）を忘れずに。' : '「会話をはじめる」を押してスタート。'}</div></div></div>`)}</div>
       ${S.av.started ? `<div class="mt-3">${card(`<div class="p-4"><div class="text-[12.5px] font-semibold mb-1.5">打ち込みでも送れます</div>
         <div class="flex gap-2"><input id="av_type" placeholder="営業のセリフを入力" class="flex-1 border border-neutral-200 rounded-lg px-3 py-2.5 text-sm">
@@ -408,7 +476,7 @@
       RP._avTeardown();
       const p = PERSONAS.shufu;
       const cur = S.av || {};
-      S.av = { persona: p.key, difficulty: cur.difficulty || 'normal', product: cur.product || 'solar', turns: [], state: 'idle', started: false, note: '' };
+      S.av = { persona: p.key, difficulty: cur.difficulty || 'normal', product: cur.product || 'solar', turns: [], state: 'idle', started: false, note: '', hint: hintOn() };
       S.step = 'avatar';
     },
 
@@ -418,7 +486,7 @@
       const p = PERSONAS[personaKey] || PERSONAS.shufu;
       if (!p.ready) { RP._avNote(p.label + 'は準備中です。'); return; }
       const cur = S.av || {};
-      S.av = { persona: p.key, difficulty: cur.difficulty || 'normal', product: cur.product || 'solar', turns: [], state: 'idle', started: false, note: '' };
+      S.av = { persona: p.key, difficulty: cur.difficulty || 'normal', product: cur.product || 'solar', turns: [], state: 'idle', started: false, note: '', hint: hintOn() };
       S.step = 'avatar'; render(); window.scrollTo(0, 0);
     },
     // 1回押したら会話開始。この操作の中でマイク・音声を解錠し、以後はハンズフリーで続く。
@@ -606,6 +674,7 @@
       } catch (e) { S.av.state = 'listening'; RP._avStatus(); }
     },
     async _avReply(salesLine) {
+      RP._avClearHint();
       S.av.turns.push({ role: 'sales', text: salesLine }); RP._avRenderLog();
       S.av.state = 'processing'; RP._avStatus();
       const history = S.av.turns.slice(0, -1).map(t => ({ role: t.role, text: t.text }));
@@ -621,6 +690,7 @@
       } catch (e) {}
       if (!reply) { S.av.note = 'お客様の返答を作れませんでした（AIお客様が未設定かも）。'; RP._avNote(S.av.note); S.av.state = 'listening'; RP._avStatus(); return; }
       S.av.turns.push({ role: 'customer', text: reply }); RP._avRenderLog();
+      RP._avHint(reply);
       const p = PERSONAS[S.av.persona] || PERSONAS.shufu;
       S.av.state = 'processing'; RP._avStatus();   // 声を用意する間は「考え中」
       speakServer(reply, {
@@ -670,6 +740,7 @@
       } catch (e) {}
       text = text.trim();
       if (!text) { ttsReset(); if (tIdx >= 0) S.av.turns.splice(tIdx, 1); return false; }
+      RP._avHint(text);
       if (!audioAny) {   // 文字は出たが声が作れなかった。会話を止めずブラウザ読み上げでつなぐ。
         S.av.state = 'speaking'; RP._avShowTalking(true); RP._avStatus();
         speak(text, { gender: p.gender, onend: () => { RP._avShowTalking(false); if (S.av.state === 'speaking') { S.av.state = 'listening'; RP._avStatus(); } } });
@@ -705,6 +776,28 @@
       }
     },
     _avNote(msg) { S.av.note = msg || ''; const el = document.getElementById('av_note'); if (el) el.textContent = S.av.note; },
+    // 客の返事が「断り」なら、その型と切り返しの一言をその場で出す（判定は決定論の辞書＝待ち時間ゼロ）。
+    _avHint(text) {
+      const el = document.getElementById('av_hint'); if (!el) return;
+      if (!S.av.hint) { el.innerHTML = ''; return; }
+      const o = detectOut(text); if (!o) { el.innerHTML = ''; return; }
+      const w = WORTH[o.worth] || WORTH.press;
+      const esc = x => String(x).replace(/</g, '&lt;');
+      el.innerHTML = `<div class="rounded-xl border ${w.cls} px-3 py-2 text-left">
+        <div class="text-[12px] font-semibold mb-0.5">アウト：${esc(o.label)}<span class="ml-1.5 font-bold">［${esc(w.label)}］</span></div>
+        <div class="text-[11.5px] mb-1" style="opacity:.85">${esc(o.why)}</div>
+        <div class="text-[12.5px]"><b>${o.worth === 'stop' ? 'ここは' : '切り返し'}：</b>${esc(o.rail)}</div>
+      </div>`;
+    },
+    _avClearHint() { const el = document.getElementById('av_hint'); if (el) el.innerHTML = ''; },
+    avToggleHint() {
+      S.av.hint = !S.av.hint;
+      try { localStorage.setItem(HINT_KEY, S.av.hint ? 'on' : 'off'); } catch (e) {}
+      const b = document.getElementById('av_hintbtn');
+      if (b) b.textContent = S.av.hint ? '切り返しヒント：ON' : '切り返しヒント：OFF';
+      if (!S.av.hint) RP._avClearHint();
+      else { const last = [...S.av.turns].reverse().find(t => t.role === 'customer'); if (last) RP._avHint(last.text); }
+    },
     _avRenderLog() {
       const el = document.getElementById('av_log'); if (!el) return;
       el.innerHTML = S.av.turns.length ? S.av.turns.map(t => bubble(t.role, t.text)).join('')
@@ -799,8 +892,22 @@
       catch (e) { el.innerHTML = '<span class="text-neutral-400">講評を取得できませんでした。</span>'; return; }
       if (!d || !d.ok) { el.innerHTML = '<span class="text-neutral-400">' + ((d && d.error) || '講評を生成できませんでした。') + '</span>'; return; }
       const list = (title, arr, cls) => (arr && arr.length) ? `<div class="mb-2.5"><div class="text-[12.5px] font-semibold ${cls} mb-1">${title}</div><ul class="list-disc pl-5 text-[13px] text-neutral-700 space-y-0.5">${arr.map(x => `<li>${String(x).replace(/</g, '&lt;')}</li>`).join('')}</ul></div>` : '';
+      // アウト（断り）の扱い：型／切り返したか／粘る価値。効率に直結するのでヒアリングの前に出す。
+      const esc = x => String(x).replace(/</g, '&lt;');
+      const vcls = { '粘る余地あり': 'bg-emerald-50 text-emerald-700 border-emerald-200', '1回だけ粘る': 'bg-amber-50 text-amber-700 border-amber-200', '引くべき': 'bg-rose-50 text-rose-700 border-rose-200' };
+      const outsHtml = (d.outs && d.outs.length)
+        ? `<div class="mb-3"><div class="text-[12.5px] font-semibold text-neutral-700 mb-1.5">アウト（断り）の扱い</div>
+            ${d.outs.map(o => `<div class="rounded-xl border ${vcls[o.verdict] || vcls['粘る余地あり']} px-3 py-2 mb-1.5">
+              <div class="text-[12px] font-semibold mb-0.5">${esc(o.type)}<span class="ml-1.5 font-bold">［${esc(o.verdict)}］</span>${o.handled ? '' : '<span class="ml-1.5 text-[11px]">切り返しなし</span>'}</div>
+              <div class="text-[11.5px] mb-1" style="opacity:.85">客：「${esc(o.quote)}」</div>
+              <div class="text-[12.5px]"><b>${o.verdict === '引くべき' ? 'ここは' : '言うべきだった'}：</b>${esc(o.better)}</div>
+            </div>`).join('')}
+            ${d.outAdvice ? `<div class="text-[12.5px] text-neutral-700 mt-1">${esc(d.outAdvice)}</div>` : ''}
+          </div>`
+        : '';
       el.innerHTML =
         (d.summary ? `<div class="text-[13.5px] text-neutral-800 mb-3">${String(d.summary).replace(/</g, '&lt;')}</div>` : '')
+        + outsHtml
         + list('ヒアリング力で伸ばす', d.hearing, 'text-emerald-700')
         + list('できていない・弱い点', d.notDone, 'text-rose-600')
         + list('次に練習すること', d.practice, 'text-amber-700')
