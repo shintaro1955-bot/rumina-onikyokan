@@ -316,9 +316,10 @@
     if (ttsChainIn && ttsChainIn.context === avCtx) return ttsChainIn;
     const hp = avCtx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 95;          // こもり・ノイズの元を落とす
     const pres = avCtx.createBiquadFilter(); pres.type = 'peaking'; pres.frequency.value = 2800; pres.Q.value = 0.9; pres.gain.value = 4.5;  // 子音の抜け＝声の通り
-    const comp = avCtx.createDynamicsCompressor();                                                   // 小声/大声の差をならす（スマホでも聞き取れる）
-    comp.threshold.value = -21; comp.knee.value = 18; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.18;
-    const g = avCtx.createGain(); g.gain.value = 1.3;
+    // 小声/大声の差をならす（スマホでも聞き取れる）。強い口調でも波形が割れない値を実測で選定。
+    const comp = avCtx.createDynamicsCompressor();
+    comp.threshold.value = -26; comp.knee.value = 18; comp.ratio.value = 5; comp.attack.value = 0.004; comp.release.value = 0.18;
+    const g = avCtx.createGain(); g.gain.value = 1.25;
     hp.connect(pres); pres.connect(comp); comp.connect(g); g.connect(avCtx.destination);
     ttsChainIn = hp; return hp;
   }
