@@ -47,6 +47,24 @@ const PORT = process.env.PORT || 4180;
 const API_KEY = process.env.OPENAI_API_KEY || '';
 const MODEL = process.env.WHISPER_MODEL || 'whisper-1';
 
+/* AIロープレの暖機。外部への接続は「久しぶりの1回目」だけ確立に時間がかかり、
+   会話の1言目だけ遅く感じる。会話開始の合図が来たら裏で小さく叩いて温めておく。
+   投げっぱなし（結果は使わない）。連打・常時稼働で無駄打ちしないよう間隔を空ける。 */
+let warmAt = 0;
+function warmUpVoice() {
+  const now = Date.now();
+  if (now - warmAt < 45000) return;
+  warmAt = now;
+  const dg = process.env.DEEPGRAM_API_KEY || '', an = process.env.ANTHROPIC_API_KEY || '';
+  if (dg) fetch('https://api.deepgram.com/v1/speak?model=aura-2-izanami-ja&encoding=linear16&sample_rate=24000&container=none',
+    { method: 'POST', headers: { Authorization: `Token ${dg}`, 'content-type': 'application/json' }, body: JSON.stringify({ text: 'あ' }) })
+    .then(r => r.arrayBuffer()).catch(() => {});
+  if (an) fetch('https://api.anthropic.com/v1/messages',
+    { method: 'POST', headers: { 'x-api-key': an, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: persona.model(), max_tokens: 1, messages: [{ role: 'user', content: 'a' }] }) })
+    .then(r => r.text()).catch(() => {});
+}
+
 // 録音・解析への同意（版）。文言を更新したら版を上げると全員に再同意を求められる。
 const CONSENT_VERSION = process.env.CONSENT_VERSION || '2026-07-15';
 // 文字起こし後に音声ファイルを自動削除するか（既定=保持）。個人情報を残さない運用に。
@@ -556,6 +574,7 @@ const server = createServer(async (req, res) => {
         const dgKeyS = process.env.DEEPGRAM_API_KEY || '';
 
         res.writeHead(200, { 'content-type': 'application/octet-stream', 'cache-control': 'no-store', 'x-accel-buffering': 'no' });
+        try { res.flushHeaders(); } catch (e) {}   // 本文を待たずに頭を出す（ブラウザが即この経路に確定できる）
         const writeBuf = async (buf) => { if (!res.write(buf)) await new Promise(rs => res.once('drain', rs)); };
         const frame = async (type, payload) => {
           const head = Buffer.alloc(5); head[0] = type; head.writeUInt32BE(payload.length, 1);
@@ -625,6 +644,7 @@ const server = createServer(async (req, res) => {
         if (!meST) return json(res, 401, { error: 'ログインが必要です' });
         const dgKey = process.env.DEEPGRAM_API_KEY || '';
         if (!dgKey) return json(res, 200, { ok: false, error: '音声認識が未設定です' });
+        warmUpVoice();   // 会話開始の合図。1言目が重くならないよう、裏で接続を温めておく。
         try {
           const r = await fetch('https://api.deepgram.com/v1/auth/grant', {
             method: 'POST', headers: { Authorization: `Token ${dgKey}`, 'content-type': 'application/json' }, body: JSON.stringify({ ttl_seconds: 30 }),
