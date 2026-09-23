@@ -31,6 +31,7 @@ import { scoreTalk, ready as scoreReady } from './lib/score.mjs';
 import * as persona from './lib/persona.mjs';
 import { roleplayFeedback } from './lib/rpfeedback.mjs';
 import * as daycoach from './lib/daycoach.mjs';
+import * as recmind from './lib/recmind.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
 import { buildPersonalMessages } from './lib/coachdm.mjs';
@@ -656,6 +657,23 @@ const server = createServer(async (req, res) => {
           const j = await r.json();
           return json(res, 200, { ok: true, access_token: j.access_token, expires_in: j.expires_in });
         } catch (e) { console.warn('[roleplay stt-token]', e.message); return json(res, 200, { ok: false, error: 'トークン発行に失敗しました' }); }
+      }
+
+      /* 録音の提出状況（owner）。誰が回って誰が録音を出したか＝決定論。
+         一日のトークコーチは診断ログが無いと動かないので、その燃料切れを見張る画面用。 */
+      if (path === '/api/rec/submissions' && req.method === 'GET') {
+        const meRS = currentUser(req);
+        if (!meRS || meRS.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        return json(res, 200, { ok: true, ...recmind.submissions({ date: url.searchParams.get('date') || '' }), config: recmind.config() });
+      }
+
+      /* 録音の提出リマインド（owner）。既定はドライラン＝?live=1 を付けた時だけ実送信。 */
+      if (path === '/api/rec/remind' && (req.method === 'POST' || req.method === 'GET')) {
+        const meRR = currentUser(req);
+        if (!meRR || meRR.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const live = /^(1|true|yes|on)$/i.test(url.searchParams.get('live') || '');
+        const out = await recmind.runOnce({ date: url.searchParams.get('date') || '', live }).catch(e => ({ error: e.message }));
+        return json(res, 200, { ok: !out.error, ...out });
       }
 
       /* 一日のトークコーチ：その日の診断ログを束ねて、判定＋修正指示を返す。

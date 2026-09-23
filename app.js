@@ -997,6 +997,7 @@ function viewLog() {
     <span class="font-semibold text-neutral-700 ml-1">保存先</span>：サーバーの永続領域（本番は Railway Volume の <code>/data</code>）。再デプロイでも消えません。
     <span class="font-semibold text-neutral-700 ml-1">音声ファイル</span>：文字起こし後も同領域に保持（不要なら運用で削除可）。
   </div>`)}
+  <div id="recSub" class="mt-4"></div>
   <div id="consentWrap" class="mt-4"></div>
   <div id="logWrap" class="mt-4 text-sm text-neutral-500">読み込み中…</div>
   <div id="logDetail" class="mt-4"></div>`;
@@ -1021,7 +1022,74 @@ async function loadConsents() {
     </tr></thead><tbody>${rows}</tbody></table></div>
   </div>`);
 }
+/* 録音の提出状況：誰が回って、誰が録音を出したか。出ていないと日次コーチが動かない。 */
+async function loadRecSubmissions(date) {
+  const el = document.getElementById('recSub'); if (!el) return;
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  el.innerHTML = `<div class="p-4 text-sm text-neutral-500 border border-neutral-200 rounded-xl bg-white">提出状況を読み込み中…</div>`;
+  let d;
+  try { d = await API.recSubmissions(date); }
+  catch (e) { el.innerHTML = `<div class="p-4 text-sm text-rose-600 border border-neutral-200 rounded-xl bg-white">${esc(e.message)}</div>`; return; }
+  if (!d.cyzenReady && !d.rows.length) {
+    el.innerHTML = `<div class="p-4 text-sm text-neutral-500 border border-neutral-200 rounded-xl bg-white">提出状況を出すには、cyzenの稼働データか録音の記録が要ります。</div>`;
+    return;
+  }
+  const rows = d.rows.map(r => `<tr class="border-t border-neutral-200">
+    <td class="px-3 py-2 text-neutral-800">${esc(r.name)}</td>
+    <td class="px-3 py-2 text-neutral-500 tabular-nums">${r.visits == null ? '—' : r.visits + '件'}</td>
+    <td class="px-3 py-2">${r.submitted
+      ? `<span class="text-emerald-600 font-semibold">提出済み</span><span class="text-neutral-400 text-[11px] ml-1">${r.recordings}本・${r.pings}訪問</span>`
+      : '<span class="text-rose-600 font-semibold">未提出</span>'}</td></tr>`).join('');
+  el.innerHTML = `<div class="rounded-xl border border-neutral-200 bg-white overflow-hidden">
+    <div class="p-4 flex items-center justify-between gap-3 flex-wrap">
+      <div><div class="font-semibold text-neutral-800">録音の提出状況</div>
+        <div class="text-[12px] text-neutral-500 mt-0.5">${esc(d.date)}　回った ${d.total}人中、提出 <b class="text-emerald-600">${d.submitted}</b>人／<b class="text-rose-600">未提出 ${d.missing}</b>人</div></div>
+      <div class="flex gap-2">
+        <input id="recDate" type="date" value="${esc(d.date)}" class="border border-neutral-200 rounded-lg px-2 py-1.5 text-[12.5px]" onchange="loadRecSubmissions(this.value)">
+        ${d.missing ? `<button onclick="previewRecRemind()" class="px-4 py-1.5 rounded-lg bg-emerald-600 text-white text-[12.5px] font-semibold">未提出者にリマインド</button>` : ''}
+      </div>
+    </div>
+    ${d.rows.length ? `<table class="w-full text-[13px]"><thead class="bg-neutral-50 text-neutral-500 text-[11.5px]">
+      <tr><th class="px-3 py-2 text-left font-medium">氏名</th><th class="px-3 py-2 text-left font-medium">訪問</th><th class="px-3 py-2 text-left font-medium">録音</th></tr></thead>
+      <tbody>${rows}</tbody></table>` : '<div class="px-4 pb-4 text-[13px] text-neutral-500">この日に回った記録がありません。</div>'}
+    <div id="recRemind" class="px-4 pb-4"></div></div>`;
+}
+
+/* リマインドは必ず下書きを見せてから。押した時点では送らない。 */
+async function previewRecRemind() {
+  const box = document.getElementById('recRemind'); if (!box) return;
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const date = (document.getElementById('recDate') || {}).value || '';
+  box.innerHTML = '<div class="text-[13px] text-neutral-500 pt-2">下書きを作っています…</div>';
+  let d;
+  try { d = await API.recRemind(date, false); }
+  catch (e) { box.innerHTML = `<div class="text-[13px] text-rose-600 pt-2">${esc(e.message)}</div>`; return; }
+  const list = (d.wouldSend || []).map(x => `<div class="mt-2 p-2.5 rounded-lg bg-neutral-50 border border-neutral-200">
+    <div class="text-[12px] font-semibold text-neutral-700">${esc(x.name)}</div>
+    <div class="text-[12.5px] text-neutral-700 whitespace-pre-wrap mt-0.5">${esc(x.message)}</div></div>`).join('');
+  const un = (d.unreachable || []).map(x => esc(x.name)).join('、');
+  box.innerHTML = `<div class="pt-2 border-t border-neutral-200 mt-2">
+    <div class="text-[12.5px] font-semibold text-neutral-700">送信の下書き（${(d.wouldSend || []).length}件）</div>
+    ${list || '<div class="text-[13px] text-neutral-500 mt-1">送る相手がいません。</div>'}
+    ${un ? `<div class="text-[11.5px] text-amber-700 mt-2">LINE未連携のため送れない人：${un}</div>` : ''}
+    ${(d.skipped || []).length ? `<div class="text-[11.5px] text-neutral-500 mt-1">本日送信済みのため除外：${d.skipped.map(x => esc(x.name)).join('、')}</div>` : ''}
+    <div class="text-[11.5px] text-neutral-500 mt-2">${esc(d.note || '')}</div>
+    ${(d.wouldSend || []).length ? `<button onclick="sendRecRemind()" class="mt-2 px-4 py-1.5 rounded-lg bg-rose-600 text-white text-[12.5px] font-semibold">この内容で送信する</button>` : ''}
+  </div>`;
+}
+
+async function sendRecRemind() {
+  if (!confirm('未提出者のLINEに送信します。よろしいですか？')) return;
+  const date = (document.getElementById('recDate') || {}).value || '';
+  const box = document.getElementById('recRemind');
+  try {
+    const d = await API.recRemind(date, true);
+    if (box) box.innerHTML = `<div class="pt-2 text-[13px] text-neutral-700">${String(d.note || '').replace(/</g, '&lt;')}</div>`;
+  } catch (e) { if (box) box.innerHTML = `<div class="pt-2 text-[13px] text-rose-600">${String(e.message).replace(/</g, '&lt;')}</div>`; }
+}
+
 async function loadLog() {
+  loadRecSubmissions();
   const wrap = document.getElementById('logWrap'); if (!wrap) return;
   let reports = [];
   try { reports = await API.getLog(); } catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
