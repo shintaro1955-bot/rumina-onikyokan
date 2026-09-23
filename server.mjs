@@ -32,6 +32,7 @@ import * as persona from './lib/persona.mjs';
 import { roleplayFeedback } from './lib/rpfeedback.mjs';
 import * as daycoach from './lib/daycoach.mjs';
 import * as recmind from './lib/recmind.mjs';
+import { buildup } from './lib/buildup.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
 import { buildPersonalMessages } from './lib/coachdm.mjs';
@@ -649,6 +650,13 @@ const server = createServer(async (req, res) => {
           const j = await r.json();
           return json(res, 200, { ok: true, access_token: j.access_token, expires_in: j.expires_in });
         } catch (e) { console.warn('[roleplay stt-token]', e.message); return json(res, 200, { ok: false, error: 'トークン発行に失敗しました' }); }
+      }
+
+      /* 底上げ一覧（owner）。チーム実データの中央値を基準に、誰がどの段で止まっているか。 */
+      if (path === '/api/buildup' && req.method === 'GET') {
+        const meB = currentUser(req);
+        if (!meB || meB.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        return json(res, 200, { ok: true, ...buildup({ ym: url.searchParams.get('ym') || '' }) });
       }
 
       /* 本人の提出状況（トップ画面の問いかけ用）。全員が使うので軽い処理だけ。 */
