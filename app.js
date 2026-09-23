@@ -1344,7 +1344,8 @@ async function loadBuildup() {
     if (t.dir === 'new') return '<span class="text-neutral-400">先週は稼働なし</span>';
     const col = t.dir === 'up' ? 'text-emerald-600' : t.dir === 'down' ? 'text-rose-600' : 'text-neutral-400';
     const mark = t.dir === 'up' ? '▲' : t.dir === 'down' ? '▼' : '→';
-    return `<span class="${col} font-semibold">${mark} ${esc(t.sign)}</span><span class="text-neutral-400 ml-1">先週 ${esc(t.prev)}</span>`;
+    // 今週と先週の両方を出す。「今」の列は期間の集計、この列は直近7日なので母数が違う。
+    return `<span class="${col} font-semibold">${mark} ${esc(t.sign)}</span><span class="text-neutral-400 ml-1">${esc(t.now)} ← 先週 ${esc(t.prev)}</span>`;
   };
 
   const mv = d.movement || null;
@@ -1363,7 +1364,13 @@ async function loadBuildup() {
         <span class="text-[11.5px] rounded-full px-2.5 py-1 border ${RUNG[k].cls}">${k} ${list.length}人</span>
         <span class="text-[12px] text-neutral-600">${esc(fix.fix)}</span>
         <span class="text-[11.5px] text-neutral-400">→ ${esc(fix.where)}</span></div>
-      <div class="overflow-x-auto mt-2"><table class="w-full text-[13px] min-w-[560px]">
+      <div class="overflow-x-auto mt-2"><table class="w-full text-[13px] min-w-[680px]">
+        <thead class="text-neutral-400 text-[11px]"><tr>
+          <th class="px-3 py-1 text-left font-medium">氏名</th>
+          <th class="px-3 py-1 text-left font-medium">今（期間の集計）</th>
+          <th class="px-3 py-1 text-left font-medium">先週比（直近7日 vs その前7日）</th>
+          <th class="px-3 py-1 text-left font-medium">チームの位置</th>
+          <th class="px-3 py-1 text-right font-medium">あと</th></tr></thead>
         <tbody>${list.slice(0, PER).map(r => `<tr class="border-t border-neutral-200">
           <td class="px-3 py-2 text-neutral-800 whitespace-nowrap">${esc(r.name)}</td>
           <td class="px-3 py-2 text-neutral-700 text-[12.5px] whitespace-nowrap">${esc(r.now)}</td>
