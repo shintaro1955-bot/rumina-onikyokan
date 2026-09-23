@@ -1341,30 +1341,39 @@ async function loadBuildup() {
   const chips = Object.entries(d.summary).filter(([, n]) => n > 0)
     .map(([k, n]) => `<span class="text-[11.5px] rounded-full px-2.5 py-1 border ${RUNG[k].cls}">${k} ${n}人</span>`).join(' ');
 
-  const rows = d.rows.slice(0, 40).map(r => `<tr class="border-t border-neutral-200">
-    <td class="px-3 py-2 text-neutral-800 whitespace-nowrap">${esc(r.name)}</td>
-    <td class="px-3 py-2"><span class="text-[11.5px] rounded-full px-2 py-0.5 border ${RUNG[r.rung].cls}">${r.rung}</span></td>
-    <td class="px-3 py-2 text-neutral-700 text-[12.5px] whitespace-nowrap">${esc(r.now)}</td>
-    <td class="px-3 py-2 text-neutral-500 text-[12px] whitespace-nowrap">${esc(r.target)}</td>
-    <td class="px-3 py-2 text-emerald-700 text-[12.5px] font-semibold whitespace-nowrap">${esc(r.gap)}</td>
-    <td class="px-3 py-2 text-neutral-500 text-[11.5px]">${esc(r.where)}</td></tr>`).join('');
+  // 段ごとに分ける。1つの表にすると稼働の人だけで埋まり、鬼教官で直せるトークの人が画面に出てこない。
+  const PER = 12;
+  const section = (k) => {
+    const list = d.rows.filter(r => r.rung === k);
+    if (!list.length) return '';
+    const fix = list[0];
+    return `<div class="mt-4">
+      <div class="flex items-baseline gap-2 flex-wrap">
+        <span class="text-[11.5px] rounded-full px-2.5 py-1 border ${RUNG[k].cls}">${k} ${list.length}人</span>
+        <span class="text-[12px] text-neutral-600">${esc(fix.fix)}</span>
+        <span class="text-[11.5px] text-neutral-400">→ ${esc(fix.where)}</span></div>
+      <div class="overflow-x-auto mt-2"><table class="w-full text-[13px] min-w-[560px]">
+        <tbody>${list.slice(0, PER).map(r => `<tr class="border-t border-neutral-200">
+          <td class="px-3 py-2 text-neutral-800 whitespace-nowrap">${esc(r.name)}</td>
+          <td class="px-3 py-2 text-neutral-700 text-[12.5px] whitespace-nowrap">${esc(r.now)}</td>
+          <td class="px-3 py-2 text-neutral-500 text-[12px] whitespace-nowrap">${esc(r.target)}</td>
+          <td class="px-3 py-2 text-right text-emerald-700 text-[12.5px] font-semibold whitespace-nowrap">${esc(r.gap)}</td>
+        </tr>`).join('')}</tbody></table></div>
+      ${list.length > PER ? `<div class="text-[11px] text-neutral-400 mt-1">ほか${list.length - PER}人（訪問数の多い順に${PER}人まで表示）</div>` : ''}
+    </div>`;
+  };
+  const sections = ['記録', '稼働', '行動量', 'トーク', 'クロージング'].map(section).join('');
 
   box.innerHTML = card(`<div class="p-4">
     <div class="flex items-center justify-between gap-3 flex-wrap">
       <div><div class="font-semibold text-neutral-800">底上げ一覧</div>
-        <div class="text-[12px] text-neutral-500 mt-0.5">稼働 ${d.pool}人のうち <b>${d.total}人</b>が、下の段のどこかで止まっています。</div></div>
+        <div class="text-[12px] text-neutral-500 mt-0.5">稼働 ${d.pool}人。下の段から順に、手を入れる相手を並べています（各段は訪問数の多い順）。</div></div>
       <div class="text-[11.5px] text-neutral-500 text-right">
         チームの中央値：訪問 <b class="text-neutral-700">${st.vpd.median ?? '—'}</b>件/日 ・ アポ率 <b class="text-neutral-700">${st.apoRate.median ?? '—'}</b>%<br>
         トップ層（上位25%）：訪問 <b class="text-neutral-700">${st.vpd.top ?? '—'}</b>件/日 ・ アポ率 <b class="text-neutral-700">${st.apoRate.top ?? '—'}</b>%</div>
     </div>
     <div class="flex gap-2 flex-wrap mt-3">${chips}</div>
-    <div class="overflow-x-auto mt-3"><table class="w-full text-[13px] min-w-[720px]">
-      <thead class="bg-neutral-50 text-neutral-500 text-[11.5px]"><tr>
-        <th class="px-3 py-2 text-left font-medium">氏名</th><th class="px-3 py-2 text-left font-medium">止まっている段</th>
-        <th class="px-3 py-2 text-left font-medium">今</th><th class="px-3 py-2 text-left font-medium">チームの位置</th>
-        <th class="px-3 py-2 text-left font-medium">あと</th><th class="px-3 py-2 text-left font-medium">手を入れる所</th></tr></thead>
-      <tbody>${rows}</tbody></table></div>
-    ${d.rows.length > 40 ? `<div class="text-[11px] text-neutral-400 mt-2">上位40人を表示（全${d.total}人）。訪問数が多い人ほど、同じ1段の改善で効く件数が大きいので上に出しています。</div>` : ''}
+    ${sections}
     <div class="text-[11px] text-neutral-400 mt-2">基準は平均ではなく中央値（訪問数の多い人と1日だけの人が混在し、平均が外れ値に引かれるため）。「記録」はアポ報告の抜けが疑われる人で、低調とは別に出しています。</div>
   </div>`);
 }
