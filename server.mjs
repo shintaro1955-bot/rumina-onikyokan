@@ -556,6 +556,7 @@ const server = createServer(async (req, res) => {
           difficulty: typeof body.difficulty === 'string' ? body.difficulty : undefined,
           product: typeof body.product === 'string' ? body.product : undefined,
           history, salesText: String(body.salesText || '').slice(0, 1000),
+          drill: typeof body.drill === 'string' ? body.drill : undefined,
         }).catch(() => null);
         if (!reply) return json(res, 200, { ok: false, error: '返答の生成に失敗しました' });
         return json(res, 200, { ok: true, reply });
@@ -609,6 +610,7 @@ const server = createServer(async (req, res) => {
               product: typeof b.product === 'string' ? b.product : undefined,
               history: Array.isArray(b.history) ? b.history.slice(-20) : [],
               salesText: String(b.salesText || '').slice(0, 1000),
+              drill: typeof b.drill === 'string' ? b.drill : undefined,
             })) {
               acc += d; full += d;
               let m;
@@ -678,8 +680,9 @@ const server = createServer(async (req, res) => {
         if (!reports.length) return json(res, 200, { ok: true, empty: true, days, date, error: 'この日の記録が見つかりませんでした。' });
         const facts = daycoach.buildDayFacts(reports, { name: wantName, date });
         if (!facts.totalPings) return json(res, 200, { ok: true, empty: true, days, date, facts, error: 'この日は訪問の記録がありません。' });
+        const drill = daycoach.buildDrill(facts);   // 明日ロープレで潰す課題（決定論）
         const coach = await daycoach.buildDayCoach(facts).catch(() => null);
-        return json(res, 200, { ok: true, days, date, facts, coach, coachReady: daycoach.ready() });
+        return json(res, 200, { ok: true, days, date, facts, drill, coach, coachReady: daycoach.ready() });
       }
 
       /* AIロープレ：講評（録音の文字起こしから、できていない点/練習点/ヒアリング力を抜粋）。参考値。 */

@@ -91,6 +91,12 @@
   };
   // 客のセリフから断りの型を1つ返す（上から順に当てる＝引くべき断りを最優先で拾う）。無ければ null。
   // 切り返しヒントの表示可否（端末に保存。既定=ON＝練習用の補助輪）。
+  // 鬼教官の日次コーチから渡ってくる「今日の課題」。入場時に1回だけ受け取る。
+  const DRILL_KEY = 'rp_drill';
+  function takeDrill() {
+    try { const v = localStorage.getItem(DRILL_KEY); if (!v) return null; localStorage.removeItem(DRILL_KEY); return JSON.parse(v); }
+    catch (e) { return null; }
+  }
   const HINT_KEY = 'rp_out_hint';
   function hintOn() { try { return localStorage.getItem(HINT_KEY) !== 'off'; } catch (e) { return true; } }
 
@@ -195,11 +201,29 @@
       </div>`)}
     </div>`;
   }
+  // 今日の課題の合否。判定はCHECKSの該当局面＝決定論（AIに聞かない）。
+  function drillVerdictHtml() {
+    const d = S.av && S.av.drill; const r = S.result;
+    if (!d || !r || !r.items) return '';
+    const it = r.items.find(i => i.id === d.checkId);
+    if (!it) return '';
+    const ok = !!it.ok; const esc = x => String(x || '').replace(/</g, '&lt;');
+    return `<div class="rounded-2xl px-4 py-3.5 mb-3 border ${ok ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}">
+      <div class="text-[11px] tracking-wide ${ok ? 'text-emerald-700' : 'text-rose-600'}">今日の課題</div>
+      <div class="flex items-baseline gap-2 mt-0.5">
+        <span class="text-lg font-bold ${ok ? 'text-emerald-800' : 'text-rose-700'}">${esc(d.title)}</span>
+        <span class="text-base font-extrabold ${ok ? 'text-emerald-700' : 'text-rose-600'}">${ok ? '達成' : '未達成'}</span></div>
+      <div class="text-[12px] ${ok ? 'text-emerald-800' : 'text-rose-700'} mt-1">${esc(d.goal)}</div>
+      ${ok ? '' : '<div class="text-[12px] text-rose-700 mt-1">ここが今日の現場で落としている所です。もう一度やってみてください。</div>'}
+    </div>`;
+  }
+
   function viewResult() {
     const r = S.result, pass = r.pass;
     return `<div class="max-w-[860px] mx-auto">
       <h1 class="text-xl font-bold mb-1">採点結果</h1>
       <p class="text-neutral-500 text-[13px] mb-4">${S.rep || '—'} × ${S.partner || 'お客様役'}（${S.ctype}） <span class="text-[10.5px] bg-indigo-50 text-indigo-800 rounded px-1.5 py-0.5">ロープレ（現場ではない）</span></p>
+      ${drillVerdictHtml()}
       <div class="rounded-2xl px-4 py-4 mb-4 font-bold ${pass ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-700'}">
         <span class="text-[11px] tracking-wide opacity-80 block">八賀式トーク 判定</span><span class="text-xl">${pass ? '合格' : 'もう一歩（不合格）'}</span></div>
       ${card(`<div class="p-5"><div class="flex items-baseline gap-2.5"><span class="text-3xl font-extrabold text-emerald-600">${r.met}/${r.total}</span><span class="text-neutral-500 text-[13px]">六局面の達成（①冒頭フック必須／4局面以上で合格）</span></div>
@@ -279,6 +303,13 @@
     return `<div class="max-w-[860px] mx-auto">
       <h1 class="text-xl font-bold mb-1">AIお客様と会話（顔つき）</h1>
       <p class="text-neutral-500 text-[13px] mb-3">「会話をはじめる」を押したら、あとは<b>話しかけるだけ</b>——黙ると相手が返し、そのまま会話が続きます。お客様・難易度・商材を選べます。</p>
+      ${S.av.drill ? `<div class="mb-3 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2.5">
+        <div class="text-[11.5px] font-semibold text-emerald-800">今日の課題（鬼教官の日次コーチより）</div>
+        <div class="text-[14px] font-bold text-emerald-900 mt-0.5">${String(S.av.drill.title).replace(/</g, '&lt;')}</div>
+        <div class="text-[11.5px] text-emerald-800 mt-1">${String(S.av.drill.why || '').replace(/</g, '&lt;')}</div>
+        <div class="text-[12px] text-emerald-900 mt-1"><b>合格条件：</b>${String(S.av.drill.goal || '').replace(/</g, '&lt;')}</div>
+        <div class="mt-1.5"><button onclick="RP.clearDrill()" class="text-[11px] text-emerald-700 underline">課題なしで練習する</button></div>
+      </div>` : ''}
       <div id="av_sel" class="mb-3">${avRowsHtml()}</div>
       <div class="relative rounded-2xl overflow-hidden bg-black mx-auto" style="aspect-ratio:3/4;max-width:340px">
         <video id="av_idle" src="${p.idle}" poster="${p.poster || ''}" muted loop playsinline autoplay preload="auto" class="absolute inset-0 w-full h-full object-cover"></video>
@@ -476,7 +507,9 @@
       RP._avTeardown();
       const p = PERSONAS.shufu;
       const cur = S.av || {};
-      S.av = { persona: p.key, difficulty: cur.difficulty || 'normal', product: cur.product || 'solar', turns: [], state: 'idle', started: false, note: '', hint: hintOn() };
+      const drill = takeDrill();
+      S.av = { persona: p.key, difficulty: (drill && drill.difficulty) || cur.difficulty || 'normal', product: cur.product || 'solar',
+        turns: [], state: 'idle', started: false, note: '', hint: hintOn(), drill: drill || null };
       S.step = 'avatar';
     },
 
@@ -684,7 +717,8 @@
       let reply = '';
       try {
         const r = await fetch('/api/roleplay/reply', { method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ persona: S.av.persona, difficulty: S.av.difficulty, product: S.av.product, history, salesText: salesLine }) });
+          body: JSON.stringify({ persona: S.av.persona, difficulty: S.av.difficulty, product: S.av.product, history, salesText: salesLine,
+            drill: S.av.drill ? S.av.drill.customerRule : undefined }) });
         const j = await r.json();
         reply = ((j && j.ok && j.reply) || '').trim();
       } catch (e) {}
@@ -706,7 +740,8 @@
       let r;
       try {
         r = await fetch('/api/roleplay/say', { method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ persona: S.av.persona, difficulty: S.av.difficulty, product: S.av.product, history, salesText: salesLine, voice: p.ttsVoice }) });
+          body: JSON.stringify({ persona: S.av.persona, difficulty: S.av.difficulty, product: S.av.product, history, salesText: salesLine, voice: p.ttsVoice,
+            drill: S.av.drill ? S.av.drill.customerRule : undefined }) });
       } catch (e) { return false; }
       if (!r.ok || !r.body || !r.body.getReader) return false;
       if ((r.headers.get('content-type') || '').indexOf('octet-stream') < 0) return false;   // JSONで返ってきた＝未設定など
@@ -790,6 +825,7 @@
       </div>`;
     },
     _avClearHint() { const el = document.getElementById('av_hint'); if (el) el.innerHTML = ''; },
+    clearDrill() { S.av.drill = null; render(); window.scrollTo(0, 0); },
     avToggleHint() {
       S.av.hint = !S.av.hint;
       try { localStorage.setItem(HINT_KEY, S.av.hint ? 'on' : 'off'); } catch (e) {}

@@ -2414,11 +2414,28 @@ async function loadDayCoach(date) {
     <div class="muted" style="font-size:10.5px;margin-top:10px">※ 指導文はAIによる参考です。上の件数と六局面の判定が正本です。</div>`
     : `<div class="muted" style="font-size:12.5px;margin-top:12px">${d.coachReady === false ? '指導文の生成は未設定です。上の判定はそのまま使えます。' : '指導文を生成できませんでした。上の判定はそのまま使えます。'}</div>`;
 
+  // 今日の弱点を、そのままロープレの課題にする
+  const dr = d.drill;
+  const drillHtml = dr ? `<div style="margin-top:14px;padding:12px;border-radius:12px;border:1px solid var(--primary);background:var(--surface-2)">
+      <div style="font-size:12.5px;font-weight:700;color:var(--text)">今日の弱点でロープレする</div>
+      <div style="font-size:13.5px;font-weight:700;color:var(--primary);margin-top:4px">${esc(dr.title)}</div>
+      <div class="muted" style="font-size:12px;margin-top:3px">${esc(dr.why)}</div>
+      <div style="font-size:12.5px;color:var(--text);margin-top:6px">合格条件：${esc(dr.goal)}</div>
+      <div style="margin-top:10px"><button class="fo-btn" style="padding:8px 16px;font-size:13px" onclick='startTalkDrill(${JSON.stringify(dr).replace(/'/g, "&#39;")})'>この課題でロープレをはじめる</button></div>
+    </div>` : '';
+
   body.innerHTML = head
     + `<div style="margin-top:14px"><div style="font-size:12.5px;font-weight:700;color:var(--text)">六局面<span class="muted" style="font-weight:400;font-size:11px">　①の母数＝在宅 ${f.homeCount}件／②〜⑥＝会話 ${f.convCount}件</span></div>${phaseRows}</div>`
     + (f.weakest ? `<div style="font-size:12.5px;color:var(--text);margin-top:10px">崩れどころ：<b>${f.weakest.id}${esc(f.weakest.phase)}</b>（${f.weakest.rate}%）</div>` : '')
     + `<div style="margin-top:14px"><div style="font-size:12.5px;font-weight:700;color:var(--text)">断りの扱い</div>${objRows}${lossBits.join('')}</div>`
+    + drillHtml
     + coachHtml;
+}
+
+/* 今日の弱点を課題として持ち込み、ロープレ道場を開く。※Academyの startDrill とは別物。 */
+function startTalkDrill(drill) {
+  try { localStorage.setItem('rp_drill', JSON.stringify(drill)); } catch (e) {}
+  nav('roleplay');
 }
 
 /* Momentum重み設定（owner） */
