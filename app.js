@@ -2500,6 +2500,21 @@ async function loadDayCoach(date) {
     <span style="color:${wCol[o.worth]};font-weight:700">${wLabel[o.worth]}</span></div>`).join('')
     || '<div class="muted" style="font-size:12.5px;margin-top:6px">断りの記録はありません。</div>';
 
+  // 危ない言い回し（辞書による検出＝要確認）。成績より先に見せる。
+  const rk = f.risks || { items: [], high: 0, mid: 0 };
+  const riskHtml = rk.items.length ? `<div style="margin-top:14px;border:1px solid ${rk.high ? '#e11d48' : '#f59e0b'};border-radius:12px;padding:12px;background:${rk.high ? 'rgba(225,29,72,.05)' : 'rgba(245,158,11,.06)'}">
+      <div style="font-size:12.5px;font-weight:700;color:${rk.high ? '#e11d48' : '#b45309'}">危ない言い回し${rk.high ? `　重いもの ${rk.high}件` : ''}</div>
+      ${rk.items.map(r => `<div style="margin-top:8px">
+        <div style="font-size:12.5px;font-weight:700;color:var(--text)">${esc(r.label)}
+          <span class="muted" style="font-weight:400;font-size:11px">・${esc(r.law)}・${r.count}回</span>
+          <span style="font-size:10.5px;font-weight:700;color:${r.level === 'high' ? '#e11d48' : '#b45309'};margin-left:4px">${r.level === 'high' ? '重い' : '要注意'}</span></div>
+        <div class="muted" style="font-size:11.5px;margin-top:2px">「${esc(r.quotes[0])}」</div>
+        <div style="font-size:12.5px;color:var(--text);margin-top:2px">${esc(r.why)}</div>
+        <div style="font-size:12.5px;color:var(--text);margin-top:2px"><b>こう言う：</b>${esc(r.instead)}</div>
+      </div>`).join('')}
+      <div class="muted" style="font-size:10.5px;margin-top:8px">※ 言い回しの検出です。違反かどうかの判断は人がしてください。</div>
+    </div>` : '';
+
   const lossBits = [];
   if (f.gaveUpEarly) lossBits.push(`<div style="font-size:12.5px;color:#e11d48;margin-top:8px"><b>粘れる断りで引いた：${f.gaveUpEarly}件</b> — 今日いちばんの取りこぼし。</div>`);
   if (f.pushedTooFar) lossBits.push(`<div style="font-size:12.5px;color:#e11d48;margin-top:4px"><b>引くべき断りに粘った：${f.pushedTooFar}件</b> — 時間の浪費で、明確な拒絶なら再勧誘は法令違反。</div>`);
@@ -2520,6 +2535,7 @@ async function loadDayCoach(date) {
         <div style="font-size:12px;font-weight:700;color:var(--text)">${esc(x.phase)}</div>
         <div class="muted" style="font-size:12.5px;margin-top:3px">今日：${esc(x.before)}</div>
         <div style="font-size:13px;color:var(--text);margin-top:2px"><b>明日：</b>${esc(x.after)}</div></div>`).join('')}</div>` : ''}
+    ${listOf('今すぐ直すこと', c.risky)}
     ${listOf('明日やること', c.tomorrow)}
     ${listOf('続けること', c.keep)}
     <div class="muted" style="font-size:10.5px;margin-top:10px">※ 指導文はAIによる参考です。上の件数と六局面の判定が正本です。</div>`
@@ -2539,6 +2555,7 @@ async function loadDayCoach(date) {
     + `<div style="margin-top:14px"><div style="font-size:12.5px;font-weight:700;color:var(--text)">六局面<span class="muted" style="font-weight:400;font-size:11px">　①の母数＝在宅 ${f.homeCount}件／②〜⑥＝会話 ${f.convCount}件</span></div>${phaseRows}</div>`
     + (f.weakest ? `<div style="font-size:12.5px;color:var(--text);margin-top:10px">崩れどころ：<b>${f.weakest.id}${esc(f.weakest.phase)}</b>（${f.weakest.rate}%）</div>` : '')
     + `<div style="margin-top:14px"><div style="font-size:12.5px;font-weight:700;color:var(--text)">断りの扱い</div>${objRows}${lossBits.join('')}</div>`
+    + riskHtml
     + drillHtml
     + coachHtml;
 }
