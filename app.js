@@ -2337,7 +2337,88 @@ async function loadMePerf() {
     <div class="muted" style="font-size:12px;margin-top:6px">${window.__mySubmission ? '直近の講評があります' : 'まだ録音の記録がありません'}</div>
     <div style="margin-top:10px;display:flex;gap:8px"><button class="fo-btn ghost" style="padding:7px 14px;font-size:13px" onclick="nav('upload')">録音を出稿</button>${window.__mySubmission ? `<button class="fo-btn" style="padding:7px 14px;font-size:13px" onclick="nav('report')">レポート</button>` : ''}</div></div>`;
 
-  wrap.innerHTML = `${h1('My Performance')}${moCard}${goalCard}${statCard}${xpCard}${recCard}`;
+  // 一日のトークコーチ（中身は非同期で差し込む）
+  const dayCard = `<div class="fo-card" style="padding:16px;margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="font-weight:700;color:var(--text)">一日のトークコーチ</div>
+      <select id="dcDate" class="fo-chip" style="padding:5px 10px;font-size:12px" onchange="loadDayCoach(this.value)"></select>
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:6px">その日の録音を全部読んで、崩れている局面と直し方を出します。</div>
+    <div id="dcBody" style="margin-top:12px"><div class="muted" style="font-size:13px">読み込み中…</div></div>
+  </div>`;
+
+  wrap.innerHTML = `${h1('My Performance')}${moCard}${dayCard}${goalCard}${statCard}${xpCard}${recCard}`;
+  loadDayCoach();
+}
+
+/* 一日のトークコーチ：判定（決定論）＋指導文（AI・参考）を描画する。 */
+async function loadDayCoach(date) {
+  const body = document.getElementById('dcBody'); if (!body) return;
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  body.innerHTML = '<div class="muted" style="font-size:13px">その日のトークを読み込んでいます…（少し時間がかかります）</div>';
+  let d;
+  try { d = await API.dayCoach(date); }
+  catch (e) { body.innerHTML = `<div style="font-size:13px;color:var(--danger,#e11d48)">${esc(e.message)}</div>`; return; }
+
+  const sel = document.getElementById('dcDate');
+  if (sel && d.days && d.days.length) {
+    sel.innerHTML = d.days.map(x => `<option value="${x}"${x === d.date ? ' selected' : ''}>${x}</option>`).join('');
+    sel.style.display = '';
+  } else if (sel) { sel.style.display = 'none'; }
+
+  if (d.empty || !d.facts) { body.innerHTML = `<div class="muted" style="font-size:13px">${esc(d.error || 'この日の記録がありません。')}</div>`; return; }
+  const f = d.facts, c = d.coach;
+
+  const num = (v, u) => `<b class="num" style="color:var(--text)">${v}</b><span class="muted" style="font-size:11px">${u}</span>`;
+  const head = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:13px">
+    <div>訪問 ${num(f.totalPings, '件')}</div><div>在宅 ${num(f.homeCount, '件')}</div>
+    <div>会話 ${num(f.convCount, '件')}</div><div>アポ ${num(f.apoCount, '件')}</div></div>`;
+
+  const phaseRows = f.phases.map(p => {
+    const col = p.rate >= 60 ? 'var(--primary)' : p.rate >= 30 ? '#f59e0b' : '#e11d48';
+    return `<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:12.5px">
+      <span style="color:var(--text)">${p.id}${esc(p.phase)}${p.req ? '<span class="muted" style="font-size:10.5px"> ※必須</span>' : ''}</span>
+      <span class="num" style="color:${col}">${p.done}/${p.of}・${p.rate}%<span class="muted" style="font-size:10.5px;font-weight:400">・${esc(p.baseLabel || '')}</span></span></div>
+      <div style="height:7px;border-radius:4px;background:var(--surface-2);margin-top:3px;overflow:hidden"><div style="height:100%;width:${p.rate}%;background:${col}"></div></div></div>`;
+  }).join('');
+
+  const wLabel = { press: '粘れる', once: '1回だけ', stop: '引く' };
+  const wCol = { press: 'var(--primary)', once: '#f59e0b', stop: '#e11d48' };
+  const objRows = (f.objections || []).map(o => `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-top:6px">
+    <span style="color:var(--text)">「${esc(o.label)}」<span class="muted">・切り返し ${o.pressed}/${o.count}</span></span>
+    <span style="color:${wCol[o.worth]};font-weight:700">${wLabel[o.worth]}</span></div>`).join('')
+    || '<div class="muted" style="font-size:12.5px;margin-top:6px">断りの記録はありません。</div>';
+
+  const lossBits = [];
+  if (f.gaveUpEarly) lossBits.push(`<div style="font-size:12.5px;color:#e11d48;margin-top:8px"><b>粘れる断りで引いた：${f.gaveUpEarly}件</b> — 今日いちばんの取りこぼし。</div>`);
+  if (f.pushedTooFar) lossBits.push(`<div style="font-size:12.5px;color:#e11d48;margin-top:4px"><b>引くべき断りに粘った：${f.pushedTooFar}件</b> — 時間の浪費で、明確な拒絶なら再勧誘は法令違反。</div>`);
+
+  const listOf = (title, arr) => (arr && arr.length)
+    ? `<div style="margin-top:12px"><div style="font-size:12.5px;font-weight:700;color:var(--text)">${title}</div>
+       <ul style="margin:4px 0 0 18px;font-size:13px;color:var(--text)">${arr.map(x => `<li style="margin-top:3px">${esc(x)}</li>`).join('')}</ul></div>` : '';
+
+  const coachHtml = c ? `
+    ${c.summary ? `<div style="font-size:13.5px;color:var(--text);margin-top:12px">${esc(c.summary)}</div>` : ''}
+    ${(c.mistakes || []).length ? `<div style="margin-top:12px"><div style="font-size:12.5px;font-weight:700;color:var(--text)">今日の間違いと、正しい言い方</div>
+      ${c.mistakes.map(m => `<div style="border-left:3px solid #e11d48;padding:6px 0 6px 10px;margin-top:8px">
+        <div class="muted" style="font-size:12px">「${esc(m.scene)}」</div>
+        <div style="font-size:12.5px;color:#e11d48;margin-top:2px">${esc(m.wrong)}</div>
+        <div style="font-size:13px;color:var(--text);margin-top:3px"><b>こう言う：</b>${esc(m.right)}</div></div>`).join('')}</div>` : ''}
+    ${(c.fixes || []).length ? `<div style="margin-top:12px"><div style="font-size:12.5px;font-weight:700;color:var(--text)">トークの修正</div>
+      ${c.fixes.map(x => `<div style="margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--surface-2)">
+        <div style="font-size:12px;font-weight:700;color:var(--text)">${esc(x.phase)}</div>
+        <div class="muted" style="font-size:12.5px;margin-top:3px">今日：${esc(x.before)}</div>
+        <div style="font-size:13px;color:var(--text);margin-top:2px"><b>明日：</b>${esc(x.after)}</div></div>`).join('')}</div>` : ''}
+    ${listOf('明日やること', c.tomorrow)}
+    ${listOf('続けること', c.keep)}
+    <div class="muted" style="font-size:10.5px;margin-top:10px">※ 指導文はAIによる参考です。上の件数と六局面の判定が正本です。</div>`
+    : `<div class="muted" style="font-size:12.5px;margin-top:12px">${d.coachReady === false ? '指導文の生成は未設定です。上の判定はそのまま使えます。' : '指導文を生成できませんでした。上の判定はそのまま使えます。'}</div>`;
+
+  body.innerHTML = head
+    + `<div style="margin-top:14px"><div style="font-size:12.5px;font-weight:700;color:var(--text)">六局面<span class="muted" style="font-weight:400;font-size:11px">　①の母数＝在宅 ${f.homeCount}件／②〜⑥＝会話 ${f.convCount}件</span></div>${phaseRows}</div>`
+    + (f.weakest ? `<div style="font-size:12.5px;color:var(--text);margin-top:10px">崩れどころ：<b>${f.weakest.id}${esc(f.weakest.phase)}</b>（${f.weakest.rate}%）</div>` : '')
+    + `<div style="margin-top:14px"><div style="font-size:12.5px;font-weight:700;color:var(--text)">断りの扱い</div>${objRows}${lossBits.join('')}</div>`
+    + coachHtml;
 }
 
 /* Momentum重み設定（owner） */

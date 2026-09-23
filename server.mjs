@@ -30,6 +30,7 @@ import * as deepgram from './lib/deepgram.mjs';
 import { scoreTalk, ready as scoreReady } from './lib/score.mjs';
 import * as persona from './lib/persona.mjs';
 import { roleplayFeedback } from './lib/rpfeedback.mjs';
+import * as daycoach from './lib/daycoach.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
 import { buildPersonalMessages } from './lib/coachdm.mjs';
@@ -653,6 +654,32 @@ const server = createServer(async (req, res) => {
           const j = await r.json();
           return json(res, 200, { ok: true, access_token: j.access_token, expires_in: j.expires_in });
         } catch (e) { console.warn('[roleplay stt-token]', e.message); return json(res, 200, { ok: false, error: 'トークン発行に失敗しました' }); }
+      }
+
+      /* 一日のトークコーチ：その日の診断ログを束ねて、判定＋修正指示を返す。
+         数字と六局面の判定は決定論（daycoach.buildDayFacts）が正本。指導文はAI＝参考。
+         本人は自分の分だけ。owner は ?user= / ?name= で他人の分も見られる。 */
+      if (path === '/api/coach/day' && req.method === 'GET') {
+        const meD = currentUser(req);
+        if (!meD) return json(res, 401, { error: 'ログインが必要です' });
+        const isOwner = meD.role === 'owner';
+        const qUser = url.searchParams.get('user') || '';
+        const qName = url.searchParams.get('name') || '';
+        const wantUser = (isOwner && qUser) ? qUser : meD.username;
+        const wantName = (isOwner && qName) ? qName : (meD.name || meD.username);
+        const idx = (getDb().reports || []).filter(r => r.user === wantUser || (r.name && r.name === wantName));
+        if (!idx.length) return json(res, 200, { ok: true, empty: true, days: [], error: 'あなたの録音の記録がまだありません。' });
+        // 日付の一覧（新しい順）。date が無い記録は取り込み時刻の日付で代用する。
+        const dayOf = r => r.date || String(r.at || '').slice(0, 10);
+        const days = [...new Set(idx.map(dayOf).filter(Boolean))].sort().reverse();
+        const date = url.searchParams.get('date') || days[0];
+        const todays = idx.filter(r => dayOf(r) === date);
+        const reports = todays.map(r => getReport(r.id)).filter(Boolean);
+        if (!reports.length) return json(res, 200, { ok: true, empty: true, days, date, error: 'この日の記録が見つかりませんでした。' });
+        const facts = daycoach.buildDayFacts(reports, { name: wantName, date });
+        if (!facts.totalPings) return json(res, 200, { ok: true, empty: true, days, date, facts, error: 'この日は訪問の記録がありません。' });
+        const coach = await daycoach.buildDayCoach(facts).catch(() => null);
+        return json(res, 200, { ok: true, days, date, facts, coach, coachReady: daycoach.ready() });
       }
 
       /* AIロープレ：講評（録音の文字起こしから、できていない点/練習点/ヒアリング力を抜粋）。参考値。 */
