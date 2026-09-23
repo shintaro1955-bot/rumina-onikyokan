@@ -659,6 +659,13 @@ const server = createServer(async (req, res) => {
         } catch (e) { console.warn('[roleplay stt-token]', e.message); return json(res, 200, { ok: false, error: 'トークン発行に失敗しました' }); }
       }
 
+      /* 本人の提出状況（トップ画面の問いかけ用）。全員が使うので軽い処理だけ。 */
+      if (path === '/api/rec/mine' && req.method === 'GET') {
+        const meRM = currentUser(req);
+        if (!meRM) return json(res, 401, { error: 'ログインが必要です' });
+        return json(res, 200, { ok: true, ...recmind.mine({ username: meRM.username, name: meRM.name || meRM.username, date: url.searchParams.get('date') || '' }) });
+      }
+
       /* 録音の提出状況（owner）。誰が回って誰が録音を出したか＝決定論。
          一日のトークコーチは診断ログが無いと動かないので、その燃料切れを見張る画面用。 */
       if (path === '/api/rec/submissions' && req.method === 'GET') {

@@ -2137,10 +2137,54 @@ function foGoalTarget() { try { if (window.GOALS && GOALS.current && GOALS.curre
 
 /* ---------- TODAY（中央フィード） ---------- */
 function viewToday() {
-  return `<div class="space-y-3.5" id="todayWrap"><div class="fo-card" style="padding:20px" class="muted">読み込み中…</div></div>`;
+  return `<div id="askRec"></div><div class="space-y-3.5" id="todayWrap"><div class="fo-card" style="padding:20px" class="muted">読み込み中…</div></div>`;
+}
+
+/* トップの問いかけ。今日の録音が出ているかどうかで見た目が変わる。
+   録音が上がらないと一日のトークコーチも弱点ロープレも動かないので、
+   一番最初に目に入る所で聞く。 */
+async function loadAskRec() {
+  const el = document.getElementById('askRec'); if (!el) return;
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  let d = null;
+  try { d = await API.recMine(); } catch (e) { el.innerHTML = ''; return; }
+  const done = !!d.submitted;
+  const yday = (d.days || []).find(x => x !== d.date) || null;
+
+  const chip = (label, onclick) => `<button onclick="${onclick}" style="flex:none;padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12.5px;cursor:pointer">${label}</button>`;
+  const chips = [
+    yday ? chip('前回のコーチを見る', "nav('me')") : null,
+    chip('ロープレで練習する', "nav('roleplay')"),
+    chip('1日を振り返る', "nav('field')"),
+  ].filter(Boolean).join('');
+
+  // 未提出＝問いかけ＋大きな入口。提出済み＝受け取った報告＋次の一手。
+  const bar = done
+    ? `<div style="display:flex;align-items:center;gap:12px;width:100%;max-width:620px;margin:0 auto;padding:14px 16px;border:1px solid var(--border);border-radius:16px;background:var(--surface-2)">
+         <span style="width:30px;height:30px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none">✓</span>
+         <div style="flex:1;min-width:0;text-align:left">
+           <div style="font-size:14px;font-weight:600;color:var(--text)">今日のぶん、受け取りました</div>
+           <div class="muted" style="font-size:11.5px">${d.recordings}本・訪問${d.pings}件を読み込み済み</div></div>
+         <button class="fo-btn" style="padding:8px 16px;font-size:13px;flex:none" onclick="nav('me')">コーチを見る</button>
+       </div>`
+    : `<button onclick="nav('upload')" style="display:flex;align-items:center;gap:12px;width:100%;max-width:620px;margin:0 auto;padding:16px 18px;border:1px solid var(--border);border-radius:16px;background:var(--surface);cursor:pointer;text-align:left;box-shadow:var(--shadow)">
+         <span style="width:30px;height:30px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none">↑</span>
+         <span style="flex:1;min-width:0;font-size:14.5px;color:var(--muted)">今日の録音を出す</span>
+         <span style="width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none">→</span>
+       </button>`;
+
+  el.innerHTML = `<div style="padding:34px 16px 26px;text-align:center">
+    <div style="font-size:25px;font-weight:600;letter-spacing:-.01em;color:var(--text);line-height:1.45">
+      ${done ? '今日の録音、受け取りました' : '今日の録音、提出できた？'}</div>
+    <div class="muted" style="font-size:13px;margin-top:8px">
+      ${done ? '明日の朝までに、崩れどころと明日の言い方を出しておきます。' : '出しておくと、どこで崩れたかと明日の言い方が出ます。'}</div>
+    <div style="margin-top:20px">${bar}</div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px">${chips}</div>
+  </div>`;
 }
 async function loadToday() {
   const wrap = document.getElementById('todayWrap'); if (!wrap) return;
+  loadAskRec();
   const u = window.__user || {};
   const d = await API.today() || {};
   window.__dash = d;
