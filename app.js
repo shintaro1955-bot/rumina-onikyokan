@@ -2364,25 +2364,28 @@ async function loadGoalPage() {
   const myVpd = cz ? cz.visitsPerDay : null;
   const myApoRate = (cz && cz.visits) ? +(cz.apo / cz.visits * 100).toFixed(1) : null;
   const scale = (v, top) => Math.max(2, Math.min(100, (v / Math.max(1, top * 1.15)) * 100));
+  // 自分の実績がまだ無い人にも、追いかける先（中央値・トップ層）は見せる。
   const cmpRow = (label, mine, st, unit) => {
-    if (mine == null || !st || st.median == null) return '';
+    if (!st || st.median == null) return '';
     const top = st.top ?? st.median;
-    const diff = +(mine - st.median).toFixed(1);
-    const state = diff >= 0
-      ? `<span style="color:var(--primary);font-weight:700">中央値を ${diff === 0 ? '同水準' : '+' + diff + unit} 上回る</span>`
-      : `<span style="color:#e11d48;font-weight:700">中央値まで あと ${Math.abs(diff)}${unit}</span>`;
+    const diff = mine == null ? null : +(mine - st.median).toFixed(1);
+    const state = diff == null
+      ? '<span class="muted" style="font-size:12px">あなたの記録がまだありません</span>'
+      : diff >= 0
+        ? `<span style="color:var(--primary);font-weight:700">中央値を ${diff === 0 ? '同水準' : '+' + diff + unit} 上回る</span>`
+        : `<span style="color:#e11d48;font-weight:700">中央値まで あと ${Math.abs(diff)}${unit}</span>`;
     return `<div style="margin-top:14px">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;gap:8px;flex-wrap:wrap">
         <span style="color:var(--text);font-weight:600">${label}</span>${state}</div>
       <div style="position:relative;height:10px;border-radius:6px;background:var(--surface-2);margin-top:6px">
-        <div style="position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--primary);width:${scale(mine, top)}%"></div>
+        ${mine == null ? '' : `<div style="position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--primary);width:${scale(mine, top)}%"></div>`}
         <div title="中央値" style="position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--muted);left:${scale(st.median, top)}%"></div>
         <div title="トップ層" style="position:absolute;top:-3px;bottom:-3px;width:2px;background:#f59e0b;left:${scale(top, top)}%"></div>
       </div>
-      <div class="muted" style="font-size:11px;margin-top:4px">あなた <b style="color:var(--text)">${mine}${unit}</b> ・ 中央値 ${st.median}${unit} ・ <span style="color:#b45309">トップ層 ${top}${unit}</span></div>
+      <div class="muted" style="font-size:11px;margin-top:4px">${mine == null ? '' : `あなた <b style="color:var(--text)">${mine}${unit}</b> ・ `}中央値 ${st.median}${unit} ・ <span style="color:#b45309">トップ層 ${top}${unit}</span></div>
     </div>`;
   };
-  const benchCard = (bench && bench.ready && cz) ? `<div class="fo-card" style="padding:18px;margin-top:14px">
+  const benchCard = (bench && bench.ready) ? `<div class="fo-card" style="padding:18px;margin-top:14px">
     <div style="font-weight:700;color:var(--text)">チームの中での位置</div>
     <div class="muted" style="font-size:12px;margin-top:4px">稼働している ${bench.people}人の中央値と、トップ層（上位25%）を物差しにしています。順位は出しません。</div>
     ${cmpRow('訪問 / 日', myVpd, bench.vpd, '件')}
