@@ -1338,6 +1338,20 @@ async function loadBuildup() {
     トーク:    { cls: 'bg-sky-50 text-sky-700 border-sky-200' },
     クロージング: { cls: 'bg-violet-50 text-violet-700 border-violet-200' },
   };
+  // 先週比。前週に稼働が無い人は比較にならないので伸びに数えない。
+  const trendCell = (t) => {
+    if (!t) return '<span class="text-neutral-300">—</span>';
+    if (t.dir === 'new') return '<span class="text-neutral-400">先週は稼働なし</span>';
+    const col = t.dir === 'up' ? 'text-emerald-600' : t.dir === 'down' ? 'text-rose-600' : 'text-neutral-400';
+    const mark = t.dir === 'up' ? '▲' : t.dir === 'down' ? '▼' : '→';
+    return `<span class="${col} font-semibold">${mark} ${esc(t.sign)}</span><span class="text-neutral-400 ml-1">先週 ${esc(t.prev)}</span>`;
+  };
+
+  const mv = d.movement || null;
+  const moveLine = (mv && mv.compared) ? `<div class="mt-2 text-[12.5px] text-neutral-600">
+      先週比：<b class="text-emerald-600">上がった ${mv.up}人</b> ・ 横ばい ${mv.flat}人 ・ <b class="text-rose-600">下がった ${mv.down}人</b>
+      <span class="text-neutral-400">（直近7日と その前の7日／${esc(mv.anchor || '')}基準${mv.fresh ? ` ・ 先週は稼働なし ${mv.fresh}人` : ''}）</span></div>` : '';
+
   // 段ごとに分ける。1つの表にすると稼働の人だけで埋まり、鬼教官で直せるトークの人が画面に出てこない。
   const PER = 12;
   const section = (k) => {
@@ -1353,6 +1367,7 @@ async function loadBuildup() {
         <tbody>${list.slice(0, PER).map(r => `<tr class="border-t border-neutral-200">
           <td class="px-3 py-2 text-neutral-800 whitespace-nowrap">${esc(r.name)}</td>
           <td class="px-3 py-2 text-neutral-700 text-[12.5px] whitespace-nowrap">${esc(r.now)}</td>
+          <td class="px-3 py-2 text-[12px] whitespace-nowrap">${trendCell(r.trend)}</td>
           <td class="px-3 py-2 text-neutral-500 text-[12px] whitespace-nowrap">${esc(r.target)}</td>
           <td class="px-3 py-2 text-right text-emerald-700 text-[12.5px] font-semibold whitespace-nowrap">${esc(r.gap)}</td>
         </tr>`).join('')}</tbody></table></div>
@@ -1369,6 +1384,7 @@ async function loadBuildup() {
         チームの中央値：訪問 <b class="text-neutral-700">${st.vpd.median ?? '—'}</b>件/日 ・ アポ率 <b class="text-neutral-700">${st.apoRate.median ?? '—'}</b>%<br>
         トップ層（上位25%）：訪問 <b class="text-neutral-700">${st.vpd.top ?? '—'}</b>件/日 ・ アポ率 <b class="text-neutral-700">${st.apoRate.top ?? '—'}</b>%</div>
     </div>
+    ${moveLine}
     ${sections}
     <div class="text-[11px] text-neutral-400 mt-2">基準は平均ではなく中央値（訪問数の多い人と1日だけの人が混在し、平均が外れ値に引かれるため）。「記録」はアポ報告の抜けが疑われる人で、低調とは別に出しています。</div>
   </div>`);
