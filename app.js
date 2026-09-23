@@ -1338,9 +1338,6 @@ async function loadBuildup() {
     トーク:    { cls: 'bg-sky-50 text-sky-700 border-sky-200' },
     クロージング: { cls: 'bg-violet-50 text-violet-700 border-violet-200' },
   };
-  const chips = Object.entries(d.summary).filter(([, n]) => n > 0)
-    .map(([k, n]) => `<span class="text-[11.5px] rounded-full px-2.5 py-1 border ${RUNG[k].cls}">${k} ${n}人</span>`).join(' ');
-
   // 段ごとに分ける。1つの表にすると稼働の人だけで埋まり、鬼教官で直せるトークの人が画面に出てこない。
   const PER = 12;
   const section = (k) => {
@@ -1372,7 +1369,6 @@ async function loadBuildup() {
         チームの中央値：訪問 <b class="text-neutral-700">${st.vpd.median ?? '—'}</b>件/日 ・ アポ率 <b class="text-neutral-700">${st.apoRate.median ?? '—'}</b>%<br>
         トップ層（上位25%）：訪問 <b class="text-neutral-700">${st.vpd.top ?? '—'}</b>件/日 ・ アポ率 <b class="text-neutral-700">${st.apoRate.top ?? '—'}</b>%</div>
     </div>
-    <div class="flex gap-2 flex-wrap mt-3">${chips}</div>
     ${sections}
     <div class="text-[11px] text-neutral-400 mt-2">基準は平均ではなく中央値（訪問数の多い人と1日だけの人が混在し、平均が外れ値に引かれるため）。「記録」はアポ報告の抜けが疑われる人で、低調とは別に出しています。</div>
   </div>`);
