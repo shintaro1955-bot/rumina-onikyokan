@@ -316,7 +316,6 @@ function viewUpload() {
         <div class="text-xs text-neutral-500 mt-1">.json / .txt　・　想定フォーマット: SPEC-plaud-import.md</div>
       </label>
       <div class="flex items-center gap-3">
-        <button onclick="trySample()" class="px-3 py-1.5 rounded-md border border-neutral-300 hover:border-emerald-400/50 text-xs text-neutral-700 transition">サンプル（NotePin想定・1日分＋GPS）で試す</button>
         <div id="importInfo" class="text-xs text-neutral-500"></div>
       </div>
     </div>
@@ -1565,6 +1564,7 @@ window.joinTerakoya = joinTerakoya;
 
 function diaryCard() {
   const d = window.__diary; if (!d) return '';
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');   // ここに無くて毎回落ちていた
   const y = d.yesterday;
   const head = y ? `<div class="p-3 border-b border-dashed" style="border-color:#E3DED2">
       <div class="text-[11px] text-neutral-500 mb-1">昨日の学び（${esc(y.day)}）</div>
@@ -1635,7 +1635,7 @@ function viewTerakoya() {
     <aside class="min-w-0">
       ${mxBox('これまでの学び', past)}
       ${mxBox('メニュー', `<div class="mx-nav">
-        <a onclick="nav('my')">マイページへ戻る</a>
+        <a onclick="nav('me')">My Performance へ戻る</a>
         <a onclick="nav('upload')">録音を出稿する</a>
         <a onclick="nav('roleplay')">ロープレ道場</a>
         <a onclick="nav('terakoya')">寺子屋（Zoom研修）</a>
@@ -1682,7 +1682,7 @@ async function loadApoCoach() {
     ${d.enabled ? '' : `<div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[12.5px] text-neutral-700">まだ自動送信はOFFです。上のリストで問題なければ、本番の環境変数 <b>APO_COACH_ON=1</b> を立てると翌朝から本人LINEへ届き始めます（1日1回・上限${d.dailyMax || 20}名）。</div>`}`;
 }
 
-const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, goals: viewGoalPage, my: viewMy, terakoya: viewTerakoya, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay, apocoach: viewApoCoach };
+const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, goals: viewGoalPage, terakoya: viewTerakoya, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay, apocoach: viewApoCoach };
 // 新IA(today/field/academy/league/me)は同一currentViewでnav-activeを共有させる別名解決
 const NAV_ALIAS = { ranking: 'league', my: 'me' };
 function nav(v) {
@@ -1703,7 +1703,6 @@ function nav(v) {
   if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
   if (v === 'me') loadMePerf();
   if (v === 'goals') loadGoalPage();
-  if (v === 'my') { loadPortalProfile(); loadTerakoya(); }
   if (v === 'academy') loadAcademy();
   if (v === 'terakoya') loadTerakoya();
   loadRail();
@@ -1889,28 +1888,6 @@ function mockAnalyze() {
   })();
 }
 
-/* サンプル（NotePin想定・1日分＋GPS）をワンクリック取り込み */
-async function trySample() {
-  const info = document.getElementById('importInfo');
-  if (info) info.innerHTML = '<span class="text-neutral-600">サンプルを取り込み中…</span>';
-  try {
-    const [sample, gps] = await Promise.all([
-      fetch('/samples/plaud-fullday.json').then(r => r.json()),
-      fetch('/samples/plaud-fullday-gps.json').then(r => r.json()).catch(() => null),
-    ]);
-    const rep = await API.importTranscript(sample, { name: '田中 翔（サンプル）', gps });
-    R.loadAnalysis(rep.analysis);
-    window.__lastSessionId = rep.sessionId || null;
-    window.__mySubmission = { at: new Date().toISOString(), analysis: rep.analysis };
-    if (info) info.innerHTML = '<span class="text-emerald-600">取り込み完了</span>';
-    setTimeout(() => nav('report'), 300);
-  } catch (e) {
-    if (/同意/.test(e.message)) { window.__consent = { ok: false }; nav('upload'); return; }
-    if (info) info.innerHTML = `<span class="text-rose-600">失敗：${e.message}</span>`;
-  }
-}
-window.trySample = trySample;
-
 /* ============================================================
    ログイン / マイページ / モデル乖離
    ============================================================ */
@@ -2022,57 +1999,6 @@ async function loadPortalProfile() {
   </div>`);
 }
 
-function viewMy() {
-  const u = window.__user || { name: '' };
-  const sub = window.__mySubmission;
-  if (!sub || !sub.analysis) {
-    return `${h1('マイページ', `${u.name} さん`)}
-      <div id="portalCard" class="mb-4"></div>
-      <div id="terakoyaCard" class="mb-4"></div>
-      <div id="diaryCard" class="mb-4"></div>
-      ${card(`<div class="p-8 text-center"><div class="text-sm text-neutral-700 mb-3">まだ今日の録音がありません。</div>
-        <button onclick="nav('upload')" class="px-5 py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">稼働終了・録音を出稿する</button></div>`)}`;
-  }
-  const a = sub.analysis; R.loadAnalysis(a);
-  return `
-  ${mxProfile(`${u.name} さん`, `直近の稼働 ${(sub.at || '').slice(0, 10)} ・ ${a.workdayIndex}/${a.workdayCount}勤務目`, a.coachScore, { label: '目標設定', nav: 'goal' })}
-  <div id="portalCard"></div>
-  <div id="terakoyaCard" class="mb-4"></div>
-  <div id="diaryCard" class="mb-4"></div>
-  <div class="mx-2col">
-    <div class="min-w-0">
-      ${mxBox('本日のサマリー', `
-        <div class="mx-kpi">
-          <div class="mx-kpi-c">
-            <div class="mx-kpi-l">鬼教官スコア</div>
-            <div class="mx-kpi-v">${a.coachScore}<small>/100</small></div>
-          </div>
-          <div class="mx-kpi-c">
-            <div class="mx-kpi-l">100ピンポン達成</div>
-            ${C.pingGauge(a.totalPings, a.targetPings)}
-          </div>
-        </div>`, { label: '詳細レポート', nav: 'report' })}
-      ${deviationSection(a)}
-      ${coachPanel()}
-    </div>
-    <aside class="min-w-0">
-      ${mxBox('本日の数字', `
-        ${mxRow('総ピンポン', `${a.totalPings} 件`)}
-        ${mxRow('達成率', `${a.targetAchievementRate}%`)}
-        ${mxRow('在宅反応', `${a.homeResponseCount} 件（${a.homeResponseRate}%）`)}
-        ${mxRow('アポ', `${a.appointmentCount} 件（${a.appointmentRate}%）`)}
-        ${mxRow('サボり', `${a.suspiciousIdleTimeMinutes} 分${a.gps?.connected ? '（GPS確定）' : ''}`, a.suspiciousIdleTimeMinutes > 0 ? 'neg' : '')}
-      `)}
-      ${mxBox('メニュー', `<div class="mx-nav">
-        <a onclick="nav('upload')">新しい録音を出稿</a>
-        <a onclick="nav('report')">詳しい分析レポート</a>
-        <a onclick="nav('submit')">上長へ提出書をつくる</a>
-        <a onclick="nav('roleplay')">ロープレ道場</a>
-      </div>`)}
-    </aside>
-  </div>`;
-}
-
 async function issueRep(i) {
   const r = R.SALES_REPS[i], box = document.getElementById('issueResult');
   try {
@@ -2099,7 +2025,7 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  const allowed = ['today', 'field', 'academy', 'league', 'me', 'goals', 'my', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
+  const allowed = ['today', 'field', 'academy', 'league', 'me', 'goals', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
   if (!allowed.includes(currentView) || currentView === 'login') currentView = 'today';   // 常にTodayから
   nav(currentView);
   updateSync();
@@ -2433,8 +2359,11 @@ async function loadMePerf() {
     <div id="dcBody" style="margin-top:12px"><div class="muted" style="font-size:13px">読み込み中…</div></div>
   </div>`;
 
-  wrap.innerHTML = `${h1('My Performance')}${moCard}${dayCard}${goalCard}${statCard}${xpCard}${recCard}`;
+  wrap.innerHTML = `${h1('My Performance')}<div id="portalCard" class="mb-4"></div>${moCard}${dayCard}${goalCard}${statCard}`
+    + `<div id="terakoyaCard" style="margin-top:14px"></div><div id="diaryCard" style="margin-top:14px"></div>${xpCard}${recCard}`;
   loadDayCoach();
+  // マイページから移した3カード（本人確認・寺子屋・日記）。器を描いてから読み込む。
+  loadPortalProfile(); loadTerakoya();
 }
 
 /* 一日のトークコーチ：判定（決定論）＋指導文（AI・参考）を描画する。 */
