@@ -357,7 +357,7 @@ function viewUpload() {
       <p class="text-xs text-neutral-500">※ Whisper接続時は実解析、未接続時はモックが走ります。</p>
     </div>
 
-    <div class="text-[11px] text-neutral-400 border-t border-neutral-200 pt-3">🔒 録音・解析に同意済み（版 ${window.__consentVersion || '—'}）。${audioNote}</div>
+    <div class="text-[11px] text-neutral-400 border-t border-neutral-200 pt-3">録音・解析に同意済み（版 ${window.__consentVersion || '—'}）。${audioNote}</div>
   </div>`;
 }
 
@@ -1199,14 +1199,13 @@ async function loadTrends() {
   const cards = up.map((r, i) => `
     <div class="px-4 py-3 border border-[#DDD8CC] rounded bg-white">
       <div class="flex items-center gap-2">
-        <span class="text-lg">${['🔥', '📈', '📈', '📈', '📈'][i]}</span>
         <div class="text-[13px] font-bold text-neutral-900 truncate" title="${r.name}">${r.name || '—'}</div>
       </div>
       <div class="mt-1.5 text-[13px] text-neutral-800">今週 <b class="text-emerald-700 tabular-nums">${r.recVpd}</b> 件/日
         <span class="text-[11px] text-neutral-500">（先週 ${r.priVpd} → ${arrow(r.growth)}）</span></div>
       <div class="text-[11px] text-neutral-600 mt-0.5">アポ率 ${r.recApoRate}% ・ 直近${r.recDays}日で訪問${r.recVisits}件${r.recApo ? ` ・ アポ${r.recApo}件` : ''}</div>
     </div>`).join('');
-  box.innerHTML = mxBox('🔥 伸びているスタッフ', `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">${cards}</div>`);
+  box.innerHTML = mxBox('伸びているスタッフ', `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">${cards}</div>`);
 }
 
 async function loadRanking() {
@@ -1223,7 +1222,7 @@ async function loadRanking() {
   if (!rows.length) { wrap.innerHTML = card(`<div class="p-8 text-center text-sm text-neutral-600">期間内に稼働記録のある営業マンがいません。</div>`); return; }
 
   const max = def.get(rows[0]) || 1;
-  const medal = ['🥇', '🥈', '🥉'];
+  const medal = ['1', '2', '3'];
   const segColor = { S: 'bg-emerald-100 text-emerald-800', A: 'bg-orange-100 text-orange-800', B: 'bg-amber-100 text-amber-800', C: 'bg-sky-100 text-sky-800', D: 'bg-rose-100 text-rose-800', E: 'bg-neutral-100 text-neutral-500' };
 
   const tabs = Object.entries(RANK_DEF).map(([k, v]) =>
@@ -1232,7 +1231,7 @@ async function loadRanking() {
   // 表彰台（上位3名）
   const podium = rows.slice(0, 3).map((r, i) => `
     <div class="text-center px-2 py-3 border border-[#DDD8CC] rounded bg-white">
-      <div class="text-2xl leading-none">${medal[i]}</div>
+      <div class="text-xl font-extrabold leading-none text-neutral-400 tabular-nums">${medal[i]}<span class="text-[11px] font-semibold ml-0.5">位</span></div>
       <div class="text-[13px] font-bold text-neutral-900 mt-1 truncate" title="${r.name}">${r.name || '—'}</div>
       <div class="text-xl font-bold text-emerald-700 tabular-nums mt-0.5">${def.get(r)}<span class="text-[10px] text-neutral-500 ml-0.5">${def.unit}</span></div>
       <div class="text-[10px] text-neutral-500 mt-0.5">${def.sub(r)}</div>
@@ -1273,13 +1272,13 @@ async function renderWalkRanking(wrap, def) {
   }
   const rows = [...w.rows].sort((a, z) => def.get(z) - def.get(a));
   const max = def.get(rows[0]) || 1;
-  const medal = ['🥇', '🥈', '🥉'];
+  const medal = ['1', '2', '3'];
   const tabs = Object.entries(RANK_DEF).map(([k, v]) =>
     `<button onclick="setRankSort('${k}')" class="px-3 py-1 rounded text-[12px] border ${RANK_SORT === k ? 'bg-emerald-600 text-white border-emerald-600 font-bold' : 'bg-white text-neutral-600 border-[#DDD8CC] hover:bg-emerald-50'}">${v.label}</button>`).join(' ');
 
   const podium = rows.slice(0, 3).map((r, i) => `
     <div class="text-center px-2 py-3 border border-[#DDD8CC] rounded bg-white">
-      <div class="text-2xl leading-none">${medal[i]}</div>
+      <div class="text-xl font-extrabold leading-none text-neutral-400 tabular-nums">${medal[i]}<span class="text-[11px] font-semibold ml-0.5">位</span></div>
       <div class="text-[13px] font-bold text-neutral-900 mt-1 truncate" title="${r.name}">${r.name}</div>
       <div class="text-xl font-bold text-emerald-700 tabular-nums mt-0.5">${def.get(r)}<span class="text-[10px] text-neutral-500 ml-0.5">${def.unit}</span></div>
       <div class="text-[10px] text-neutral-500 mt-0.5">${def.sub(r)}</div>
@@ -2153,8 +2152,8 @@ async function loadAskRec() {
 
   const chip = (label, onclick) => `<button onclick="${onclick}" style="flex:none;padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12.5px;cursor:pointer">${label}</button>`;
   const chips = [
-    yday ? chip('前回のコーチを見る', "nav('me')") : null,
-    chip('ロープレで練習する', "nav('roleplay')"),
+    yday ? chip('前回の講評', "nav('me')") : null,
+    chip('ロープレで練習', "nav('roleplay')"),
     chip('1日を振り返る', "nav('field')"),
   ].filter(Boolean).join('');
 
@@ -2163,9 +2162,9 @@ async function loadAskRec() {
     ? `<div style="display:flex;align-items:center;gap:12px;width:100%;max-width:620px;margin:0 auto;padding:14px 16px;border:1px solid var(--border);border-radius:16px;background:var(--surface-2)">
          <span style="width:30px;height:30px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none">✓</span>
          <div style="flex:1;min-width:0;text-align:left">
-           <div style="font-size:14px;font-weight:600;color:var(--text)">今日のぶん、受け取りました</div>
-           <div class="muted" style="font-size:11.5px">${d.recordings}本・訪問${d.pings}件を読み込み済み</div></div>
-         <button class="fo-btn" style="padding:8px 16px;font-size:13px;flex:none" onclick="nav('me')">コーチを見る</button>
+           <div style="font-size:14px;font-weight:600;color:var(--text)">今日のぶん、届いています</div>
+           <div class="muted" style="font-size:11.5px">録音${d.recordings}本・訪問${d.pings}件</div></div>
+         <button class="fo-btn" style="padding:8px 16px;font-size:13px;flex:none" onclick="nav('me')">講評を見る</button>
        </div>`
     : `<button onclick="nav('upload')" style="display:flex;align-items:center;gap:12px;width:100%;max-width:620px;margin:0 auto;padding:16px 18px;border:1px solid var(--border);border-radius:16px;background:var(--surface);cursor:pointer;text-align:left;box-shadow:var(--shadow)">
          <span style="width:30px;height:30px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none">↑</span>
@@ -2175,9 +2174,9 @@ async function loadAskRec() {
 
   el.innerHTML = `<div style="padding:34px 16px 26px;text-align:center">
     <div style="font-size:25px;font-weight:600;letter-spacing:-.01em;color:var(--text);line-height:1.45">
-      ${done ? '今日の録音、受け取りました' : '今日の録音、提出できた？'}</div>
+      ${done ? '今日の録音、受け取りました' : '今日の録音、出せた？'}</div>
     <div class="muted" style="font-size:13px;margin-top:8px">
-      ${done ? '明日の朝までに、崩れどころと明日の言い方を出しておきます。' : '出しておくと、どこで崩れたかと明日の言い方が出ます。'}</div>
+      ${done ? '崩れた所と明日の言い方は、朝までにまとめておきます。' : '出しておけば、明日の朝には直す所が分かる。'}</div>
     <div style="margin-top:20px">${bar}</div>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px">${chips}</div>
   </div>`;
@@ -2574,7 +2573,8 @@ async function saveWeights() {
 window.openWeights = openWeights; window.saveWeights = saveWeights;
 
 /* ---------- 通知 ---------- */
-const NOTIF_ICON = { post: '📣', comment: '💬', selfbest: '📈', morning: '🌅', review: '📚', info: '🔔' };
+// 通知の種別ラベル（絵文字は使わない）
+const NOTIF_LABEL = { post: 'お知らせ', comment: 'コメント', selfbest: '記録', morning: '朝', review: '復習', info: 'info' };
 async function updateBell() {
   const badge = document.getElementById('bellBadge'); if (!badge) return;
   if (!window.__user) { badge.style.display = 'none'; return; }
@@ -2588,7 +2588,7 @@ async function openNotifs(ev) {
   panel.style.cssText = 'position:fixed;top:56px;right:12px;z-index:90;width:340px;max-width:calc(100vw - 24px);max-height:70vh;overflow:auto';
   panel.className = 'fo-card';
   const items = (n.notifs || []).length ? n.notifs.map(x => `<div style="display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);${x.read ? '' : 'background:var(--primary-soft)'}" ${x.link ? `onclick="nav('${x.link}');document.getElementById('notifPanel').remove()" role="button"` : ''}>
-      <div style="font-size:18px">${NOTIF_ICON[x.type] || '🔔'}</div>
+      <div class="muted" style="font-size:10px;font-weight:700;flex:none;width:44px;padding-top:2px">${NOTIF_LABEL[x.type] || 'info'}</div>
       <div style="min-width:0"><div style="font-size:13px;font-weight:700;color:var(--text)">${(x.title || '').replace(/</g, '&lt;')}</div>
         <div class="muted" style="font-size:12px;margin-top:2px">${(x.body || '').replace(/</g, '&lt;')}</div>
         <div class="muted" style="font-size:10px;margin-top:3px">${(x.at || '').replace('T', ' ').slice(5, 16)}</div></div></div>`).join('')
