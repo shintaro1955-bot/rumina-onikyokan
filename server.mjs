@@ -307,14 +307,6 @@ async function todayPayload(user) {
   const target = (d.goal && d.goal.visits) || 50;
   const tv = d.today ? d.today.visits : 0;
   const remain = Math.max(0, target - tv);
-  const nba = [];
-  if (!d.today) nba.push({ title: '今日の1件目を記録', reason: 'まだ稼働記録がありません', action: 'field', priority: 1 });
-  if (remain > 0) { const h = new Date().getHours(); nba.push({ title: `あと${remain}訪問で目標`, reason: h < 18 ? `${Math.min(19, h + 2)}時までに残り${Math.ceil(remain / 2)}件が目安` : '行けるところまで', action: 'field', priority: 2 }); }
-  if (d.dueReviews) nba.push({ title: `今日の学習（復習${d.dueReviews}件）`, reason: '3分で定着', action: 'academy', priority: 3 });
-  const unread = fieldos.unreadCount(user.username);
-  if (unread) nba.push({ title: `未読の通知が${unread}件`, reason: '上長の連絡・称賛を確認', action: 'today', priority: 4 });
-  if (!d.goal || !d.goal.why) nba.push({ title: '今日の目標を決める', reason: '数字を「次の行動」に変える', action: 'goals', priority: 5 });
-  nba.sort((a, b) => a.priority - b.priority);
   // 達成予測（現在ペースの外挿・簡易）
   let forecast = null;
   if (d.today && d.today.workStart && tv > 0 && remain > 0) {
@@ -331,7 +323,7 @@ async function todayPayload(user) {
     if (cached && cached.day === today && cached.coach) coach = cached.coach;
     else { coach = await providers.aiCoach.coach({ visitsPerDay: d.cyzen.visitsPerDay, apoRate: d.cyzen.apoRate, closeRate: d.cyzen.closeRate }); fieldos.setInsight(user.username, coach); }
   }
-  return { date: new Date().toISOString().slice(0, 10), ...d, nextBestActions: nba.slice(0, 3), forecast, aiCoach: coach, syncStatus: { source: cyzen.currentSource(), lastIngest: lastIngest.at || null } };
+  return { date: new Date().toISOString().slice(0, 10), ...d, forecast, aiCoach: coach, syncStatus: { source: cyzen.currentSource(), lastIngest: lastIngest.at || null } };
 }
 
 // 診断ログを永続化（1録音=1レコード。文字起こし全文・訪問明細・KPIを保存）

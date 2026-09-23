@@ -2221,16 +2221,6 @@ async function loadToday() {
     <div class="muted" style="font-size:11px;margin-top:10px">${today && today.date ? today.date + ' の実績 ・ ' : ''}<span onclick="nav('goals')" style="color:var(--primary);cursor:pointer">目標を調整</span>${today ? ` ・ <span onclick="nav('field')" style="color:var(--primary);cursor:pointer">1日を振り返る →</span>` : ''}</div>
   </div>`;
 
-  const nbas = (d.nextBestActions && d.nextBestActions.length) ? d.nextBestActions : [{ title: '今日の一歩を確認', reason: '', action: 'field' }];
-  const nextAction = `<div class="fo-card" style="padding:16px">
-    <span class="fo-chip">NEXT BEST ACTION</span>
-    <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
-      ${nbas.map((a, i) => `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px">
-        <span style="width:22px;height:22px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">${i + 1}</span>
-        <div style="min-width:0;flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">${a.title}</div>${a.reason ? `<div class="muted" style="font-size:11px">${a.reason}</div>` : ''}</div>
-        <button class="fo-btn ${i === 0 ? '' : 'ghost'}" style="padding:6px 12px;font-size:12px" onclick="nav('${a.action || 'field'}')">開く</button></div>`).join('')}
-    </div>
-  </div>`;
   const coachCard = d.aiCoach ? `<div class="fo-card" style="padding:16px">
     <div style="display:flex;gap:8px;align-items:center"><span class="fo-chip">AIコーチ</span><span class="muted" style="font-size:10px">${d.aiCoach.source === 'rule' ? '' : 'Vertex AI'}</span></div>
     <div style="font-size:14px;margin-top:10px;line-height:1.6;color:var(--text)">${d.aiCoach.text}</div>
@@ -2238,26 +2228,11 @@ async function loadToday() {
     ${d.aiCoach.module ? `<div style="margin-top:10px"><button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="nav('academy')">推奨教材へ</button></div>` : ''}
   </div>` : '';
 
-  const missions = ['今日の必修', '第一声', '切り返し', '商品知識', '成功事例'];
-  const stories = `<div class="fo-card" style="padding:14px 16px"><div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:2px">
-      ${missions.map((m, i) => `<button onclick="nav('academy')" style="flex:none;width:76px;text-align:center;background:none;border:0;cursor:pointer">
-        <div style="width:66px;height:66px;border-radius:16px;margin:0 auto;display:flex;align-items:center;justify-content:center;background:var(--primary-soft);border:2px solid ${i === 0 ? 'var(--primary)' : 'transparent'};color:var(--primary);font-weight:700;font-size:12px">${i === 0 ? 'MUST' : ''}</div>
-        <div style="font-size:11px;margin-top:5px;color:var(--text)">${m}</div></button>`).join('')}
-    </div></div>`;
-
-  const drillDue = d.dueReviews ? ` ・ 復習${d.dueReviews}件` : '';
-  const drill = `<div class="fo-card" style="padding:16px">
-    <div style="display:flex;justify-content:space-between;align-items:center"><span class="fo-chip">DAILY DRILL ・ 3分</span><span class="muted" style="font-size:11px">今日の学習${drillDue}</span></div>
-    <div style="font-size:16px;font-weight:700;margin-top:10px;color:var(--text)">玄関先10秒の第一声</div>
-    
-    <div style="margin-top:12px"><button class="fo-btn" style="padding:8px 16px;font-size:13.5px" onclick="nav('academy')">トレーニングを始める</button></div>
-  </div>`;
-
   let perf = '';
   if (tr && tr.deltaVpd > 0) perf = foPost('perf-' + (u.name || ''), `${u.name || 'あなた'}さん、今週は伸びています`, `今週の訪問/日 <b class="num">${tr.recVpd}</b> 件（先週 ${tr.priVpd} → ${tr.growth == null ? 'NEW' : '+' + tr.growth + '%'}）`, null);
   else if (cz) perf = foPost('perf-' + (u.name || ''), `直近${cz.periodDays}日の実績`, `訪問 <b class="num">${cz.visits}</b>件（${cz.visitsPerDay}件/日）・ アポ <b class="num">${cz.apo}</b>件 ・ 稼働 <b class="num">${cz.days}</b>日`, null);
 
-  wrap.innerHTML = hero + composerHtml() + nextAction + coachCard + stories + drill + perf + '<div id="mgrPosts"></div>';
+  wrap.innerHTML = hero + composerHtml() + coachCard + perf + '<div id="mgrPosts"></div>';
   loadPosts();
 }
 
