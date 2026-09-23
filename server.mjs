@@ -32,7 +32,7 @@ import * as persona from './lib/persona.mjs';
 import { roleplayFeedback } from './lib/rpfeedback.mjs';
 import * as daycoach from './lib/daycoach.mjs';
 import * as recmind from './lib/recmind.mjs';
-import { buildup } from './lib/buildup.mjs';
+import { buildup, teamStats } from './lib/buildup.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
 import { buildPersonalMessages } from './lib/coachdm.mjs';
@@ -650,6 +650,13 @@ const server = createServer(async (req, res) => {
           const j = await r.json();
           return json(res, 200, { ok: true, access_token: j.access_token, expires_in: j.expires_in });
         } catch (e) { console.warn('[roleplay stt-token]', e.message); return json(res, 200, { ok: false, error: 'トークン発行に失敗しました' }); }
+      }
+
+      /* チームの物差し（全員が見てよい。個人の数字は含まない）。目標ページで自分との差を出すため。 */
+      if (path === '/api/team/bench' && req.method === 'GET') {
+        const meT2 = currentUser(req);
+        if (!meT2) return json(res, 401, { error: 'ログインが必要です' });
+        return json(res, 200, { ok: true, ...teamStats({ ym: url.searchParams.get('ym') || '' }) });
       }
 
       /* 底上げ一覧（owner）。チーム実データの中央値を基準に、誰がどの段で止まっているか。 */

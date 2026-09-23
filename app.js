@@ -2233,8 +2233,35 @@ async function loadToday() {
   if (tr && tr.deltaVpd > 0) perf = foPost('perf-' + (u.name || ''), `${u.name || 'あなた'}さん、今週は伸びています`, `今週の訪問/日 <b class="num">${tr.recVpd}</b> 件（先週 ${tr.priVpd} → ${tr.growth == null ? 'NEW' : '+' + tr.growth + '%'}）`, null);
   else if (cz) perf = foPost('perf-' + (u.name || ''), `直近${cz.periodDays}日の実績`, `訪問 <b class="num">${cz.visits}</b>件（${cz.visitsPerDay}件/日）・ アポ <b class="num">${cz.apo}</b>件 ・ 稼働 <b class="num">${cz.days}</b>日`, null);
 
-  wrap.innerHTML = hero + composerHtml() + coachCard + perf + '<div id="mgrPosts"></div>';
+  wrap.innerHTML = hero + composerHtml() + coachCard + '<div id="growNews"></div>' + perf + '<div id="mgrPosts"></div>';
   loadPosts();
+  loadGrowNews();
+}
+
+/* 伸びている人のニュース。実名で出すのは**伸びた人だけ**（下がった人は出さない）。
+   直近7日とその前7日で訪問/日が伸びた人を、伸び幅の大きい順に。 */
+async function loadGrowNews() {
+  const box = document.getElementById('growNews'); if (!box) return;
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  let t; try { t = await API.cyzenTrends(); } catch (e) { return; }
+  if (!t || !t.ready) return;
+  // 伸びた人だけ。前週に稼働が無い人は比較にならないので出さない。
+  const up = (t.rows || []).filter(r => r.name && r.priVpd > 0 && r.deltaVpd > 0).slice(0, 5);
+  if (!up.length) { box.innerHTML = ''; return; }
+  const items = up.map((r, i) => `<div style="display:flex;align-items:center;gap:10px;padding:9px 0${i ? ';border-top:1px solid var(--border)' : ''}">
+      <span style="width:22px;height:22px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">${i + 1}</span>
+      <div style="min-width:0;flex:1">
+        <div style="font-size:13.5px;font-weight:700;color:var(--text)">${esc(r.name)}</div>
+        <div class="muted" style="font-size:11.5px">訪問 ${r.recVpd}件/日（先週 ${r.priVpd}件）${r.recApo ? ` ・ アポ${r.recApo}件` : ''}</div>
+      </div>
+      <span style="color:var(--primary);font-weight:700;font-size:13px;flex:none">+${r.deltaVpd}件/日</span>
+    </div>`).join('');
+  box.innerHTML = `<div class="fo-card" style="padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
+      <div style="font-size:14px;font-weight:700;color:var(--text)">今週のびた人</div>
+      <span class="muted" style="font-size:11px">直近7日とその前の7日${t.anchor ? ' ・ ' + esc(t.anchor) + '基準' : ''}</span></div>
+    <div style="margin-top:6px">${items}</div>
+  </div>`;
 }
 
 /* 上長投稿（owner=作成、全員=閲覧・リアクション・既読） */
@@ -2332,6 +2359,42 @@ async function loadGoalPage() {
     ${today ? (tv < g.visits ? `<div class="fo-chip" style="margin-top:14px">あと ${g.visits - tv} 訪問で目標</div>` : `<div class="fo-chip" style="margin-top:14px">今日の訪問目標クリア</div>`) : `<div class="muted" style="font-size:13px;margin-top:14px">今日のcyzen記録はまだありません。</div>`}
   </div>`;
 
+  // チームの中での位置。個人の順位は出さず、中央値とトップ層だけを物差しにする。
+  let bench = null; try { bench = await API.teamBench(); } catch (e) {}
+  const myVpd = cz ? cz.visitsPerDay : null;
+  const myApoRate = (cz && cz.visits) ? +(cz.apo / cz.visits * 100).toFixed(1) : null;
+  const scale = (v, top) => Math.max(2, Math.min(100, (v / Math.max(1, top * 1.15)) * 100));
+  const cmpRow = (label, mine, st, unit) => {
+    if (mine == null || !st || st.median == null) return '';
+    const top = st.top ?? st.median;
+    const diff = +(mine - st.median).toFixed(1);
+    const state = diff >= 0
+      ? `<span style="color:var(--primary);font-weight:700">中央値を ${diff === 0 ? '同水準' : '+' + diff + unit} 上回る</span>`
+      : `<span style="color:#e11d48;font-weight:700">中央値まで あと ${Math.abs(diff)}${unit}</span>`;
+    return `<div style="margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px">
+        <span style="color:var(--text);font-weight:600">${label}</span>${state}</div>
+      <div style="position:relative;height:10px;border-radius:6px;background:var(--surface-2);margin-top:6px">
+        <div style="position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--primary);width:${scale(mine, top)}%"></div>
+        <div title="中央値" style="position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--muted);left:${scale(st.median, top)}%"></div>
+        <div title="トップ層" style="position:absolute;top:-3px;bottom:-3px;width:2px;background:#f59e0b;left:${scale(top, top)}%"></div>
+      </div>
+      <div class="muted" style="font-size:11px;margin-top:4px">あなた <b style="color:var(--text)">${mine}${unit}</b> ・ 中央値 ${st.median}${unit} ・ <span style="color:#b45309">トップ層 ${top}${unit}</span></div>
+    </div>`;
+  };
+  const benchCard = (bench && bench.ready && cz) ? `<div class="fo-card" style="padding:18px;margin-top:14px">
+    <div style="font-weight:700;color:var(--text)">チームの中での位置</div>
+    <div class="muted" style="font-size:12px;margin-top:4px">稼働している ${bench.people}人の中央値と、トップ層（上位25%）を物差しにしています。順位は出しません。</div>
+    ${cmpRow('訪問 / 日', myVpd, bench.vpd, '件')}
+    ${cmpRow('アポ率', myApoRate, bench.apoRate, '%')}
+  </div>` : '';
+
+  // 目標の当てはめ。中央値とトップ層をワンタップで入れられるようにする。
+  const suggest = (bench && bench.ready && bench.vpd.median != null) ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="applyGoalSuggest(${Math.ceil(bench.vpd.median)})">中央値に合わせる（${Math.ceil(bench.vpd.median)}件）</button>
+      <button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="applyGoalSuggest(${Math.ceil(bench.vpd.top ?? bench.vpd.median)})">トップ層を狙う（${Math.ceil(bench.vpd.top ?? bench.vpd.median)}件）</button>
+    </div>` : '';
+
   const editor = `<div class="fo-card" style="padding:18px;margin-top:14px">
     <div style="font-weight:700;color:var(--text)">目標を決める</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
@@ -2342,6 +2405,7 @@ async function loadGoalPage() {
     </div>
     <label style="font-size:12px;display:block;margin-top:12px" class="muted">なぜこの目標？
       <textarea id="gpWhy" rows="3" placeholder="自分の言葉で" style="display:block;width:100%;margin-top:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:14px;color:var(--text);line-height:1.6">${(g.why || '').replace(/</g, '&lt;')}</textarea></label>
+    ${suggest}
     <div style="margin-top:14px;display:flex;gap:8px;align-items:center"><button class="fo-btn" onclick="saveGoalPage()">保存</button><span id="gpMsg" class="muted" style="font-size:12px"></span>
       ${g.updatedAt ? `<span class="muted" style="font-size:11px;margin-left:auto">更新 ${(g.updatedAt || '').slice(0, 10)}</span>` : ''}</div>
   </div>`;
@@ -2362,7 +2426,7 @@ async function loadGoalPage() {
     <div style="margin-top:8px"><span class="mx-more" onclick="nav('me')">Momentum内訳を見る »</span></div>
   </div>` : '';
 
-  wrap.innerHTML = progress + editor + recent + contrib;
+  wrap.innerHTML = progress + benchCard + editor + recent + contrib;
 }
 function goalBar(label, val, target, unit) {
   const pct = target ? Math.min(100, Math.round(val / target * 100)) : 0;
@@ -2370,6 +2434,13 @@ function goalBar(label, val, target, unit) {
   return `<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="color:var(--text)">${label}</span><span class="num" style="color:${over ? 'var(--primary)' : 'var(--text)'}">${val}<span class="muted"> / ${target}${unit}</span></span></div>
     <div style="height:8px;border-radius:5px;background:var(--surface-2);margin-top:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--primary)"></div></div></div>`;
 }
+/* 中央値／トップ層をそのまま訪問目標に入れる。 */
+function applyGoalSuggest(v) {
+  const el = document.getElementById('gpVisits'); if (!el) return;
+  el.value = v; el.focus();
+  const msg = document.getElementById('gpMsg'); if (msg) msg.textContent = '入れました。保存を押すと確定します。';
+}
+
 async function saveGoalPage() {
   const visits = parseInt(document.getElementById('gpVisits').value) || 50;
   const apoV = document.getElementById('gpApo').value; const apo = apoV === '' ? null : parseInt(apoV);
