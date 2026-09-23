@@ -227,7 +227,7 @@ function viewHome() {
   const gaps = [['ピンポン数', g.pings, '件'], ['在宅反応率', g.homeResponseRate, '%'], ['平均会話', g.averageConversationSeconds, '秒'], ['切り返し', g.averageRebuttalCount, '回'], ['冒頭質問率', g.openingQuestionRate, '%']]
     .map(([l, v, u]) => mxRow(l, `${v < 0 ? '' : '+'}${v}${u}`, v < 0 ? 'neg' : 'pos')).join('');
   return `
-  ${mxProfile('田中 翔', `第2営業部 ・ ${a.workdayIndex}/${a.workdayCount}勤務目`, a.coachScore, { label: '目標設定', nav: 'goal' })}
+  ${mxProfile('田中 翔', `第2営業部 ・ ${a.workdayIndex}/${a.workdayCount}勤務目`, a.coachScore, null)}
   <div class="mx-2col">
     <div class="min-w-0">
       ${mxBox('本日のサマリー', `
@@ -2217,8 +2217,8 @@ async function loadToday() {
     ${today ? (remain > 0
       ? `<div class="fo-chip" style="margin-top:16px">あと ${remain} 訪問で今日の目標達成</div>${d.forecast ? `<span class="muted" style="font-size:12px;margin-left:8px">現在ペースで ${d.forecast.etaText}</span>` : ''}`
       : `<div class="fo-chip" style="margin-top:16px">今日の訪問目標を達成しています</div>`)
-      : `<div style="margin-top:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:13px">今日のcyzen記録がまだありません。</span><button class="fo-btn ghost" style="padding:6px 12px;font-size:13px" onclick="nav('goals')">目標を設定</button></div>`}
-    <div class="muted" style="font-size:11px;margin-top:10px">${today && today.date ? today.date + ' の実績 ・ ' : ''}<span onclick="nav('goals')" style="color:var(--primary);cursor:pointer">目標を調整</span>${today ? ` ・ <span onclick="nav('field')" style="color:var(--primary);cursor:pointer">1日を振り返る →</span>` : ''}</div>
+      : `<div style="margin-top:16px"><span class="muted" style="font-size:13px">今日のcyzen記録がまだありません。</span></div>`}
+    <div class="muted" style="font-size:11px;margin-top:10px">${today && today.date ? today.date + ' の実績' : ''}${today ? ` ・ <span onclick="nav('field')" style="color:var(--primary);cursor:pointer">1日を振り返る →</span>` : ''}</div>
   </div>`;
 
   const coachCard = d.aiCoach ? `<div class="fo-card" style="padding:16px">
