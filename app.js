@@ -2199,55 +2199,70 @@ function viewToday() {
   return `<div id="askRec"></div><div class="space-y-3.5" id="todayWrap"><div class="fo-card" style="padding:20px" class="muted">読み込み中…</div></div>`;
 }
 
-/* トップ＝今日これから戦う画面。
-   日中は「今日ここだけ意識する」（直近の弱点＝ロープレ課題）を主に、
-   夕方以降は「今日の録音を出す」に切り替える。目標設定の類はここには置かない。 */
+/* トップ＝今日の数字と、みんなとの差。
+   自分の訪問・アポ・歩いた距離を、今日動いているみんなの平均と並べ、
+   足りない分を出す。夕方以降は録音の提出を前に出す。 */
 async function loadTodayFocus() {
   const el = document.getElementById('askRec'); if (!el) return;
   const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
-  const [mine, dc] = await Promise.all([
+  const [mine, g] = await Promise.all([
     API.recMine().catch(() => null),
-    API.coachDrill().catch(() => null),
+    API.todayGap().catch(() => null),
   ]);
-  const hour = new Date().getHours();
-  const evening = hour >= 16;
+  const evening = new Date().getHours() >= 16;
   const done = !!(mine && mine.submitted);
-  const drill = dc && dc.drill;
+
+  // 指標：自分 / みんなの平均 / あと
+  const cell = (label, mineV, teamV, unit, shortV) => {
+    if (teamV == null) return '';
+    const has = mineV != null;
+    const ok = has && shortV === 0;
+    return `<div style="flex:1;min-width:120px;padding:12px 14px;border:1px solid ${ok ? 'var(--primary)' : 'var(--border)'};border-radius:14px;background:var(--surface);text-align:left">
+      <div class="muted" style="font-size:11px;font-weight:700">${label}</div>
+      <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px">
+        <span style="font-size:24px;font-weight:700;color:var(--text)" class="num">${has ? mineV : '—'}</span>
+        <span class="muted" style="font-size:11px">${unit}</span></div>
+      <div class="muted" style="font-size:11px;margin-top:2px">みんなの平均 ${teamV}${unit}</div>
+      <div style="font-size:12.5px;font-weight:700;margin-top:4px;color:${ok ? 'var(--primary)' : '#e11d48'}">
+        ${!has ? '記録待ち' : ok ? '平均を超えています' : `あと ${shortV}${unit}`}</div>
+    </div>`;
+  };
+
+  let board = '';
+  if (g && g.ready && g.team && g.team.people) {
+    const me = g.me || {}, t = g.team, sh = g.short || {};
+    board = `<div style="max-width:660px;margin:16px auto 0">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${cell('訪問', g.found ? me.visits : null, t.visits, '件', sh.visits)}
+        ${cell('アポ', g.found ? me.apo : null, t.apo, '件', sh.apo)}
+        ${cell('歩いた距離', g.found ? me.walkKm : null, t.walkKm, 'km', sh.walkKm)}
+      </div>
+      <div class="muted" style="font-size:11px;margin-top:8px">${esc(g.date)} ・ 今日動いている ${t.people}人の平均${t.walkKm != null ? `（距離はGPSの記録がある${t.walkPeople}人）` : ''}</div>
+    </div>`;
+  }
 
   const chip = (label, onclick) => `<button onclick="${onclick}" style="flex:none;padding:8px 16px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer">${label}</button>`;
   const primary = (label, onclick) => `<button onclick="${onclick}" style="flex:none;padding:11px 22px;border-radius:999px;border:0;background:var(--primary);color:#fff;font-size:14px;font-weight:700;cursor:pointer">${label}</button>`;
 
   let head, sub, actions;
-  if (evening && !done) {
-    head = '今日の録音、出せた？';
-    sub = '出しておけば、明日の朝には直す所が分かる。';
-    actions = primary('今日の録音を出す', "nav('upload')") + chip('ロープレで練習', "nav('roleplay')");
-  } else if (evening && done) {
+  if (done) {
     head = '今日の録音、受け取りました';
     sub = '崩れた所と明日の言い方は、朝までにまとめておきます。';
     actions = primary('講評を見る', "nav('me')") + chip('ロープレで練習', "nav('roleplay')");
-  } else if (drill) {
-    head = '今日、ここだけ意識する';
-    sub = '';
-    window.__todayDrill = drill;   // onclickにJSONを埋めない（属性の引用符と衝突して壊れる）
-    actions = primary('この課題でロープレ（1分）', 'startTalkDrill(window.__todayDrill)')
-      + chip('1日を振り返る', "nav('field')") + chip('録音を出す', "nav('upload')");
+  } else if (evening) {
+    head = '今日の録音、出せた？';
+    sub = '出しておけば、明日の朝には直す所が分かる。';
+    actions = primary('今日の録音を出す', "nav('upload')") + chip('ロープレで練習', "nav('roleplay')");
   } else {
-    head = '今日も一件ずつ、いこう';
-    sub = '玄関先の10秒で決まる。「電気代、上がっていませんか？」から入る。';
-    actions = primary('ロープレで一本', "nav('roleplay')") + chip('録音を出す', "nav('upload')");
+    head = '今日の数字';
+    sub = '';
+    actions = primary('今日の録音を出す', "nav('upload')") + chip('ロープレで練習', "nav('roleplay')") + chip('1日を振り返る', "nav('field')");
   }
 
-  const focus = (!evening && drill) ? `<div style="max-width:620px;margin:16px auto 0;padding:16px 18px;border:1px solid var(--primary);border-radius:16px;background:var(--surface);text-align:left">
-      <div style="font-size:16px;font-weight:700;color:var(--primary)">${esc(drill.title)}</div>
-      <div class="muted" style="font-size:12.5px;margin-top:4px">${esc(drill.why || '')}</div>
-      <div style="font-size:13px;color:var(--text);margin-top:6px">${esc(drill.goal || '')}</div>
-    </div>` : '';
-
-  el.innerHTML = `<div style="padding:34px 16px 22px;text-align:center">
+  el.innerHTML = `<div style="padding:30px 16px 20px;text-align:center">
     <div style="font-size:25px;font-weight:600;letter-spacing:-.01em;color:var(--text);line-height:1.45">${esc(head)}</div>
     ${sub ? `<div class="muted" style="font-size:13px;margin-top:8px">${esc(sub)}</div>` : ''}
-    ${focus}
+    ${board}
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">${actions}</div>
   </div>`;
 }

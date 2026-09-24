@@ -34,6 +34,7 @@ import * as daycoach from './lib/daycoach.mjs';
 import * as recmind from './lib/recmind.mjs';
 import { buildup, teamStats } from './lib/buildup.mjs';
 import * as weekly from './lib/weekly.mjs';
+import { todayGap } from './lib/todaygap.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
 import { buildPersonalMessages } from './lib/coachdm.mjs';
@@ -679,6 +680,14 @@ const server = createServer(async (req, res) => {
           noLine,      // 本人がまだLINEログイン／本人選択をしていない
           nameGap,     // ポータルには登録があるのに、名前で拾えていない＝名寄せで救える
         });
+      }
+
+      /* 今日の自分と、今日のみんな（トップ画面の指標）。訪問・アポ・歩いた距離と不足分。 */
+      if (path === '/api/today/gap' && req.method === 'GET') {
+        const meTG = currentUser(req);
+        if (!meTG) return json(res, 401, { error: 'ログインが必要です' });
+        const repCode = (getDb().users[meTG.username] || {}).repId || '';
+        return json(res, 200, { ok: true, ...todayGap({ name: meTG.name || meTG.username, code: repCode }) });
       }
 
       /* 先週からの動き（本人ぶん）。マイページに出す。他人の数値は返さない。 */
