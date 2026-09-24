@@ -1820,6 +1820,8 @@ const NAV_ALIAS = { ranking: 'league', my: 'me' };
 function nav(v) {
   // ロープレ道場を離れるときはマイク/音声を止める（付けっぱなし防止）。
   if (currentView === 'roleplay' && v !== 'roleplay' && window.RP && RP._avTeardown) RP._avTeardown();
+  // 画面を移ったら読み上げは必ず止める（どの経路で来ても音を残さない）
+  try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
   if (v === 'roleplay' && window.RP) RP.reset();
   // ロープレ道場だけ全画面の集中モード（メニュー等のUIを隠す）。
   document.body.classList.toggle('rp-focus', v === 'roleplay');
@@ -2227,7 +2229,8 @@ async function loadTodayFocus() {
   } else if (drill) {
     head = '今日、ここだけ意識する';
     sub = '';
-    actions = primary('この課題でロープレ（1分）', `startTalkDrill(${JSON.stringify(drill).replace(/'/g, '&#39;')})`)
+    window.__todayDrill = drill;   // onclickにJSONを埋めない（属性の引用符と衝突して壊れる）
+    actions = primary('この課題でロープレ（1分）', 'startTalkDrill(window.__todayDrill)')
       + chip('1日を振り返る', "nav('field')") + chip('録音を出す', "nav('upload')");
   } else {
     head = '今日も一件ずつ、いこう';
