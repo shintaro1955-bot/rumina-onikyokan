@@ -2273,9 +2273,9 @@ async function loadToday() {
         <div class="muted" style="font-size:10px">${mo.confidence === 'low' ? '（データ少・暫定）' : '/ 1000'}</div></div>` : ''}
     </div>
     <div style="display:flex;gap:20px;align-items:center;margin-top:16px;flex-wrap:wrap">
-      ${ring(pct)}
+      ${today ? ring(pct) : ''}
       <div style="display:grid;grid-template-columns:repeat(4,auto);gap:14px 22px">
-        ${foStat('訪問', `${tv}`, target ? `/ ${target}` : '')}
+        ${foStat('訪問', `${tv}`, today && target ? `/ ${target}` : '件')}
         ${foStat('アポ', `${ta}`, '件')}
         ${foStat('稼働', workH != null ? workH.toFixed(1) : '—', workH != null ? 'h' : '')}
         ${foStat('連続', streak, '日')}
@@ -2284,7 +2284,7 @@ async function loadToday() {
     ${today ? (remain > 0
       ? `<div class="fo-chip" style="margin-top:16px">あと ${remain} 訪問で今日の目標達成</div>${d.forecast ? `<span class="muted" style="font-size:12px;margin-left:8px">現在ペースで ${d.forecast.etaText}</span>` : ''}`
       : `<div class="fo-chip" style="margin-top:16px">今日の訪問目標を達成しています</div>`)
-      : `<div style="margin-top:16px"><span class="muted" style="font-size:13px">今日のcyzen記録がまだありません。</span></div>`}
+      : `<div style="margin-top:16px"><span class="muted" style="font-size:13px">今日の記録はこれからです。回った分だけここに積み上がります。</span></div>`}
     <div class="muted" style="font-size:11px;margin-top:10px">${today && today.date ? today.date + ' の実績' : ''}${today ? ` ・ <span onclick="nav('field')" style="color:var(--primary);cursor:pointer">1日を振り返る →</span>` : ''}</div>
   </div>`;
 
