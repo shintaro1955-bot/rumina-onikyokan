@@ -2235,9 +2235,9 @@ async function loadTodayFocus() {
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         ${cell('訪問', g.found ? me.visits : null, t.visits, '件', sh.visits)}
         ${cell('アポ', g.found ? me.apo : null, t.apo, '件', sh.apo)}
-        ${cell('歩いた距離', g.found ? me.walkKm : null, t.walkKm, 'km', sh.walkKm)}
+        ${cell('歩いた距離', (g.found && me.walkKm != null) ? me.walkKm : null, t.walkKm, 'km', sh.walkKm)}
       </div>
-      <div class="muted" style="font-size:11px;margin-top:8px">${esc(g.date)} ・ 今日動いている ${t.people}人の平均${t.walkKm != null ? `（距離はGPSの記録がある${t.walkPeople}人）` : ''}</div>
+      <div class="muted" style="font-size:11px;margin-top:8px">${esc(g.date)} ・ 今日動いている ${t.people}人の平均${t.walkKm == null ? '' : t.walkBasis === 'today' ? `（距離はGPSの記録がある${t.walkPeople}人）` : '（距離は直近30日の1日あたり。今日のGPSがまだ少ないため）'}</div>
     </div>`;
   }
 
