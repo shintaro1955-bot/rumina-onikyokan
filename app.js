@@ -1347,12 +1347,31 @@ async function loadWeeklyNotify() {
       <div class="text-[12px]">${status}</div>
     </div>
     <div class="text-[12px] text-neutral-600 mt-2">送る相手 <b>${(d.wouldSend || []).length}</b>人${(d.unreachable || []).length ? ` ・ <span class="text-amber-700">LINE未連携 ${(d.unreachable || []).length}人</span>` : ''}${(d.skipped || []).length ? ` ・ 今週送信済み ${(d.skipped || []).length}人` : ''}</div>
+    <div id="unlinkedDiag"></div>
     ${review ? `<div class="mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800">
       <b>自動送信しない（要確認）${(d.review || []).length}人</b>：${review}<br>稼働が急に落ちています。休職・離脱の可能性があるので、人が確認してから連絡してください。</div>` : ''}
     ${sample ? `<div class="mt-3"><div class="text-[12.5px] font-semibold text-neutral-700">下書き（先頭3件）</div>${sample}</div>` : ''}
     <div class="text-[11.5px] text-neutral-500 mt-2">${esc(d.note || '')}</div>
     ${(d.wouldSend || []).length ? `<button onclick="sendWeeklyNotify()" class="mt-2 px-4 py-1.5 rounded-lg bg-rose-600 text-white text-[12.5px] font-semibold">この内容で送信する</button>` : ''}
   </div>`);
+  loadUnlinkedDiag();
+}
+
+/* LINE未連携の内訳。名寄せで救える人と、本人の登録待ちを分けて出す。 */
+async function loadUnlinkedDiag() {
+  const box = document.getElementById('unlinkedDiag'); if (!box) return;
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  let d; try { d = await API.lineUnlinkedDiag(); } catch (e) { return; }
+  if (!d.ok) { box.innerHTML = `<div class="mt-2 text-[12px] text-neutral-500">未連携の内訳を出せませんでした（${esc(d.error || '')}）。</div>`; return; }
+  const gap = d.nameGap || [], none = d.noLine || [];
+  box.innerHTML = `<div class="mt-2 p-2.5 rounded-lg bg-neutral-50 border border-neutral-200 text-[12px] text-neutral-700">
+    <div class="font-semibold text-neutral-800">LINE未連携 ${d.total}人の内訳</div>
+    ${gap.length ? `<div class="mt-1.5"><b class="text-emerald-700">名寄せで解決できる ${gap.length}人</b>：${gap.map(esc).join('、')}<br>
+      ポータルには登録がありますが、氏名で引けていません。ポータルの「LINE名寄せ」で本人の記録を確認してください。</div>` : ''}
+    <div class="mt-1.5"><b class="text-amber-700">本人のLINE登録待ち ${none.length}人</b>：${none.slice(0, 12).map(esc).join('、')}${none.length > 12 ? ` ほか${none.length - 12}人` : ''}<br>
+      ポータルにLINEログインの記録がありません。本人がLINEでログインして本人選択をするまで、こちらから紐付けることはできません（LINEのIDが存在しないため）。</div>
+    <div class="mt-1.5 text-neutral-500">会社全体：名簿 ${d.portal.roster}人 のうち LINE登録済み ${d.portal.registered}人（${Math.round(d.portal.registered / Math.max(1, d.portal.roster) * 100)}%）</div>
+  </div>`;
 }
 
 async function sendWeeklyNotify() {
