@@ -179,6 +179,12 @@ window.API = (function () {
     if (!r.ok) throw new Error(j.error || '底上げ一覧の取得に失敗しました');
     return j;
   }
+  async function coachDrill() {
+    const r = await fetch('/api/coach/day?light=1');
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || '今日の一点の取得に失敗しました');
+    return j;
+  }
   async function recMine(date) {
     const r = await fetch('/api/rec/mine' + (date ? '?date=' + encodeURIComponent(date) : ''));
     const j = await r.json().catch(() => ({}));
@@ -197,7 +203,7 @@ window.API = (function () {
   async function getLineUsers() { const r = await fetch('/api/admin/line-users'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'LINEユーザー一覧の取得に失敗しました'); return j.users || []; }
   async function linkRep(username, repId) { const r = await fetch('/api/admin/link-rep', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, repId }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '紐付けに失敗しました'); return j; }
 
-  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenTrends, cyzenReminders, cyzenReminderRun, cyzenWalk, cyzenUpload, portalProfile, apoCoachView, dayCoach, recSubmissions, recRemind, recMine, getBuildup, teamBench, weeklyMine, weeklyNotify, lineUnlinkedDiag,
+  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenTrends, cyzenReminders, cyzenReminderRun, cyzenWalk, cyzenUpload, portalProfile, apoCoachView, dayCoach, recSubmissions, recRemind, recMine, coachDrill, getBuildup, teamBench, weeklyMine, weeklyNotify, lineUnlinkedDiag,
     dashboard, today, integrations, setGoal, getWeights, setWeights, completeDrill, academyProgress, getPosts, addPost, deletePost, react, markRead,
     getComments, addComment, deleteComment, notifications, readNotifs, setNotifSettings, track };
 })();

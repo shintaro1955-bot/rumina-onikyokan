@@ -758,6 +758,10 @@ const server = createServer(async (req, res) => {
         const facts = daycoach.buildDayFacts(reports, { name: wantName, date });
         if (!facts.totalPings) return json(res, 200, { ok: true, empty: true, days, date, facts, error: 'この日は訪問の記録がありません。' });
         const drill = daycoach.buildDrill(facts);   // 明日ロープレで潰す課題（決定論）
+        // light=1 は決定論の部分だけ返す（トップ画面用。AI生成は20秒前後かかるので待たせない）
+        if (/^(1|true|yes|on)$/i.test(url.searchParams.get('light') || '')) {
+          return json(res, 200, { ok: true, light: true, days, date, facts, drill });
+        }
         const coach = await daycoach.buildDayCoach(facts).catch(() => null);
         return json(res, 200, { ok: true, days, date, facts, drill, coach, coachReady: daycoach.ready() });
       }

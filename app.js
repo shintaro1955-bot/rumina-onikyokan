@@ -2197,51 +2197,60 @@ function viewToday() {
   return `<div id="askRec"></div><div class="space-y-3.5" id="todayWrap"><div class="fo-card" style="padding:20px" class="muted">読み込み中…</div></div>`;
 }
 
-/* トップの問いかけ。今日の録音が出ているかどうかで見た目が変わる。
-   録音が上がらないと一日のトークコーチも弱点ロープレも動かないので、
-   一番最初に目に入る所で聞く。 */
-async function loadAskRec() {
+/* トップ＝今日これから戦う画面。
+   日中は「今日ここだけ意識する」（直近の弱点＝ロープレ課題）を主に、
+   夕方以降は「今日の録音を出す」に切り替える。目標設定の類はここには置かない。 */
+async function loadTodayFocus() {
   const el = document.getElementById('askRec'); if (!el) return;
   const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
-  let d = null;
-  try { d = await API.recMine(); } catch (e) { el.innerHTML = ''; return; }
-  const done = !!d.submitted;
-  const yday = (d.days || []).find(x => x !== d.date) || null;
+  const [mine, dc] = await Promise.all([
+    API.recMine().catch(() => null),
+    API.coachDrill().catch(() => null),
+  ]);
+  const hour = new Date().getHours();
+  const evening = hour >= 16;
+  const done = !!(mine && mine.submitted);
+  const drill = dc && dc.drill;
 
-  const chip = (label, onclick) => `<button onclick="${onclick}" style="flex:none;padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12.5px;cursor:pointer">${label}</button>`;
-  const chips = [
-    yday ? chip('前回の講評', "nav('me')") : null,
-    chip('ロープレで練習', "nav('roleplay')"),
-    chip('1日を振り返る', "nav('field')"),
-  ].filter(Boolean).join('');
+  const chip = (label, onclick) => `<button onclick="${onclick}" style="flex:none;padding:8px 16px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer">${label}</button>`;
+  const primary = (label, onclick) => `<button onclick="${onclick}" style="flex:none;padding:11px 22px;border-radius:999px;border:0;background:var(--primary);color:#fff;font-size:14px;font-weight:700;cursor:pointer">${label}</button>`;
 
-  // 未提出＝問いかけ＋大きな入口。提出済み＝受け取った報告＋次の一手。
-  const bar = done
-    ? `<div style="display:flex;align-items:center;gap:12px;width:100%;max-width:620px;margin:0 auto;padding:14px 16px;border:1px solid var(--border);border-radius:16px;background:var(--surface-2)">
-         <span style="width:30px;height:30px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none">✓</span>
-         <div style="flex:1;min-width:0;text-align:left">
-           <div style="font-size:14px;font-weight:600;color:var(--text)">今日のぶん、届いています</div>
-           <div class="muted" style="font-size:11.5px">録音${d.recordings}本・訪問${d.pings}件</div></div>
-         <button class="fo-btn" style="padding:8px 16px;font-size:13px;flex:none" onclick="nav('me')">講評を見る</button>
-       </div>`
-    : `<button onclick="nav('upload')" style="display:flex;align-items:center;gap:12px;width:100%;max-width:620px;margin:0 auto;padding:16px 18px;border:1px solid var(--border);border-radius:16px;background:var(--surface);cursor:pointer;text-align:left;box-shadow:var(--shadow)">
-         <span style="width:30px;height:30px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none">↑</span>
-         <span style="flex:1;min-width:0;font-size:14.5px;color:var(--muted)">今日の録音を出す</span>
-         <span style="width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none">→</span>
-       </button>`;
+  let head, sub, actions;
+  if (evening && !done) {
+    head = '今日の録音、出せた？';
+    sub = '出しておけば、明日の朝には直す所が分かる。';
+    actions = primary('今日の録音を出す', "nav('upload')") + chip('ロープレで練習', "nav('roleplay')");
+  } else if (evening && done) {
+    head = '今日の録音、受け取りました';
+    sub = '崩れた所と明日の言い方は、朝までにまとめておきます。';
+    actions = primary('講評を見る', "nav('me')") + chip('ロープレで練習', "nav('roleplay')");
+  } else if (drill) {
+    head = '今日、ここだけ意識する';
+    sub = '';
+    actions = primary('この課題でロープレ（1分）', `startTalkDrill(${JSON.stringify(drill).replace(/'/g, '&#39;')})`)
+      + chip('1日を振り返る', "nav('field')") + chip('録音を出す', "nav('upload')");
+  } else {
+    head = '今日も一件ずつ、いこう';
+    sub = '玄関先の10秒で決まる。「電気代、上がっていませんか？」から入る。';
+    actions = primary('ロープレで一本', "nav('roleplay')") + chip('録音を出す', "nav('upload')");
+  }
 
-  el.innerHTML = `<div style="padding:34px 16px 26px;text-align:center">
-    <div style="font-size:25px;font-weight:600;letter-spacing:-.01em;color:var(--text);line-height:1.45">
-      ${done ? '今日の録音、受け取りました' : '今日の録音、出せた？'}</div>
-    <div class="muted" style="font-size:13px;margin-top:8px">
-      ${done ? '崩れた所と明日の言い方は、朝までにまとめておきます。' : '出しておけば、明日の朝には直す所が分かる。'}</div>
-    <div style="margin-top:20px">${bar}</div>
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px">${chips}</div>
+  const focus = (!evening && drill) ? `<div style="max-width:620px;margin:16px auto 0;padding:16px 18px;border:1px solid var(--primary);border-radius:16px;background:var(--surface);text-align:left">
+      <div style="font-size:16px;font-weight:700;color:var(--primary)">${esc(drill.title)}</div>
+      <div class="muted" style="font-size:12.5px;margin-top:4px">${esc(drill.why || '')}</div>
+      <div style="font-size:13px;color:var(--text);margin-top:6px">${esc(drill.goal || '')}</div>
+    </div>` : '';
+
+  el.innerHTML = `<div style="padding:34px 16px 22px;text-align:center">
+    <div style="font-size:25px;font-weight:600;letter-spacing:-.01em;color:var(--text);line-height:1.45">${esc(head)}</div>
+    ${sub ? `<div class="muted" style="font-size:13px;margin-top:8px">${esc(sub)}</div>` : ''}
+    ${focus}
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">${actions}</div>
   </div>`;
 }
 async function loadToday() {
   const wrap = document.getElementById('todayWrap'); if (!wrap) return;
-  loadAskRec();
+  loadTodayFocus();
   const u = window.__user || {};
   const d = await API.today() || {};
   window.__dash = d;
