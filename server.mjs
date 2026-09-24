@@ -653,6 +653,34 @@ const server = createServer(async (req, res) => {
         } catch (e) { console.warn('[roleplay stt-token]', e.message); return json(res, 200, { ok: false, error: 'トークン発行に失敗しました' }); }
       }
 
+      /* LINE未連携の内訳（owner）。名寄せで救える人と、本人の登録待ちの人を分ける。
+         ポータル（名寄せの正本）に問い合わせて突き合わせる。判定はこちらで行う。 */
+      if (path === '/api/line/unlinked-diag' && req.method === 'GET') {
+        const meLD = currentUser(req);
+        if (!meLD || meLD.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const t = await weekly.targets().catch(() => null);
+        const names = t && t.ready ? (t.unreachable || []).map(x => x.name) : [];
+        if (!PORTAL_URL || !BOT_API_SECRET) return json(res, 200, { ok: false, error: 'ポータル連携が未設定です', names });
+        let portal = null;
+        try {
+          const r = await fetch(`${PORTAL_URL}/api/coach/unregistered-staff?secret=${encodeURIComponent(BOT_API_SECRET)}`);
+          if (r.ok) portal = await r.json();
+          else return json(res, 200, { ok: false, error: `ポータル応答 ${r.status}`, names });
+        } catch (e) { return json(res, 200, { ok: false, error: e.message, names }); }
+        // 空白と全半角の揺れを落として突き合わせる（ポータルの normName と同じ揃え方）
+        const norm = (x) => String(x == null ? '' : x).replace(/\s+/g, '').normalize('NFKC');
+        const unregistered = new Set((portal.staff || []).map(x => norm(x.name)));
+        const noLine = [], nameGap = [];
+        for (const n of names) (unregistered.has(norm(n)) ? noLine : nameGap).push(n);
+        return json(res, 200, {
+          ok: true,
+          portal: { roster: portal.total, registered: portal.registered, unregistered: portal.unregistered },
+          total: names.length,
+          noLine,      // 本人がまだLINEログイン／本人選択をしていない
+          nameGap,     // ポータルには登録があるのに、名前で拾えていない＝名寄せで救える
+        });
+      }
+
       /* 先週からの動き（本人ぶん）。マイページに出す。他人の数値は返さない。 */
       if (path === '/api/weekly/mine' && req.method === 'GET') {
         const meW = currentUser(req);
