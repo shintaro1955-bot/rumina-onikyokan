@@ -2223,7 +2223,7 @@ async function loadTodayFocus() {
         <span style="font-size:24px;font-weight:700;color:var(--text)" class="num">${has ? mineV : '—'}</span>
         <span class="muted" style="font-size:11px">${unit}</span></div>
       <div class="muted" style="font-size:11px;margin-top:2px">みんなの平均 ${teamV}${unit}</div>
-      <div style="font-size:12.5px;font-weight:700;margin-top:4px;color:${ok ? 'var(--primary)' : '#e11d48'}">
+      <div style="font-size:12.5px;font-weight:700;margin-top:4px;color:${!has ? 'var(--muted)' : ok ? 'var(--primary)' : '#e11d48'}">
         ${!has ? '記録待ち' : ok ? '平均を超えています' : `あと ${shortV}${unit}`}</div>
     </div>`;
   };
