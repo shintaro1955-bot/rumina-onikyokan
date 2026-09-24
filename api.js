@@ -149,6 +149,18 @@ window.API = (function () {
     if (!r.ok) throw new Error(j.error || '提出状況の取得に失敗しました');
     return j;
   }
+  async function weeklyMine() {
+    const r = await fetch('/api/weekly/mine');
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || '先週からの動きの取得に失敗しました');
+    return j;
+  }
+  async function weeklyNotify(live) {
+    const r = await fetch('/api/weekly/notify' + (live ? '?live=1' : ''), { method: 'POST' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || '通知の実行に失敗しました');
+    return j;
+  }
   async function teamBench() {
     const r = await fetch('/api/team/bench');
     const j = await r.json().catch(() => ({}));
@@ -179,7 +191,7 @@ window.API = (function () {
   async function getLineUsers() { const r = await fetch('/api/admin/line-users'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'LINEユーザー一覧の取得に失敗しました'); return j.users || []; }
   async function linkRep(username, repId) { const r = await fetch('/api/admin/link-rep', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, repId }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '紐付けに失敗しました'); return j; }
 
-  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenTrends, cyzenReminders, cyzenReminderRun, cyzenWalk, cyzenUpload, portalProfile, apoCoachView, dayCoach, recSubmissions, recRemind, recMine, getBuildup, teamBench,
+  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenTrends, cyzenReminders, cyzenReminderRun, cyzenWalk, cyzenUpload, portalProfile, apoCoachView, dayCoach, recSubmissions, recRemind, recMine, getBuildup, teamBench, weeklyMine, weeklyNotify,
     dashboard, today, integrations, setGoal, getWeights, setWeights, completeDrill, academyProgress, getPosts, addPost, deletePost, react, markRead,
     getComments, addComment, deleteComment, notifications, readNotifs, setNotifSettings, track };
 })();

@@ -33,6 +33,7 @@ import { roleplayFeedback } from './lib/rpfeedback.mjs';
 import * as daycoach from './lib/daycoach.mjs';
 import * as recmind from './lib/recmind.mjs';
 import { buildup, teamStats } from './lib/buildup.mjs';
+import * as weekly from './lib/weekly.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
 import { buildPersonalMessages } from './lib/coachdm.mjs';
@@ -650,6 +651,22 @@ const server = createServer(async (req, res) => {
           const j = await r.json();
           return json(res, 200, { ok: true, access_token: j.access_token, expires_in: j.expires_in });
         } catch (e) { console.warn('[roleplay stt-token]', e.message); return json(res, 200, { ok: false, error: 'トークン発行に失敗しました' }); }
+      }
+
+      /* 先週からの動き（本人ぶん）。マイページに出す。他人の数値は返さない。 */
+      if (path === '/api/weekly/mine' && req.method === 'GET') {
+        const meW = currentUser(req);
+        if (!meW) return json(res, 401, { error: 'ログインが必要です' });
+        return json(res, 200, { ok: true, ...weekly.mine({ name: meW.name || meW.username }) });
+      }
+
+      /* 先週からの動きの本人DM（owner）。既定はドライラン＝?live=1 の時だけ実送信。 */
+      if (path === '/api/weekly/notify' && (req.method === 'POST' || req.method === 'GET')) {
+        const meWN = currentUser(req);
+        if (!meWN || meWN.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const live = /^(1|true|yes|on)$/i.test(url.searchParams.get('live') || '');
+        const out = await weekly.runOnce({ live }).catch(e => ({ error: e.message }));
+        return json(res, 200, { ok: !out.error, config: weekly.config(), ...out });
       }
 
       /* チームの物差し（全員が見てよい。個人の数字は含まない）。目標ページで自分との差を出すため。 */

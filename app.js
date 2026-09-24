@@ -1320,7 +1320,45 @@ function viewCyzen() {
   return `
   ${h1('全営業KPI（cyzen）')}
   <div id="buildupWrap" class="mb-4"></div>
+  <div id="weeklyNotify" class="mb-4"></div>
   <div id="cyzenWrap" class="text-sm text-neutral-500">読み込み中…</div>`;
+}
+
+/* 先週からの動きを本人へDM（owner）。必ず下書きを見せてから送る。 */
+async function loadWeeklyNotify() {
+  const box = document.getElementById('weeklyNotify'); if (!box) return;
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  let d; try { d = await API.weeklyNotify(false); } catch (e) { box.innerHTML = ''; return; }
+  if (!d.ready) { box.innerHTML = ''; return; }
+  const c = d.config || {};
+  const status = c.canSend ? '<span class="text-emerald-600 font-semibold">実送信 ON</span>'
+    : c.tokenSet ? '<span class="text-neutral-500 font-semibold">停止中（WEEKLY_ENABLED 未設定）</span>'
+    : '<span class="text-neutral-500 font-semibold">停止中（LINE未設定）</span>';
+  const s = d.summary || {};
+  const sample = (d.wouldSend || []).slice(0, 3).map(x => `<div class="mt-2 p-2.5 rounded-lg bg-neutral-50 border border-neutral-200">
+      <div class="text-[12px] font-semibold ${x.dir === 'up' ? 'text-emerald-700' : x.dir === 'down' ? 'text-rose-600' : 'text-neutral-600'}">${esc(x.name)}（${x.dir === 'up' ? '増' : x.dir === 'down' ? '減' : '横ばい'} ${x.delta > 0 ? '+' : ''}${x.delta}件/日）</div>
+      <div class="text-[12.5px] text-neutral-700 whitespace-pre-wrap mt-0.5">${esc(x.message)}</div></div>`).join('');
+  const review = (d.review || []).map(x => `${esc(x.name)}（稼働${x.priDays}日→${x.recDays}日）`).join('、');
+
+  box.innerHTML = card(`<div class="p-4">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div><div class="font-semibold text-neutral-800">先週からの動きを本人へ送る</div>
+        <div class="text-[12px] text-neutral-500 mt-0.5">増えた ${s.up || 0}人 ・ 横ばい ${s.flat || 0}人 ・ 減った ${s.down || 0}人。本人へのDMのみで、グループには出しません。</div></div>
+      <div class="text-[12px]">${status}</div>
+    </div>
+    <div class="text-[12px] text-neutral-600 mt-2">送る相手 <b>${(d.wouldSend || []).length}</b>人${(d.unreachable || []).length ? ` ・ <span class="text-amber-700">LINE未連携 ${(d.unreachable || []).length}人</span>` : ''}${(d.skipped || []).length ? ` ・ 今週送信済み ${(d.skipped || []).length}人` : ''}</div>
+    ${review ? `<div class="mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800">
+      <b>自動送信しない（要確認）${(d.review || []).length}人</b>：${review}<br>稼働が急に落ちています。休職・離脱の可能性があるので、人が確認してから連絡してください。</div>` : ''}
+    ${sample ? `<div class="mt-3"><div class="text-[12.5px] font-semibold text-neutral-700">下書き（先頭3件）</div>${sample}</div>` : ''}
+    <div class="text-[11.5px] text-neutral-500 mt-2">${esc(d.note || '')}</div>
+    ${(d.wouldSend || []).length ? `<button onclick="sendWeeklyNotify()" class="mt-2 px-4 py-1.5 rounded-lg bg-rose-600 text-white text-[12.5px] font-semibold">この内容で送信する</button>` : ''}
+  </div>`);
+}
+
+async function sendWeeklyNotify() {
+  if (!confirm('先週からの動きを、本人のLINEへ送信します。よろしいですか？')) return;
+  try { const d = await API.weeklyNotify(true); alert(d.note || '完了しました'); loadWeeklyNotify(); }
+  catch (e) { alert(e.message); }
 }
 
 /* 底上げ一覧：チーム実データの中央値を基準に、誰がどの段で止まっているか。 */
@@ -1772,7 +1810,7 @@ function nav(v) {
   if (v === 'upload') bindUpload();
   if (v === 'log') { loadLog(); loadConsents(); }
   if (v === 'linkrep') loadLinkRep();
-  if (v === 'cyzen') { loadBuildup(); loadCyzen(); }
+  if (v === 'cyzen') { loadBuildup(); loadWeeklyNotify(); loadCyzen(); }
   if (v === 'compliance') { loadCompliance(); loadReminders(); }
   if (v === 'apocoach') loadApoCoach();
   if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
@@ -2508,11 +2546,36 @@ async function loadMePerf() {
     <div id="dcBody" style="margin-top:12px"><div class="muted" style="font-size:13px">読み込み中…</div></div>
   </div>`;
 
-  wrap.innerHTML = `${h1('My Performance')}<div id="portalCard" class="mb-4"></div>${moCard}${dayCard}${goalCard}${statCard}`
+  wrap.innerHTML = `${h1('My Performance')}<div id="portalCard" class="mb-4"></div><div id="weekMove" class="mb-4"></div>${moCard}${dayCard}${goalCard}${statCard}`
     + `<div id="terakoyaCard" style="margin-top:14px"></div><div id="diaryCard" style="margin-top:14px"></div>${xpCard}${recCard}`;
   loadDayCoach();
   // マイページから移した3カード（本人確認・寺子屋・日記）。器を描いてから読み込む。
-  loadPortalProfile(); loadTerakoya();
+  loadPortalProfile(); loadTerakoya(); loadWeekMove();
+}
+
+/* 先週からの動き（本人ぶん）。上がっても下がっても事実を出し、次の一手を添える。 */
+async function loadWeekMove() {
+  const box = document.getElementById('weekMove'); if (!box) return;
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  let d; try { d = await API.weeklyMine(); } catch (e) { return; }
+  if (!d.ready || !d.found || !d.comparable) { box.innerHTML = ''; return; }
+  const up = d.dir === 'up', down = d.dir === 'down';
+  const col = up ? 'var(--primary)' : down ? '#e11d48' : 'var(--muted)';
+  const mark = up ? '▲' : down ? '▼' : '→';
+  const head = up ? '先週より増えています' : down ? '先週より減っています' : '先週と同じくらいです';
+  const next = up ? 'この動きはそのまま続けてください。'
+    : down ? `まずは1日あと${Math.max(1, Math.ceil(d.priVpd - d.recVpd))}件、戻すところから。`
+    : (d.median != null && d.recVpd < d.median ? `チームの中央値は${d.median}件です。あと${Math.ceil(d.median - d.recVpd)}件上げられると景色が変わります。` : 'この調子で続けてください。');
+  box.innerHTML = `<div class="fo-card" style="padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
+      <div style="font-weight:700;color:var(--text)">先週からの動き</div>
+      <span class="muted" style="font-size:11px">直近7日とその前の7日${d.anchor ? ' ・ ' + esc(d.anchor) + '基準' : ''}</span></div>
+    <div style="display:flex;align-items:baseline;gap:10px;margin-top:10px;flex-wrap:wrap">
+      <span style="font-size:22px;font-weight:700;color:${col}">${mark} ${d.deltaVpd > 0 ? '+' : ''}${d.deltaVpd}<span style="font-size:12px;font-weight:500">件/日</span></span>
+      <span style="font-size:13px;color:var(--text)">${esc(head)}</span></div>
+    <div class="muted" style="font-size:12px;margin-top:4px">訪問 ${d.recVpd}件/日（先週 ${d.priVpd}件）・稼働 ${d.recDays}日${d.recApo ? ` ・ アポ${d.recApo}件` : ''}${d.median != null ? ` ・ チーム中央値 ${d.median}件` : ''}</div>
+    <div style="font-size:13px;color:var(--text);margin-top:8px">${esc(next)}</div>
+  </div>`;
 }
 
 /* 一日のトークコーチ：判定（決定論）＋指導文（AI・参考）を描画する。 */
