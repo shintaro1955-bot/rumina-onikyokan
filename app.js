@@ -133,66 +133,6 @@ function diagnosisSection() {
     </div></section>`;
 }
 
-/* ---------- ⓪ 目標設定 ---------- */
-function gInput(id, label, val, hint) {
-  return `<label class="block">
-    <div class="text-xs text-neutral-500 mb-1">${label}</div>
-    <input id="${id}" type="number" step="any" value="${val}" oninput="updateGoal()"
-      class="w-full bg-transparent border border-neutral-200 rounded-md px-3 py-2 text-neutral-900 tabular-nums focus:border-emerald-400/60 focus:outline-none">
-    <div class="text-[10px] text-neutral-500 mt-1">${hint}</div>
-  </label>`;
-}
-
-function goalResultHTML() {
-  const r = GOALS.backcast(SESSION.analysis, GOALS.current);
-  const maxAbs = Math.max(1, ...r.losses.map(l => Math.abs(l.period)));
-  const bars = r.losses.map(l => {
-    const hole = l.period > 0, w = Math.abs(l.period) / maxAbs * 100;
-    return `<div class="flex items-center gap-3">
-      <div class="w-20 text-xs text-neutral-600 text-right shrink-0">${l.stage}</div>
-      <div class="flex-1 h-5 rounded bg-neutral-200 overflow-hidden">
-        <div class="h-full ${hole ? 'bg-rose-500/70' : 'bg-emerald-500/70'}" style="width:${w}%"></div>
-      </div>
-      <div class="w-16 text-right text-xs tabular-nums ${hole ? 'text-rose-600' : 'text-emerald-600'}">${hole ? '−' : '+'}${Math.abs(l.period)}件</div>
-    </div>`;
-  }).join('');
-  const border = { harsh: 'border-rose-400/50', good: 'border-emerald-400/50', warn: 'border-amber-400/50', close: 'border-neutral-600' };
-  const blocks = r.narrative.map(x => `
-    <div class="border-l-2 ${border[x.tone]} pl-3">
-      <div class="text-[11px] text-neutral-500 mb-0.5">${x.title}</div>
-      <p class="text-[13px] leading-relaxed text-neutral-800">${x.text}</p>
-    </div>`).join('');
-  const behind = !r.onTrack, col = behind ? 'text-rose-600' : 'text-emerald-600';
-  return card(`
-    <div class="grid grid-cols-3 divide-x divide-neutral-200 border-b border-neutral-200">
-      ${statCell('必要ペース', r.neededPerDay.toFixed(1), '件/日')}
-      ${statCell('現状の見込み', r.projectedPeriod, '件', '', col)}
-      ${statCell('目標との差', behind ? '−' + r.gapPeriod : '達成', behind ? '件' : '', '', col)}
-    </div>
-    <div class="p-5 border-b border-neutral-200">
-      <div class="text-xs text-neutral-500 mb-3">不足の内訳（期間・アポ換算）　<span class="text-neutral-500">赤=穴 / 緑=目標超過</span></div>
-      <div class="space-y-2">${bars}</div>
-    </div>
-    <div class="p-5">
-      <div class="text-xs text-neutral-500 mb-3">鬼教官の分析</div>
-      <div class="space-y-4">${blocks}</div>
-    </div>`);
-}
-
-function readGoalInputs() {
-  const v = id => parseFloat(document.getElementById(id).value) || 0;
-  GOALS.current = {
-    targetApoPeriod: v('g_target'), periodDays: v('g_days'), pings: v('g_pings'),
-    homeResponseRate: v('g_home'), conversationRate: v('g_conv'), openingQuestionRate: v('g_open'),
-    averageRebuttalCount: v('g_reb'), appointmentRate: v('g_apo'),
-    averageConversationSeconds: GOALS.current.averageConversationSeconds,
-  };
-  GOALS.save(GOALS.current);
-}
-function updateGoal() { readGoalInputs(); document.getElementById('goalResult').innerHTML = goalResultHTML(); }
-function resetGoal() { GOALS.current = GOALS.defaults(); GOALS.save(GOALS.current); render(); }
-window.updateGoal = updateGoal; window.resetGoal = resetGoal;
-
 /* ---------- ① ホーム ---------- */
 function viewHome() {
   const a = SESSION.analysis, g = SESSION.gap;
@@ -2163,7 +2103,6 @@ function ring(pct, big) {
   </svg>`;
 }
 const foGreet = () => { const h = new Date().getHours(); return h < 11 ? 'GOOD MORNING' : h < 17 ? 'こんにちは' : 'お疲れさまです'; };
-function foGoalTarget() { try { if (window.GOALS && GOALS.current && GOALS.current.pings) return GOALS.current.pings; } catch {} return 50; }
 
 /* ---------- TODAY（中央フィード） ---------- */
 function viewToday() {
@@ -2379,9 +2318,7 @@ async function doReact(id, kind) { await API.react(id, kind); API.track('feed_re
 async function delPost(id) { if (confirm('この投稿を削除しますか？')) { await API.deletePost(id); loadPosts(); } }
 window.doReact = doReact; window.delPost = delPost;
 
-/* 目標設定モーダル */
 
-/* ---------- 自分の目標（/goals） ---------- */
 function goalBar(label, val, target, unit) {
   const pct = target ? Math.min(100, Math.round(val / target * 100)) : 0;
   const over = val >= target;
@@ -2396,7 +2333,7 @@ async function loadMePerf() {
   const wrap = document.getElementById('mePerf'); if (!wrap) return;
   const d = await API.dashboard() || {}; window.__dash = d;
   const u = window.__user || {}; const mo = d.momentum, cz = d.cyzen;
-  const PL = { goal: '行動目標達成', conversion: 'アポ・成約への転換', continuity: '稼働の継続', learning: '学習・ロープレ', report: '報告品質' };
+  const PL = { goal: '訪問の量（トップ比）', conversion: 'アポ・成約への転換', continuity: '稼働の継続', learning: '学習・ロープレ', report: '報告品質' };
   const bars = mo && mo.parts ? Object.keys(PL).map(k => {
     const v = Math.round((mo.parts[k] || 0) * 100), w = mo.weights[k];
     return `<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="color:var(--text)">${PL[k]} <span class="muted">・重み${w}%</span></span><span class="num" style="color:var(--text)">${v}%</span></div>
@@ -2577,7 +2514,7 @@ function startTalkDrill(drill) {
 /* Momentum重み設定（owner） */
 async function openWeights() {
   const w = await API.getWeights() || { goal: 35, conversion: 25, continuity: 15, learning: 15, report: 10 };
-  const PL = { goal: '行動目標達成', conversion: '転換', continuity: '継続', learning: '学習', report: '報告品質' };
+  const PL = { goal: '訪問の量', conversion: '転換', continuity: '継続', learning: '学習', report: '報告品質' };
   const m = document.createElement('div'); m.id = 'wModal';
   m.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px';
   m.innerHTML = `<div class="fo-card" style="padding:20px;max-width:380px;width:100%" onclick="event.stopPropagation()">
@@ -2629,7 +2566,7 @@ window.openNotifs = openNotifs;
 async function openNotifSettings() {
   const p = document.getElementById('notifPanel'); if (p) p.remove();
   const s = (window.__notifs && window.__notifs.settings) || { morning: true, pace: true, praise: true, review: true };
-  const L = { morning: '朝の目標・学習', pace: '自己ベスト・ペース', praise: '称賛・コメント', review: '復習期限' };
+  const L = { morning: '朝の通知・学習', pace: '自己ベスト・ペース', praise: '称賛・コメント', review: '復習期限' };
   const m = document.createElement('div'); m.id = 'nsModal';
   m.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px';
   m.innerHTML = `<div class="fo-card" style="padding:20px;max-width:320px;width:100%" onclick="event.stopPropagation()">

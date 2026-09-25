@@ -34,7 +34,7 @@ import * as daycoach from './lib/daycoach.mjs';
 import * as recmind from './lib/recmind.mjs';
 import { buildup, teamStats } from './lib/buildup.mjs';
 import * as weekly from './lib/weekly.mjs';
-import { todayGap } from './lib/todaygap.mjs';
+import { todayGap, topPerformer } from './lib/todaygap.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
 import { buildPersonalMessages } from './lib/coachdm.mjs';
@@ -295,7 +295,10 @@ function myDashboard(user) {
     const tr = cyzen.trends({ recentDays: 7 });
     out.trend = tr.ready ? (tr.rows.find(r => r.code === code) || null) : null;
     out.streak = cyzen.personStreak(code, 1);
-    out.momentum = fieldos.momentum(out.cyzen, user.username, learnRate);
+    // Momentumの基準もトップ画面と同じ「トップの1日」に揃える（個人の目標設定は廃止済み）
+    let std = null;
+    try { const b = topPerformer(30); if (b) std = { visits: b.visitsPerDay, apoRate: b.apoRate }; } catch (e) {}
+    out.momentum = fieldos.momentum(out.cyzen, user.username, learnRate, std);
     // 自己ベスト（今週の伸び）を1日1回だけ通知
     if (out.trend && out.trend.deltaVpd >= 3 && fieldos.getNotifSettings(user.username).pace) {
       fieldos.pushNotif(user.username, { type: 'selfbest', title: '今週、伸びています', body: `訪問/日 ${out.trend.recVpd}件（先週比 ${out.trend.growth == null ? 'NEW' : '+' + out.trend.growth + '%'}）`, link: 'league' }, 'selfbest');
