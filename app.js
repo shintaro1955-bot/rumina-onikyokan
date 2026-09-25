@@ -2205,39 +2205,55 @@ function viewToday() {
 async function loadTodayFocus() {
   const el = document.getElementById('askRec'); if (!el) return;
   const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
-  const [mine, g] = await Promise.all([
+  const [mine, g, dc] = await Promise.all([
     API.recMine().catch(() => null),
     API.todayGap().catch(() => null),
+    API.coachDrill().catch(() => null),
   ]);
+  const drill = dc && dc.drill;
   const evening = new Date().getHours() >= 16;
   const done = !!(mine && mine.submitted);
 
-  // 指標：自分 / みんなの平均 / あと
-  const cell = (label, mineV, teamV, unit, shortV) => {
-    if (teamV == null) return '';
+  // 指標：自分 / あるべき姿(上位2%) / あと。みんなの平均は文脈として小さく添える。
+  const cell = (label, mineV, topV, teamV, unit, shortV) => {
+    if (topV == null && teamV == null) return '';
+    const target = topV != null ? topV : teamV;
     const has = mineV != null;
     const ok = has && shortV === 0;
-    return `<div style="flex:1;min-width:120px;padding:12px 14px;border:1px solid ${ok ? 'var(--primary)' : 'var(--border)'};border-radius:14px;background:var(--surface);text-align:left">
+    return `<div style="flex:1;min-width:130px;padding:12px 14px;border:1px solid ${ok ? 'var(--primary)' : 'var(--border)'};border-radius:14px;background:var(--surface);text-align:left">
       <div class="muted" style="font-size:11px;font-weight:700">${label}</div>
       <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px">
         <span style="font-size:24px;font-weight:700;color:var(--text)" class="num">${has ? mineV : '—'}</span>
         <span class="muted" style="font-size:11px">${unit}</span></div>
-      <div class="muted" style="font-size:11px;margin-top:2px">みんなの平均 ${teamV}${unit}</div>
+      <div style="font-size:11.5px;margin-top:2px;color:#b45309;font-weight:700">あるべき姿 ${target}${unit}</div>
+      ${teamV != null ? `<div class="muted" style="font-size:10.5px">みんなの平均 ${teamV}${unit}</div>` : ''}
       <div style="font-size:12.5px;font-weight:700;margin-top:4px;color:${!has ? 'var(--muted)' : ok ? 'var(--primary)' : '#e11d48'}">
-        ${!has ? '記録待ち' : ok ? '平均を超えています' : `あと ${shortV}${unit}`}</div>
+        ${!has ? '記録待ち' : ok ? '届いています' : `あと ${shortV}${unit}`}</div>
     </div>`;
   };
 
   let board = '';
   if (g && g.ready && g.team && g.team.people) {
-    const me = g.me || {}, t = g.team, sh = g.short || {};
-    board = `<div style="max-width:660px;margin:16px auto 0">
+    const me = g.me || {}, t = g.team, tp = g.top || {}, sh = g.shortTop || {};
+    const f = g.focus;
+    const rungAction = (f && f.rung === '行動量')
+      ? `<button onclick="nav('field')" style="flex:none;padding:8px 16px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12.5px;cursor:pointer">1日を振り返る</button>`
+      : `<button onclick="${drill ? 'startTalkDrill(window.__todayDrill)' : "nav('roleplay')"}" style="flex:none;padding:8px 16px;border-radius:999px;border:0;background:var(--primary);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer">${drill ? 'この課題でロープレ' : 'ロープレで練習'}</button>`;
+    if (drill) window.__todayDrill = drill;
+
+    board = `<div style="max-width:680px;margin:16px auto 0">
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        ${cell('訪問', g.found ? me.visits : null, t.visits, '件', sh.visits)}
-        ${cell('アポ', g.found ? me.apo : null, t.apo, '件', sh.apo)}
-        ${cell('歩いた距離', (g.found && me.walkKm != null) ? me.walkKm : null, t.walkKm, 'km', sh.walkKm)}
+        ${cell('訪問', g.found ? me.visits : null, tp.visits, t.visits, '件', sh.visits)}
+        ${cell('アポ', g.found ? me.apo : null, tp.apo, t.apo, '件', sh.apo)}
+        ${cell('歩いた距離', (g.found && me.walkKm != null) ? me.walkKm : null, tp.walkKm, t.walkKm, 'km', sh.walkKm)}
       </div>
-      <div class="muted" style="font-size:11px;margin-top:8px">${esc(g.date)} ・ 今日動いている ${t.people}人の平均${t.walkKm == null ? '' : t.walkBasis === 'today' ? `（距離はGPSの記録がある${t.walkPeople}人）` : '（距離は直近30日の1日あたり。今日のGPSがまだ少ないため）'}</div>
+      ${f ? `<div style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--surface-2);text-align:left">
+        <div style="font-size:12px;font-weight:700;color:var(--text)">この差を埋めるのは　<span style="color:var(--primary)">${esc(f.rung)}</span></div>
+        <div class="muted" style="font-size:12px;margin-top:3px">${esc(f.why)}</div>
+        ${drill && f.rung === 'トーク' ? `<div style="font-size:12.5px;color:var(--text);margin-top:5px">直す所：<b>${esc(drill.title)}</b></div>` : ''}
+        <div style="margin-top:9px">${rungAction}</div>
+      </div>` : ''}
+      <div class="muted" style="font-size:11px;margin-top:8px">あるべき姿＝上位2%の水準（直近30日の${tp.sampleDays || 0}人日から）・ みんなの平均＝${esc(g.date)}に動いている${t.people}人</div>
     </div>`;
   }
 
