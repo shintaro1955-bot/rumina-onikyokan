@@ -2247,6 +2247,11 @@ async function loadTodayFocus() {
         ${cell('アポ', g.found ? me.apo : null, tp.apo, t.apo, '件', sh.apo)}
         ${cell('歩いた距離', (g.found && me.walkKm != null) ? me.walkKm : null, tp.walkKm, t.walkKm, 'km', sh.walkKm)}
       </div>
+      ${g.best ? `<div style="margin-top:12px;padding:11px 14px;border:1px solid #f59e0b;border-radius:14px;background:rgba(245,158,11,.06);text-align:left">
+        <div style="font-size:11px;font-weight:700;color:#b45309">追いかける先</div>
+        <div style="font-size:13.5px;font-weight:700;color:var(--text);margin-top:2px">${esc(g.best.name)}さん</div>
+        <div class="muted" style="font-size:12px;margin-top:2px">直近30日で アポ ${g.best.apo}件。1日あたり 訪問 ${g.best.visitsPerDay}件・アポ ${g.best.apoPerDay}件${g.best.apoRate != null ? `（アポ率 ${g.best.apoRate}%）` : ''}</div>
+      </div>` : ''}
       ${f ? `<div style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--surface-2);text-align:left">
         <div style="font-size:12px;font-weight:700;color:var(--text)">この差を埋めるのは　<span style="color:var(--primary)">${esc(f.rung)}</span></div>
         <div class="muted" style="font-size:12px;margin-top:3px">${esc(f.why)}</div>
