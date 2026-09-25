@@ -2186,20 +2186,20 @@ async function loadTodayFocus() {
   const done = !!(mine && mine.submitted);
 
   // 指標：自分 / あるべき姿(上位2%) / あと。みんなの平均は文脈として小さく添える。
-  const cell = (label, mineV, topV, teamV, unit, shortV) => {
+  const cell = (label, mineV, topV, teamV, unit, shortV, note) => {
     if (topV == null && teamV == null) return '';
-    const target = topV != null ? topV : teamV;
+    const target = topV;                     // 目標を置かない軸(距離)は topV=null で「あるべき姿」を出さない
     const has = mineV != null;
-    const ok = has && shortV === 0;
+    const ok = has && target != null && shortV === 0;
     return `<div style="flex:1;min-width:130px;padding:12px 14px;border:1px solid ${ok ? 'var(--primary)' : 'var(--border)'};border-radius:14px;background:var(--surface);text-align:left">
       <div class="muted" style="font-size:11px;font-weight:700">${label}</div>
       <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px">
         <span style="font-size:24px;font-weight:700;color:var(--text)" class="num">${has ? mineV : '—'}</span>
         <span class="muted" style="font-size:11px">${unit}</span></div>
-      <div style="font-size:11.5px;margin-top:2px;color:#b45309;font-weight:700">あるべき姿 ${target}${unit}</div>
+      ${target != null ? `<div style="font-size:11.5px;margin-top:2px;color:#b45309;font-weight:700">あるべき姿 ${target}${unit}</div>` : ''}
       ${teamV != null ? `<div class="muted" style="font-size:10.5px">みんなの平均 ${teamV}${unit}</div>` : ''}
-      <div style="font-size:12.5px;font-weight:700;margin-top:4px;color:${!has ? 'var(--muted)' : ok ? 'var(--primary)' : '#e11d48'}">
-        ${!has ? '記録待ち' : ok ? '届いています' : `あと ${shortV}${unit}`}</div>
+      <div style="font-size:12.5px;font-weight:700;margin-top:4px;color:${target == null ? 'var(--muted)' : !has ? 'var(--muted)' : ok ? 'var(--primary)' : '#e11d48'}">
+        ${target == null ? (note || '参考値') : !has ? '記録待ち' : ok ? '届いています' : `あと ${shortV}${unit}`}</div>
     </div>`;
   };
 
@@ -2216,7 +2216,7 @@ async function loadTodayFocus() {
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         ${cell('訪問', g.found ? me.visits : null, gl.visits, t.visits, '件', sh.visits)}
         ${cell('アポ', g.found ? me.apo : null, gl.apo, t.apo, '件', sh.apo)}
-        ${cell('歩いた距離', (g.found && me.walkKm != null) ? me.walkKm : null, gl.walkKm, t.walkKm, 'km', sh.walkKm)}
+        ${cell('歩いた距離', (g.found && me.walkKm != null) ? me.walkKm : null, gl.walkKm, t.walkKm, 'km', sh.walkKm, '目標は置かない')}
       </div>
       ${g.best ? `<div style="margin-top:12px;padding:11px 14px;border:1px solid #f59e0b;border-radius:14px;background:rgba(245,158,11,.06);text-align:left">
         <div style="font-size:11px;font-weight:700;color:#b45309">あるべき姿＝この人の1日</div>
@@ -2229,7 +2229,7 @@ async function loadTodayFocus() {
         ${drill && f.rung === 'トーク' ? `<div style="font-size:12.5px;color:var(--text);margin-top:5px">直す所：<b>${esc(drill.title)}</b></div>` : ''}
         <div style="margin-top:9px">${rungAction}</div>
       </div>` : ''}
-      <div class="muted" style="font-size:11px;margin-top:8px">あるべき姿＝${g.best ? `${esc(g.best.name)}さんの1日（直近30日の平均）` : '上位2%の水準'}${tp.visits != null ? ` ・ 参考：訪問の上位2%は1日${tp.visits}件` : ''} ・ みんなの平均＝${esc(g.date)}に動いている${t.people}人</div>
+      <div class="muted" style="font-size:11px;margin-top:8px">あるべき姿＝${g.best ? `${esc(g.best.name)}さんの1日（直近30日の平均）。量ではなく決める率で追う` : '上位2%の水準'} ・ 歩いた距離はGPSの記録が粗いため目標を置いていません ・ みんなの平均＝${esc(g.date)}に動いている${t.people}人</div>
     </div>`;
   }
 
