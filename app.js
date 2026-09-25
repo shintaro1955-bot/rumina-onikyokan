@@ -2205,7 +2205,7 @@ async function loadTodayFocus() {
 
   let board = '';
   if (g && g.ready && g.team && g.team.people) {
-    const me = g.me || {}, t = g.team, tp = g.top || {}, sh = g.shortTop || {};
+    const me = g.me || {}, t = g.team, tp = g.top || {}, gl = g.goal || {}, sh = g.shortTop || {};
     const f = g.focus;
     const rungAction = (f && f.rung === '行動量')
       ? `<button onclick="nav('field')" style="flex:none;padding:8px 16px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12.5px;cursor:pointer">1日を振り返る</button>`
@@ -2214,12 +2214,12 @@ async function loadTodayFocus() {
 
     board = `<div style="max-width:680px;margin:16px auto 0">
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        ${cell('訪問', g.found ? me.visits : null, tp.visits, t.visits, '件', sh.visits)}
-        ${cell('アポ', g.found ? me.apo : null, tp.apo, t.apo, '件', sh.apo)}
-        ${cell('歩いた距離', (g.found && me.walkKm != null) ? me.walkKm : null, tp.walkKm, t.walkKm, 'km', sh.walkKm)}
+        ${cell('訪問', g.found ? me.visits : null, gl.visits, t.visits, '件', sh.visits)}
+        ${cell('アポ', g.found ? me.apo : null, gl.apo, t.apo, '件', sh.apo)}
+        ${cell('歩いた距離', (g.found && me.walkKm != null) ? me.walkKm : null, gl.walkKm, t.walkKm, 'km', sh.walkKm)}
       </div>
       ${g.best ? `<div style="margin-top:12px;padding:11px 14px;border:1px solid #f59e0b;border-radius:14px;background:rgba(245,158,11,.06);text-align:left">
-        <div style="font-size:11px;font-weight:700;color:#b45309">追いかける先</div>
+        <div style="font-size:11px;font-weight:700;color:#b45309">あるべき姿＝この人の1日</div>
         <div style="font-size:13.5px;font-weight:700;color:var(--text);margin-top:2px">${esc(g.best.name)}さん</div>
         <div class="muted" style="font-size:12px;margin-top:2px">直近30日で アポ ${g.best.apo}件。1日あたり 訪問 ${g.best.visitsPerDay}件・アポ ${g.best.apoPerDay}件${g.best.apoRate != null ? `（アポ率 ${g.best.apoRate}%）` : ''}</div>
       </div>` : ''}
@@ -2229,7 +2229,7 @@ async function loadTodayFocus() {
         ${drill && f.rung === 'トーク' ? `<div style="font-size:12.5px;color:var(--text);margin-top:5px">直す所：<b>${esc(drill.title)}</b></div>` : ''}
         <div style="margin-top:9px">${rungAction}</div>
       </div>` : ''}
-      <div class="muted" style="font-size:11px;margin-top:8px">あるべき姿＝上位2%の水準（直近30日で5日以上出ている${tp.samplePeople || 0}人の1日あたり平均から）・ みんなの平均＝${esc(g.date)}に動いている${t.people}人</div>
+      <div class="muted" style="font-size:11px;margin-top:8px">あるべき姿＝${g.best ? `${esc(g.best.name)}さんの1日（直近30日の平均）` : '上位2%の水準'}${tp.visits != null ? ` ・ 参考：訪問の上位2%は1日${tp.visits}件` : ''} ・ みんなの平均＝${esc(g.date)}に動いている${t.people}人</div>
     </div>`;
   }
 
