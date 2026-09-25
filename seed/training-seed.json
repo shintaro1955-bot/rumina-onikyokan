@@ -1,0 +1,1303 @@
+[
+ {
+  "code": "MUST-001",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "玄関先で、商品の話をする前に必ず伝える3つは？",
+  "choices": [
+   "会社名・勧誘が目的であること・商品の種類",
+   "担当者名・年齢・出身",
+   "価格・工期・保証",
+   "会社の売上・設立年・従業員数"
+  ],
+  "answer_index": 0,
+  "explanation": "事業者名、勧誘目的であること、商品等の種類を勧誘に先立って明示する。",
+  "talk_example": "「◯◯株式会社の△△です。電気の無料診断のご案内で回っています」",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第1条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-002",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "「結構です」と言われた後の正しい行動は？",
+  "choices": [
+   "その場で終了し、以後その人に勧誘しない",
+   "日を改めて再訪問する",
+   "上司を連れて戻る",
+   "もう一度だけ押す"
+  ],
+  "answer_index": 0,
+  "explanation": "契約しない意思を示した人への勧誘継続・再勧誘は違法。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第2条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-003",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "「電力会社の者です」と名乗ることは？",
+  "choices": [
+   "絶対禁止。他の団体と誤認させる名乗りにあたる",
+   "提携していれば可",
+   "上司の許可があれば可",
+   "丁寧なので推奨"
+  ],
+  "answer_index": 0,
+  "explanation": "誤認させる名乗りは明示義務違反・不実告知のおそれ。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第3条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-004",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "「無料点検に来ました」と装って販売する手口は？",
+  "choices": [
+   "点検商法。禁止されている",
+   "サービスなので問題ない",
+   "点検が本当なら問題ない",
+   "小額なら問題ない"
+  ],
+  "answer_index": 0,
+  "explanation": "勧誘目的を隠した訪問は明示義務違反にあたる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第4条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-005",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "事実と違うことを言う、大事なことを故意に言わない行為は？",
+  "choices": [
+   "不実告知・事実不告知として刑事罰の対象",
+   "マナー違反にとどまる",
+   "社内注意で済む",
+   "問題にならない"
+  ],
+  "answer_index": 0,
+  "explanation": "刑事罰の対象。会社にも行政処分のおそれ。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第5条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-006",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "訪問販売のクーリングオフ期間は？",
+  "choices": [
+   "契約書面を受け取った日を含めて8日間",
+   "契約日から3日間",
+   "工事完了から14日間",
+   "20日間"
+  ],
+  "answer_index": 0,
+  "explanation": "法定書面の受領日を1日目として8日間。書面またはメール等の電磁的方法で通知できる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第6条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-007",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "「クーリングオフはできません」と伝えた場合は？",
+  "choices": [
+   "妨害にあたり違法。期間も延びる",
+   "期間内なら問題ない",
+   "口頭なら問題ない",
+   "契約後なら問題ない"
+  ],
+  "answer_index": 0,
+  "explanation": "妨害があった場合、改めて書面を受け取ってから8日を経過するまで解除できる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第7条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-008",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "契約書面の交付とクーリングオフの記載方法は？",
+  "choices": [
+   "その場で必ず交付し、クーリングオフは赤枠に赤字",
+   "後日郵送でよい",
+   "口頭説明で足りる",
+   "裏面に小さく記載"
+  ],
+  "answer_index": 0,
+  "explanation": "書面はその場で交付。クーリングオフ事項は赤枠内に赤字で記載する。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第8条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-009",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "試算をお客様に伝えるときの正しい言い方は？",
+  "choices": [
+   "前提条件を示し、変動することも伝える",
+   "「電気代がゼロになります」",
+   "「絶対に得をします」",
+   "「必ず◯年で元が取れます」"
+  ],
+  "answer_index": 0,
+  "explanation": "断定は不実告知・断定的判断の提供と取られるおそれ。",
+  "talk_example": "「今のご使用量と単価が続いた場合、という前提での試算です」",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第9条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-010",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "「帰ってください」と言われたときは？",
+  "choices": [
+   "即座に退去する",
+   "説明が終わるまで居る",
+   "契約書を置いて粘る",
+   "上司の指示を待つ"
+  ],
+  "answer_index": 0,
+  "explanation": "居座りは威迫・困惑にあたり、消費者契約法の取消対象にもなる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第10条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-011",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "高齢のお客様で判断に不安がある場合は？",
+  "choices": [
+   "ご家族の同席をお願いし、その場での契約は見送る",
+   "簡単な言葉で急いで契約する",
+   "サインだけ先にもらう",
+   "そのまま進める"
+  ],
+  "answer_index": 0,
+  "explanation": "判断力不足に乗じた契約は禁止行為。会社として最も重いリスク。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第11条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-012",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "会社が出していない「今日だけ特別値引き」を言うのは？",
+  "choices": [
+   "言わない。事実でない限定は法令違反のおそれ",
+   "歩合が上がるなら可",
+   "上司に黙っていれば可",
+   "お客様が喜ぶので可"
+  ],
+  "answer_index": 0,
+  "explanation": "虚偽の限定・有利に見せかける表示は特商法・景表法上の問題になりうる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第12条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-013",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "kW と kWh の違いは？",
+  "choices": [
+   "kW＝力の大きさ、kWh＝量",
+   "kW＝量、kWh＝力の大きさ",
+   "どちらも同じ",
+   "kWhは電圧の単位"
+  ],
+  "answer_index": 0,
+  "explanation": "パネル容量はkW、発電量と蓄電容量はkWh。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第13条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-014",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "パネルが発電する電気と、家で使うために変換する機器は？",
+  "choices": [
+   "直流で発電し、パワーコンディショナで交流に変える",
+   "交流で発電し、分電盤で変える",
+   "直流で発電し、蓄電池で変える",
+   "交流で発電し、変換は不要"
+  ],
+  "answer_index": 0,
+  "explanation": "パネルは直流（DC）、家庭用は交流（AC）。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第14条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-015",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "日本の住宅用太陽光で1kWあたりの年間発電量の目安は？",
+  "choices": [
+   "約1,000〜1,200kWh",
+   "約100kWh",
+   "約5,000kWh",
+   "約10,000kWh"
+  ],
+  "answer_index": 0,
+  "explanation": "地域・方角・角度・影で変わる目安。",
+  "talk_example": "「5kWで年5,000〜6,000kWhが目安。正確にはお宅の屋根で試算します」",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第15条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-016",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "屋根の方角で最も発電しやすいのは？また東西の目安は？",
+  "choices": [
+   "南が最適。東西は南の約85%程度",
+   "北が最適",
+   "東が最適。南は約85%",
+   "方角は関係ない"
+  ],
+  "answer_index": 0,
+  "explanation": "北面は原則すすめない。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第16条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-017",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "発電量を落とす最大の要因は？",
+  "choices": [
+   "影。一部でも回路全体に影響することがある",
+   "低い気温",
+   "強い風",
+   "高い湿度"
+  ],
+  "answer_index": 0,
+  "explanation": "現地調査で周囲の建物・木・アンテナを必ず確認する。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第17条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-018",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "蓄電池で容量と一緒に必ず見るものは？",
+  "choices": [
+   "出力（kW）。同時に使える力",
+   "重さ",
+   "色",
+   "本社所在地"
+  ],
+  "answer_index": 0,
+  "explanation": "容量（kWh）＝ためられる量、出力（kW）＝同時に使える力。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第18条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-019",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "停電時に家全体が使えるタイプは？",
+  "choices": [
+   "全負荷型",
+   "特定負荷型",
+   "単機能型",
+   "系統連系型"
+  ],
+  "answer_index": 0,
+  "explanation": "特定負荷型は決めた回路だけ。ただし容量・出力の範囲内。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第19条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-020",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "住宅用太陽光（10kW未満）の売電方式と買取期間は？",
+  "choices": [
+   "余剰売電・10年",
+   "全量売電・20年",
+   "余剰売電・20年",
+   "全量売電・10年"
+  ],
+  "answer_index": 0,
+  "explanation": "使って余った分を売る余剰売電。買取期間は10年。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第20条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-021",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "固定価格での買取期間が終わることを何という？",
+  "choices": [
+   "卒FIT",
+   "FIP",
+   "PPA",
+   "V2H"
+  ],
+  "answer_index": 0,
+  "explanation": "買取単価が大きく下がるため、自家消費への切り替え提案が有効になる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第21条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-022",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "今、売電より自家消費が有利になりやすい理由は？",
+  "choices": [
+   "買う電気の単価が売電単価より高いから",
+   "売電が禁止されたから",
+   "パネルの寿命が延びたから",
+   "蓄電池が無料だから"
+  ],
+  "answer_index": 0,
+  "explanation": "自分で使えば「買わずに済む電気代」分の価値がある。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第22条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-023",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "電気代明細を構成する4つは？",
+  "choices": [
+   "基本料金・電力量料金・燃料費調整額・再エネ賦課金",
+   "基本料金・工事費・税・保険",
+   "電力量料金・修繕費・税・手数料",
+   "基本料金・売電収入・税・賦課金"
+  ],
+  "answer_index": 0,
+  "explanation": "明細の内訳を説明できることが、診断の入口になる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第23条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-024",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "保証を説明するときに区別すべき4つは？",
+  "choices": [
+   "機器保証・出力保証・工事保証・自然災害補償",
+   "メーカー保証だけ",
+   "工事保証だけ",
+   "保証は一種類"
+  ],
+  "answer_index": 0,
+  "explanation": "混同して説明すると、後のトラブルの原因になる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第24条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-025",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "試算をする前に必ず確認するものは？",
+  "choices": [
+   "お客様の電気代明細（検針票）",
+   "近所の設置件数",
+   "屋根の色",
+   "築年数だけ"
+  ],
+  "answer_index": 0,
+  "explanation": "明細を見ずに試算しない。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第25条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-026",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "補助金の正しい伝え方は？",
+  "choices": [
+   "年度・自治体で変わるため「対象か確認します」と伝える",
+   "「必ずもらえます」",
+   "「国が全額出します」",
+   "「今なら100%通ります」"
+  ],
+  "answer_index": 0,
+  "explanation": "断定は誤認を招く。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第26条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-027",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "屋根の設置可否について正しい対応は？",
+  "choices": [
+   "現地調査で確認してから確定する",
+   "口頭で「絶対つけられる」と言う",
+   "写真だけで確定する",
+   "築年数から推測で答える"
+  ],
+  "answer_index": 0,
+  "explanation": "屋根の状態・築年数・構造は現地調査で確認する。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第27条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-028",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "わからない質問をされたときは？",
+  "choices": [
+   "「確認して折り返します」と伝える",
+   "その場で推測して答える",
+   "曖昧にごまかす",
+   "答えずに話題を変える"
+  ],
+  "answer_index": 0,
+  "explanation": "その場しのぎの回答は禁止。後で不実告知になりうる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第28条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-029",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "訪問記録・商談内容はいつ記録する？",
+  "choices": [
+   "当日中にアプリへ記録する",
+   "週末にまとめて",
+   "覚えていれば",
+   "上長に聞かれたら"
+  ],
+  "answer_index": 0,
+  "explanation": "記録がないと指導も改善もできない。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第29条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-030",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "クレーム・トラブルの兆候に気づいたら？",
+  "choices": [
+   "その日のうちに上長へ報告する",
+   "様子を見る",
+   "自分で解決してから報告",
+   "記録しない"
+  ],
+  "answer_index": 0,
+  "explanation": "隠さない。初動が遅れるほど大きくなる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第30条",
+  "verified_by": null
+ },
+ {
+  "code": "A-001",
+  "test_type": "basic100",
+  "category": "A_basic",
+  "tags": [],
+  "question": "太陽光パネルが光を電気に変える現象は？",
+  "choices": [
+   "光起電力効果",
+   "電磁誘導",
+   "圧電効果",
+   "熱電効果"
+  ],
+  "answer_index": 0,
+  "explanation": "半導体に光が当たって電圧が生じる現象。熱ではなく光（日射）で発電する。",
+  "talk_example": "「暑い日ほど発電するわけではなく、日射の強さが大事なんです」",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "A-002",
+  "test_type": "basic100",
+  "category": "A_basic",
+  "tags": [],
+  "question": "パネルの『5kW』が表しているものは？",
+  "choices": [
+   "発電設備の大きさ（出力）",
+   "1日の発電量",
+   "1年間の発電量",
+   "蓄電できる量"
+  ],
+  "answer_index": 0,
+  "explanation": "kWは力（出力）の単位。発電した量はkWhで表す。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "A-003",
+  "test_type": "basic100",
+  "category": "A_basic",
+  "tags": [],
+  "question": "日本の住宅用太陽光で、1kWあたりの年間発電量の目安は？",
+  "choices": [
+   "約100kWh",
+   "約1,000〜1,200kWh",
+   "約5,000kWh",
+   "約10,000kWh"
+  ],
+  "answer_index": 1,
+  "explanation": "地域・方角・角度・影で変わるが、目安は1kWあたり年1,000〜1,200kWh程度。",
+  "talk_example": "「5kW載せると年間5,000〜6,000kWhくらいが目安です。正確にはお宅の屋根でシミュレーションします」",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "A-004",
+  "test_type": "basic100",
+  "category": "A_basic",
+  "tags": [],
+  "question": "屋根の方角で最も発電量が多くなりやすいのは？",
+  "choices": [
+   "北",
+   "東",
+   "南",
+   "西"
+  ],
+  "answer_index": 2,
+  "explanation": "北半球の日本では南向きが最適。東西は南の約85%程度が目安。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "A-005",
+  "test_type": "basic100",
+  "category": "A_basic",
+  "tags": [],
+  "question": "パネルが発電する電気の種類と、それを家庭用に変える機器の組み合わせは？",
+  "choices": [
+   "交流・分電盤",
+   "直流・パワーコンディショナ",
+   "直流・蓄電池",
+   "交流・スマートメーター"
+  ],
+  "answer_index": 1,
+  "explanation": "パネルは直流で発電し、パワコンで家庭で使える交流に変換する。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "A-006",
+  "test_type": "basic100",
+  "category": "A_basic",
+  "tags": [],
+  "question": "発電量が大きく下がる原因として最も注意すべきものは？",
+  "choices": [
+   "気温が低いこと",
+   "パネルへの影",
+   "風が強いこと",
+   "湿度が高いこと"
+  ],
+  "answer_index": 1,
+  "explanation": "一部の影でも回路全体の出力に影響することがある。現地調査で周囲の建物・木・アンテナを必ず確認。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "B-001",
+  "test_type": "basic100",
+  "category": "B_battery",
+  "tags": [],
+  "question": "蓄電池の『容量』の単位は？",
+  "choices": [
+   "kW",
+   "kWh",
+   "V",
+   "A"
+  ],
+  "answer_index": 1,
+  "explanation": "容量＝ためられる電気の量でkWh。同時に使える力（出力）はkW。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "B-002",
+  "test_type": "basic100",
+  "category": "B_battery",
+  "tags": [],
+  "question": "停電時に家じゅうのコンセントを使えるタイプは？",
+  "choices": [
+   "特定負荷型",
+   "全負荷型",
+   "単機能型",
+   "系統連系型"
+  ],
+  "answer_index": 1,
+  "explanation": "全負荷型は家全体、特定負荷型は事前に決めた回路のみ。ただし容量・出力の範囲内でしか使えない。",
+  "talk_example": "「全負荷型なら家全体に電気が届きますが、エアコンとIHを同時に…だと出力を超えることがあるので、使い方をご説明しますね」",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "B-003",
+  "test_type": "basic100",
+  "category": "B_battery",
+  "tags": [],
+  "question": "太陽光と蓄電池のパワコンを1台にまとめたタイプは？",
+  "choices": [
+   "単機能型",
+   "ハイブリッド型",
+   "全負荷型",
+   "独立型"
+  ],
+  "answer_index": 1,
+  "explanation": "ハイブリッド型は太陽光と蓄電池を1台のパワコンで制御する。既設パワコンの年数によって単機能型と使い分ける。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "B-004",
+  "test_type": "basic100",
+  "category": "B_battery",
+  "tags": [],
+  "question": "蓄電池を選ぶとき『容量』と一緒に必ず確認するべきものは？",
+  "choices": [
+   "出力（kW）",
+   "重さだけ",
+   "色",
+   "メーカーの本社所在地"
+  ],
+  "answer_index": 0,
+  "explanation": "容量が大きくても出力が小さいと、同時に多くの家電を動かせない。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "C-001",
+  "test_type": "basic100",
+  "category": "C_equipment",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "海の近くの住宅で設置前に必ず確認すべきことは？",
+  "choices": [
+   "塩害地域向けの仕様・設置可否",
+   "パネルの色",
+   "近所の設置件数",
+   "電柱の本数"
+  ],
+  "answer_index": 0,
+  "explanation": "塩害地域はメーカーごとに設置可否や保証条件が異なる。確認せず販売すると保証対象外になるおそれがある。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "C-002",
+  "test_type": "basic100",
+  "category": "C_equipment",
+  "tags": [],
+  "question": "太陽光の電気をEVに充電したり、EVの電気を家で使ったりする仕組みは？",
+  "choices": [
+   "V2H",
+   "HEMS",
+   "FIT",
+   "PPA"
+  ],
+  "answer_index": 0,
+  "explanation": "Vehicle to Home の略。EVを大容量の蓄電池として使える。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "D-001",
+  "test_type": "basic100",
+  "category": "D_system",
+  "tags": [],
+  "question": "住宅用太陽光（10kW未満）の売電方式は？",
+  "choices": [
+   "全量売電",
+   "余剰売電",
+   "売電できない",
+   "自己託送"
+  ],
+  "answer_index": 1,
+  "explanation": "家で使って余った電気を売る余剰売電。買取期間は10年。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "D-002",
+  "test_type": "basic100",
+  "category": "D_system",
+  "tags": [],
+  "question": "『卒FIT』とは？",
+  "choices": [
+   "太陽光を撤去すること",
+   "固定価格での買取期間が終わること",
+   "補助金を返すこと",
+   "電力会社を変えること"
+  ],
+  "answer_index": 1,
+  "explanation": "買取期間満了後は売電単価が大きく下がるため、蓄電池で自家消費に切り替える提案が有効になる。",
+  "talk_example": "「売電の10年が終わると買取単価が大きく下がるので、ためて使うほうが有利になりやすいんです」",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "D-003",
+  "test_type": "basic100",
+  "category": "D_system",
+  "tags": [],
+  "question": "電気代明細の中で、再生可能エネルギーの買取費用を利用者が負担している項目は？",
+  "choices": [
+   "基本料金",
+   "燃料費調整額",
+   "再エネ賦課金",
+   "契約アンペア"
+  ],
+  "answer_index": 2,
+  "explanation": "再エネ発電促進賦課金。使用量（kWh）に応じてかかる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "D-004",
+  "test_type": "basic100",
+  "category": "D_system",
+  "tags": [],
+  "question": "補助金についてお客様に伝える正しい言い方は？",
+  "choices": [
+   "「必ずもらえます」",
+   "「国が全額出します」",
+   "「年度・自治体の条件と予算によります。対象か確認します」",
+   "「今申し込めば100%通ります」"
+  ],
+  "answer_index": 2,
+  "explanation": "補助金は年度・自治体ごとに条件・予算・締切が変わる。断定は誤認を招く。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "E-001",
+  "test_type": "basic100",
+  "category": "E_economics",
+  "tags": [],
+  "question": "現在、自家消費が売電より有利になりやすい理由は？",
+  "choices": [
+   "売電が禁止されたから",
+   "買う電気の単価が売電単価より高いから",
+   "パネルの寿命が延びたから",
+   "蓄電池が無料になったから"
+  ],
+  "answer_index": 1,
+  "explanation": "自分で使えば『買わずに済む電気代』分の価値があり、多くの場合それが売電単価を上回る。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "E-002",
+  "test_type": "basic100",
+  "category": "E_economics",
+  "tags": [],
+  "question": "回収期間の試算をお客様に示すとき、正しい伝え方は？",
+  "choices": [
+   "「必ず○年で元が取れます」",
+   "前提条件（電気代・使用量・単価・発電量）を示し、変動することも伝える",
+   "数字は出さず雰囲気で伝える",
+   "他社のお客様の数字をそのまま使う"
+  ],
+  "answer_index": 1,
+  "explanation": "試算は前提が変われば結果も変わる。断定すると不実告知・断定的判断の提供と取られるおそれ。",
+  "talk_example": "「今のご使用量と今の単価が続いた場合、この前提でこのくらいの試算です」",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "F-001",
+  "test_type": "basic100",
+  "category": "F_compliance",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "次のうち、言ってはいけないトークは？",
+  "choices": [
+   "「前提条件付きの試算です」",
+   "「電気代が必ずゼロになります」",
+   "「現地調査で設置可否を確認します」",
+   "「補助金の対象か確認します」"
+  ],
+  "answer_index": 1,
+  "explanation": "断定表現は事実と異なれば不実告知。お客様の信頼を失い、会社は行政処分の対象になりうる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "F-002",
+  "test_type": "basic100",
+  "category": "F_compliance",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "会社が実施していない『今日だけ特別値引き』を言うと何が問題か？",
+  "choices": [
+   "問題ない",
+   "事実と異なる限定で契約を急がせる行為になり、特商法・景品表示法上の問題になりうる",
+   "値引きしすぎで赤字になるだけ",
+   "上司に怒られるだけ"
+  ],
+  "answer_index": 1,
+  "explanation": "虚偽の限定や有利に見せかける表示は法令違反のおそれ。正規のキャンペーン以外は言わない。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-001",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "訪問販売で、勧誘の前に明示しなければならない事項の組み合わせは？",
+  "choices": [
+   "事業者名・勧誘目的・商品の種類",
+   "担当者の年齢・住所・趣味",
+   "価格・支払方法・納期",
+   "会社の売上・従業員数・設立年"
+  ],
+  "answer_index": 0,
+  "explanation": "勧誘に先立って事業者の氏名（名称）、契約締結の勧誘をする目的であること、商品等の種類を明らかにする。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第3条",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-002",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "お客様から『いらない』と言われた。正しい対応は？",
+  "choices": [
+   "もう一押しする",
+   "日を改めて再訪問する",
+   "その場で勧誘をやめ、以後も勧誘しない",
+   "上司を連れて再訪問する"
+  ],
+  "answer_index": 2,
+  "explanation": "契約を締結しない意思を示した者への勧誘継続・再勧誘は禁止。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第3条の2",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-003",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "訪問販売のクーリングオフ期間は？",
+  "choices": [
+   "契約日から3日間",
+   "法定書面を受け取った日を含めて8日間",
+   "工事完了日から14日間",
+   "20日間"
+  ],
+  "answer_index": 1,
+  "explanation": "訪問販売は法定書面受領日を1日目として8日間。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第9条",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-004",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "クーリングオフの通知方法として正しいものは？",
+  "choices": [
+   "電話のみ",
+   "書面のみ",
+   "書面またはメール等の電磁的方法",
+   "営業担当者への口頭連絡のみ"
+  ],
+  "answer_index": 2,
+  "explanation": "書面のほか電磁的記録による通知も可能。発信した時点で効力が生じる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第9条",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-005",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "工事が終わった後にクーリングオフされた場合、正しいのは？",
+  "choices": [
+   "工事後なのでクーリングオフできない",
+   "お客様が撤去費用を負担する",
+   "事業者の負担で原状回復し、受領金は全額返還する",
+   "工事代の半額を請求できる"
+  ],
+  "answer_index": 2,
+  "explanation": "期間内であれば工事後でも可能。事業者は損害賠償等を請求できず、お客様は無償での原状回復を求められる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第9条",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-006",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "『クーリングオフはできません』と言ってお客様が期間を過ぎてしまった場合は？",
+  "choices": [
+   "期間経過なので解除できない",
+   "妨害にあたり、期間経過後もクーリングオフできる",
+   "お客様の自己責任",
+   "半額返金で済む"
+  ],
+  "answer_index": 1,
+  "explanation": "不実告知や威迫による妨害があった場合、改めて書面を受け取ってから8日を経過するまでクーリングオフできる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第9条",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-007",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "契約書面のクーリングオフに関する記載方法として正しいのは？",
+  "choices": [
+   "裏面に小さく記載",
+   "赤枠の中に赤字で記載",
+   "口頭で説明すれば記載不要",
+   "別紙で後日郵送"
+  ],
+  "answer_index": 1,
+  "explanation": "クーリングオフ事項は赤枠内に赤字で記載する。文字は8ポイント以上。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第5条・施行規則",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-008",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "『電力会社から来ました』と名乗って訪問するのは？",
+  "choices": [
+   "提携していなければ問題ない",
+   "他の団体と誤認させる行為で、明示義務違反・不実告知のおそれ",
+   "丁寧なので推奨",
+   "事前に上司の許可があればよい"
+  ],
+  "answer_index": 1,
+  "explanation": "誤認させる名乗りは絶対禁止。事業者名を正しく伝える。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第3条・第6条",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-009",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "『無料で屋根の点検をします』と訪問し、不安を煽って契約させる手口は？",
+  "choices": [
+   "点検商法と呼ばれ、目的の不明示や不実告知として違反になりうる",
+   "サービスなので問題ない",
+   "点検結果が本当なら問題ない",
+   "契約金額が小さければ問題ない"
+  ],
+  "answer_index": 0,
+  "explanation": "勧誘目的を隠した訪問は明示義務違反。事実と違う劣化の指摘は不実告知。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第3条・第6条",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-010",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "不実告知をした場合の個人への刑事罰の上限は？",
+  "choices": [
+   "注意のみ",
+   "10万円以下の過料",
+   "3年以下の拘禁刑または300万円以下の罰金（併科あり）",
+   "罰則はない"
+  ],
+  "answer_index": 2,
+  "explanation": "不実告知等は刑事罰の対象。法人には1億円以下の罰金。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第70条・第74条",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-011",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "特商法違反による業務停止命令の最長期間は？",
+  "choices": [
+   "1週間",
+   "3ヶ月",
+   "6ヶ月",
+   "2年"
+  ],
+  "answer_index": 3,
+  "explanation": "業務停止命令は最長2年。役員等への業務禁止命令も可能。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第8条・第8条の2",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-012",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "お客様に『帰ってください』と言われた。正しい対応は？",
+  "choices": [
+   "説明が終わるまで居る",
+   "すぐに退去する",
+   "契約書だけ置いて粘る",
+   "上司に電話して指示を待つ"
+  ],
+  "answer_index": 1,
+  "explanation": "退去しないまま契約させると消費者契約法の取消対象。威迫・困惑にもあたりうる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "消費者契約法 第4条",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-013",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "過量販売を理由とする契約解除ができる期間は？",
+  "choices": [
+   "8日以内",
+   "契約締結から1年以内",
+   "5年以内",
+   "期限なし"
+  ],
+  "answer_index": 1,
+  "explanation": "日常生活で通常必要な量を著しく超える契約は、契約から1年以内なら解除できる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第9条の2",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-014",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "不実告知で誤認して契約した場合の取消権の行使期間は？",
+  "choices": [
+   "誤認に気づいた時から1年、契約から5年",
+   "契約から8日",
+   "契約から3ヶ月",
+   "取消しはできない"
+  ],
+  "answer_index": 0,
+  "explanation": "追認できる時（誤認に気づいた時）から1年、契約締結時から5年。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第9条の3",
+  "verified_by": null
+ },
+ {
+  "code": "LAW-015",
+  "test_type": "law",
+  "category": "LAW",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "高齢のお客様が話の内容を理解できていない様子。正しい対応は？",
+  "choices": [
+   "そのまま契約を進める",
+   "ご家族の同席をお願いし、その場での契約は見送る",
+   "簡単な言葉で急いで契約する",
+   "サインだけ先にもらう"
+  ],
+  "answer_index": 1,
+  "explanation": "判断力不足に乗じた契約は禁止行為。会社としても最も重いクレーム・処分リスク。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "特定商取引法 第7条・施行規則",
+  "verified_by": null
+ }
+]

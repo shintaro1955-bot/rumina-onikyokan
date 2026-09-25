@@ -34,6 +34,7 @@ import * as daycoach from './lib/daycoach.mjs';
 import * as recmind from './lib/recmind.mjs';
 import { buildup, teamStats } from './lib/buildup.mjs';
 import * as weekly from './lib/weekly.mjs';
+import * as training from './lib/training.mjs';
 import { todayGap, topPerformer } from './lib/todaygap.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
@@ -347,6 +348,12 @@ function persistReport(id, result, userName) {
     analysis: a, pings: result.pings || [], transcript: result.transcript || [],
   });
 }
+
+// 研修の問題バンクを投入（既にある問題は触らない。全問 verifiedBy 未設定＝出題されない）
+(function seedTraining() {
+  try { const r = training.seedQuestions(); if (r.seeded) console.log(`✓ 研修の問題を${r.seeded}問投入（確認待ち）／合計${r.total}問`); }
+  catch (e) { console.error('研修seed失敗:', e.message); }
+})();
 
 // 起動時：ownerが居なければ管理者アカウントを1つseed（＝モデル営業マン。既定は owner）
 (function seedOwner() {
@@ -683,6 +690,86 @@ const server = createServer(async (req, res) => {
           noLine,      // 本人がまだLINEログイン／本人選択をしていない
           nameGap,     // ポータルには登録があるのに、名前で拾えていない＝名寄せで救える
         });
+      }
+
+      /* ---------- 初心者研修「営業解禁ゲート」 ---------- */
+      /* 本人の研修ダッシュボード */
+      if (path === '/api/training/overview' && req.method === 'GET') {
+        const meT = currentUser(req); if (!meT) return json(res, 401, { error: 'ログインが必要です' });
+        return json(res, 200, { ok: true, ...training.overview(meT.username) });
+      }
+      /* 受験開始。返す問題に正解は含まない。 */
+      if (path === '/api/training/start' && req.method === 'POST') {
+        const meT = currentUser(req); if (!meT) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readJson(req) || {};
+        return json(res, 200, training.start(meT.username, +b.step || 0));
+      }
+      /* 採点。合否・解説はここで初めて返す。 */
+      if (path === '/api/training/grade' && req.method === 'POST') {
+        const meT = currentUser(req); if (!meT) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readJson(req) || {};
+        return json(res, 200, training.grade(meT.username, String(b.attemptId || ''), Array.isArray(b.answers) ? b.answers : []));
+      }
+      /* 中断（タブを閉じた等）。回数にカウントする。 */
+      if (path === '/api/training/abort' && req.method === 'POST') {
+        const meT = currentUser(req); if (!meT) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readJson(req) || {};
+        return json(res, 200, training.abort(meT.username, String(b.attemptId || '')));
+      }
+      /* 復習キュー */
+      if (path === '/api/training/review' && req.method === 'GET') {
+        const meT = currentUser(req); if (!meT) return json(res, 401, { error: 'ログインが必要です' });
+        return json(res, 200, { ok: true, items: training.reviewQueue(meT.username) });
+      }
+      if (path === '/api/training/review' && req.method === 'POST') {
+        const meT = currentUser(req); if (!meT) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readJson(req) || {};
+        return json(res, 200, training.answerReview(meT.username, String(b.questionId || ''), b.choiceText));
+      }
+      /* 解禁状態（他システムからも参照できるようにしておく。owner は他人ぶんも引ける） */
+      const mCert = path.match(/^\/api\/certification\/([^/]+)$/);
+      if (mCert && req.method === 'GET') {
+        const meT = currentUser(req);
+        const okSec = !!BOT_API_SECRET && url.searchParams.get('secret') === BOT_API_SECRET;
+        const who = decodeURIComponent(mCert[1]);
+        if (!okSec && (!meT || (meT.username !== who && meT.role !== 'owner'))) return json(res, 401, { error: '権限がありません' });
+        return json(res, 200, { ok: true, user: who, ...training.certPublic(who) });
+      }
+
+      /* ---- 管理（owner） ---- */
+      if (path === '/api/training/admin/roster' && req.method === 'GET') {
+        const meT = currentUser(req); if (!meT || meT.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        return json(res, 200, { ok: true, rows: training.roster(), questions: training.questionStats() });
+      }
+      if (path === '/api/training/admin/questions' && req.method === 'GET') {
+        const meT = currentUser(req); if (!meT || meT.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        return json(res, 200, { ok: true, items: training.listQuestions({ testType: url.searchParams.get('type') || '', onlyUnverified: url.searchParams.get('unverified') === '1' }) });
+      }
+      if (path === '/api/training/admin/verify' && req.method === 'POST') {
+        const meT = currentUser(req); if (!meT || meT.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const b = await readJson(req) || {};
+        const codes = Array.isArray(b.codes) ? b.codes : (b.code ? [b.code] : []);
+        const out = codes.map(c => training.verifyQuestion(meT.username, String(c), String(b.verifiedBy || ''), b.active !== false));
+        return json(res, 200, { ok: true, results: out });
+      }
+      if (path === '/api/training/admin/approve' && req.method === 'POST') {
+        const meT = currentUser(req); if (!meT || meT.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const b = await readJson(req) || {};
+        return json(res, 200, training.approve(meT.username, String(b.user || ''), String(b.comment || '')));
+      }
+      if (path === '/api/training/admin/suspend' && req.method === 'POST') {
+        const meT = currentUser(req); if (!meT || meT.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const b = await readJson(req) || {};
+        return json(res, 200, training.suspend(meT.username, String(b.user || ''), String(b.reason || '')));
+      }
+      if (path === '/api/training/admin/law-alert' && req.method === 'POST') {
+        const meT = currentUser(req); if (!meT || meT.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const b = await readJson(req) || {};
+        return json(res, 200, training.expireAllLaw(meT.username, String(b.reason || '')));
+      }
+      if (path === '/api/training/admin/audit' && req.method === 'GET') {
+        const meT = currentUser(req); if (!meT || meT.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        return json(res, 200, { ok: true, rows: training.auditList({ limit: +(url.searchParams.get('limit') || 200), user: url.searchParams.get('user') || '' }) });
       }
 
       /* 今日の自分と、今日のみんな（トップ画面の指標）。訪問・アポ・歩いた距離と不足分。 */

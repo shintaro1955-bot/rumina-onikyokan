@@ -1,0 +1,602 @@
+[
+ {
+  "code": "MUST-001",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "玄関先で、商品の話をする前に必ず伝える3つは？",
+  "choices": [
+   "会社名・勧誘が目的であること・商品の種類",
+   "担当者名・年齢・出身",
+   "価格・工期・保証",
+   "会社の売上・設立年・従業員数"
+  ],
+  "answer_index": 0,
+  "explanation": "事業者名、勧誘目的であること、商品等の種類を勧誘に先立って明示する。",
+  "talk_example": "「◯◯株式会社の△△です。電気の無料診断のご案内で回っています」",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第1条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-002",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "「結構です」と言われた後の正しい行動は？",
+  "choices": [
+   "その場で終了し、以後その人に勧誘しない",
+   "日を改めて再訪問する",
+   "上司を連れて戻る",
+   "もう一度だけ押す"
+  ],
+  "answer_index": 0,
+  "explanation": "契約しない意思を示した人への勧誘継続・再勧誘は違法。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第2条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-003",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "「電力会社の者です」と名乗ることは？",
+  "choices": [
+   "絶対禁止。他の団体と誤認させる名乗りにあたる",
+   "提携していれば可",
+   "上司の許可があれば可",
+   "丁寧なので推奨"
+  ],
+  "answer_index": 0,
+  "explanation": "誤認させる名乗りは明示義務違反・不実告知のおそれ。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第3条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-004",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "「無料点検に来ました」と装って販売する手口は？",
+  "choices": [
+   "点検商法。禁止されている",
+   "サービスなので問題ない",
+   "点検が本当なら問題ない",
+   "小額なら問題ない"
+  ],
+  "answer_index": 0,
+  "explanation": "勧誘目的を隠した訪問は明示義務違反にあたる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第4条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-005",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "事実と違うことを言う、大事なことを故意に言わない行為は？",
+  "choices": [
+   "不実告知・事実不告知として刑事罰の対象",
+   "マナー違反にとどまる",
+   "社内注意で済む",
+   "問題にならない"
+  ],
+  "answer_index": 0,
+  "explanation": "刑事罰の対象。会社にも行政処分のおそれ。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第5条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-006",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "訪問販売のクーリングオフ期間は？",
+  "choices": [
+   "契約書面を受け取った日を含めて8日間",
+   "契約日から3日間",
+   "工事完了から14日間",
+   "20日間"
+  ],
+  "answer_index": 0,
+  "explanation": "法定書面の受領日を1日目として8日間。書面またはメール等の電磁的方法で通知できる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第6条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-007",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "「クーリングオフはできません」と伝えた場合は？",
+  "choices": [
+   "妨害にあたり違法。期間も延びる",
+   "期間内なら問題ない",
+   "口頭なら問題ない",
+   "契約後なら問題ない"
+  ],
+  "answer_index": 0,
+  "explanation": "妨害があった場合、改めて書面を受け取ってから8日を経過するまで解除できる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第7条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-008",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "契約書面の交付とクーリングオフの記載方法は？",
+  "choices": [
+   "その場で必ず交付し、クーリングオフは赤枠に赤字",
+   "後日郵送でよい",
+   "口頭説明で足りる",
+   "裏面に小さく記載"
+  ],
+  "answer_index": 0,
+  "explanation": "書面はその場で交付。クーリングオフ事項は赤枠内に赤字で記載する。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第8条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-009",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "試算をお客様に伝えるときの正しい言い方は？",
+  "choices": [
+   "前提条件を示し、変動することも伝える",
+   "「電気代がゼロになります」",
+   "「絶対に得をします」",
+   "「必ず◯年で元が取れます」"
+  ],
+  "answer_index": 0,
+  "explanation": "断定は不実告知・断定的判断の提供と取られるおそれ。",
+  "talk_example": "「今のご使用量と単価が続いた場合、という前提での試算です」",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第9条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-010",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "「帰ってください」と言われたときは？",
+  "choices": [
+   "即座に退去する",
+   "説明が終わるまで居る",
+   "契約書を置いて粘る",
+   "上司の指示を待つ"
+  ],
+  "answer_index": 0,
+  "explanation": "居座りは威迫・困惑にあたり、消費者契約法の取消対象にもなる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第10条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-011",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "高齢のお客様で判断に不安がある場合は？",
+  "choices": [
+   "ご家族の同席をお願いし、その場での契約は見送る",
+   "簡単な言葉で急いで契約する",
+   "サインだけ先にもらう",
+   "そのまま進める"
+  ],
+  "answer_index": 0,
+  "explanation": "判断力不足に乗じた契約は禁止行為。会社として最も重いリスク。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第11条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-012",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "会社が出していない「今日だけ特別値引き」を言うのは？",
+  "choices": [
+   "言わない。事実でない限定は法令違反のおそれ",
+   "歩合が上がるなら可",
+   "上司に黙っていれば可",
+   "お客様が喜ぶので可"
+  ],
+  "answer_index": 0,
+  "explanation": "虚偽の限定・有利に見せかける表示は特商法・景表法上の問題になりうる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第12条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-013",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "kW と kWh の違いは？",
+  "choices": [
+   "kW＝力の大きさ、kWh＝量",
+   "kW＝量、kWh＝力の大きさ",
+   "どちらも同じ",
+   "kWhは電圧の単位"
+  ],
+  "answer_index": 0,
+  "explanation": "パネル容量はkW、発電量と蓄電容量はkWh。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第13条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-014",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "パネルが発電する電気と、家で使うために変換する機器は？",
+  "choices": [
+   "直流で発電し、パワーコンディショナで交流に変える",
+   "交流で発電し、分電盤で変える",
+   "直流で発電し、蓄電池で変える",
+   "交流で発電し、変換は不要"
+  ],
+  "answer_index": 0,
+  "explanation": "パネルは直流（DC）、家庭用は交流（AC）。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第14条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-015",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "日本の住宅用太陽光で1kWあたりの年間発電量の目安は？",
+  "choices": [
+   "約1,000〜1,200kWh",
+   "約100kWh",
+   "約5,000kWh",
+   "約10,000kWh"
+  ],
+  "answer_index": 0,
+  "explanation": "地域・方角・角度・影で変わる目安。",
+  "talk_example": "「5kWで年5,000〜6,000kWhが目安。正確にはお宅の屋根で試算します」",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第15条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-016",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "屋根の方角で最も発電しやすいのは？また東西の目安は？",
+  "choices": [
+   "南が最適。東西は南の約85%程度",
+   "北が最適",
+   "東が最適。南は約85%",
+   "方角は関係ない"
+  ],
+  "answer_index": 0,
+  "explanation": "北面は原則すすめない。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第16条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-017",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "発電量を落とす最大の要因は？",
+  "choices": [
+   "影。一部でも回路全体に影響することがある",
+   "低い気温",
+   "強い風",
+   "高い湿度"
+  ],
+  "answer_index": 0,
+  "explanation": "現地調査で周囲の建物・木・アンテナを必ず確認する。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第17条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-018",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "蓄電池で容量と一緒に必ず見るものは？",
+  "choices": [
+   "出力（kW）。同時に使える力",
+   "重さ",
+   "色",
+   "本社所在地"
+  ],
+  "answer_index": 0,
+  "explanation": "容量（kWh）＝ためられる量、出力（kW）＝同時に使える力。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第18条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-019",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "停電時に家全体が使えるタイプは？",
+  "choices": [
+   "全負荷型",
+   "特定負荷型",
+   "単機能型",
+   "系統連系型"
+  ],
+  "answer_index": 0,
+  "explanation": "特定負荷型は決めた回路だけ。ただし容量・出力の範囲内。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第19条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-020",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "住宅用太陽光（10kW未満）の売電方式と買取期間は？",
+  "choices": [
+   "余剰売電・10年",
+   "全量売電・20年",
+   "余剰売電・20年",
+   "全量売電・10年"
+  ],
+  "answer_index": 0,
+  "explanation": "使って余った分を売る余剰売電。買取期間は10年。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第20条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-021",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "固定価格での買取期間が終わることを何という？",
+  "choices": [
+   "卒FIT",
+   "FIP",
+   "PPA",
+   "V2H"
+  ],
+  "answer_index": 0,
+  "explanation": "買取単価が大きく下がるため、自家消費への切り替え提案が有効になる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第21条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-022",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "今、売電より自家消費が有利になりやすい理由は？",
+  "choices": [
+   "買う電気の単価が売電単価より高いから",
+   "売電が禁止されたから",
+   "パネルの寿命が延びたから",
+   "蓄電池が無料だから"
+  ],
+  "answer_index": 0,
+  "explanation": "自分で使えば「買わずに済む電気代」分の価値がある。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第22条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-023",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "電気代明細を構成する4つは？",
+  "choices": [
+   "基本料金・電力量料金・燃料費調整額・再エネ賦課金",
+   "基本料金・工事費・税・保険",
+   "電力量料金・修繕費・税・手数料",
+   "基本料金・売電収入・税・賦課金"
+  ],
+  "answer_index": 0,
+  "explanation": "明細の内訳を説明できることが、診断の入口になる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第23条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-024",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "保証を説明するときに区別すべき4つは？",
+  "choices": [
+   "機器保証・出力保証・工事保証・自然災害補償",
+   "メーカー保証だけ",
+   "工事保証だけ",
+   "保証は一種類"
+  ],
+  "answer_index": 0,
+  "explanation": "混同して説明すると、後のトラブルの原因になる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第24条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-025",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "試算をする前に必ず確認するものは？",
+  "choices": [
+   "お客様の電気代明細（検針票）",
+   "近所の設置件数",
+   "屋根の色",
+   "築年数だけ"
+  ],
+  "answer_index": 0,
+  "explanation": "明細を見ずに試算しない。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第25条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-026",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "補助金の正しい伝え方は？",
+  "choices": [
+   "年度・自治体で変わるため「対象か確認します」と伝える",
+   "「必ずもらえます」",
+   "「国が全額出します」",
+   "「今なら100%通ります」"
+  ],
+  "answer_index": 0,
+  "explanation": "断定は誤認を招く。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第26条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-027",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "屋根の設置可否について正しい対応は？",
+  "choices": [
+   "現地調査で確認してから確定する",
+   "口頭で「絶対つけられる」と言う",
+   "写真だけで確定する",
+   "築年数から推測で答える"
+  ],
+  "answer_index": 0,
+  "explanation": "屋根の状態・築年数・構造は現地調査で確認する。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第27条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-028",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "わからない質問をされたときは？",
+  "choices": [
+   "「確認して折り返します」と伝える",
+   "その場で推測して答える",
+   "曖昧にごまかす",
+   "答えずに話題を変える"
+  ],
+  "answer_index": 0,
+  "explanation": "その場しのぎの回答は禁止。後で不実告知になりうる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第28条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-029",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [],
+  "question": "訪問記録・商談内容はいつ記録する？",
+  "choices": [
+   "当日中にアプリへ記録する",
+   "週末にまとめて",
+   "覚えていれば",
+   "上長に聞かれたら"
+  ],
+  "answer_index": 0,
+  "explanation": "記録がないと指導も改善もできない。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第29条",
+  "verified_by": null
+ },
+ {
+  "code": "MUST-030",
+  "test_type": "must30",
+  "category": "MUST30",
+  "tags": [
+   "safety_law"
+  ],
+  "question": "クレーム・トラブルの兆候に気づいたら？",
+  "choices": [
+   "その日のうちに上長へ報告する",
+   "様子を見る",
+   "自分で解決してから報告",
+   "記録しない"
+  ],
+  "answer_index": 0,
+  "explanation": "隠さない。初動が遅れるほど大きくなる。",
+  "talk_example": "",
+  "difficulty": 1,
+  "source_note": "鬼の30箇条 第30条",
+  "verified_by": null
+ }
+]
