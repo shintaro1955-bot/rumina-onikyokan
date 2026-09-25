@@ -142,34 +142,6 @@ function gInput(id, label, val, hint) {
     <div class="text-[10px] text-neutral-500 mt-1">${hint}</div>
   </label>`;
 }
-function viewGoal() {
-  const g = GOALS.current, a = SESSION.analysis, b = R.TOP_BENCHMARK;
-  return `
-  ${h1('目標を決める', '期間のアポ目標を入れると、なぜ届かないかを鬼教官が「行動→在宅→会話→クロージング」に分解して言語化する。')}
-  <div class="grid lg:grid-cols-5 gap-6">
-    <div class="lg:col-span-2 space-y-4">
-      <div class="grid grid-cols-2 gap-3">
-        ${gInput('g_target', '期間アポ目標（件）', g.targetApoPeriod, 'この期間で取りたい総数')}
-        ${gInput('g_days', '勤務数（日）', g.periodDays, '例：月22勤務')}
-      </div>
-      <div class="text-xs text-neutral-500 pt-1">1日あたりの行動目標（既定＝トップ営業の型）</div>
-      <div class="grid grid-cols-2 gap-3">
-        ${gInput('g_pings', 'ピンポン/日', g.pings, `トップ${b.targetPings}・現状${a.totalPings}`)}
-        ${gInput('g_home', '在宅反応率 %', g.homeResponseRate, `トップ${b.homeResponseRate}・現状${a.homeResponseRate}`)}
-        ${gInput('g_conv', '会話発生率 %', g.conversationRate, `トップ${b.conversationRate}・現状${a.conversationRate}`)}
-        ${gInput('g_apo', 'アポ率 %', g.appointmentRate, `トップ${b.appointmentRate}・現状${a.appointmentRate}`)}
-        ${gInput('g_open', '冒頭質問率 %', g.openingQuestionRate, `トップ${b.openingQuestionRate}・現状${a.openingQuestionRate}`)}
-        ${gInput('g_reb', '切り返し回数', g.averageRebuttalCount, `トップ${b.averageRebuttalCount}・現状${a.averageRebuttalCount}`)}
-      </div>
-      <div class="text-[10px] text-neutral-500">※ 見込み計算を動かすのは ピンポン/在宅/会話発生/アポ率。冒頭質問・切り返しはその裏の行動目標。</div>
-      <button onclick="resetGoal()" class="text-xs text-neutral-500 hover:text-neutral-700 underline">トップ営業の型にリセット</button>
-    </div>
-    <div id="goalResult" class="lg:col-span-3">${goalResultHTML()}</div>
-  </div>
-  <div class="mt-8">
-    <button onclick="nav('report')" class="px-5 py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold transition">この目標でレポートを見る</button>
-  </div>`;
-}
 
 function goalResultHTML() {
   const r = GOALS.backcast(SESSION.analysis, GOALS.current);
@@ -1814,7 +1786,7 @@ async function loadApoCoach() {
     ${d.enabled ? '' : `<div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[12.5px] text-neutral-700">まだ自動送信はOFFです。上のリストで問題なければ、本番の環境変数 <b>APO_COACH_ON=1</b> を立てると翌朝から本人LINEへ届き始めます（1日1回・上限${d.dailyMax || 20}名）。</div>`}`;
 }
 
-const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, goals: viewGoalPage, terakoya: viewTerakoya, goal: viewGoal, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay, apocoach: viewApoCoach };
+const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, terakoya: viewTerakoya, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay, apocoach: viewApoCoach };
 // 新IA(today/field/academy/league/me)は同一currentViewでnav-activeを共有させる別名解決
 const NAV_ALIAS = { ranking: 'league', my: 'me' };
 function nav(v) {
@@ -1836,7 +1808,6 @@ function nav(v) {
   if (v === 'apocoach') loadApoCoach();
   if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
   if (v === 'me') loadMePerf();
-  if (v === 'goals') loadGoalPage();
   if (v === 'academy') loadAcademy();
   if (v === 'terakoya') loadTerakoya();
   loadRail();
@@ -2159,7 +2130,7 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  const allowed = ['today', 'field', 'academy', 'league', 'me', 'goals', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
+  const allowed = ['today', 'field', 'academy', 'league', 'me', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
   if (!allowed.includes(currentView) || currentView === 'login') currentView = 'today';   // 常にTodayから
   nav(currentView);
   updateSync();
@@ -2294,10 +2265,7 @@ async function loadToday() {
   const d = await API.today() || {};
   window.__dash = d;
   const today = d.today, cz = d.cyzen, tr = d.trend, mo = d.momentum, streak = d.streak || 0;
-  const target = (d.goal && d.goal.visits) || 50;
   const tv = today ? today.visits : 0, ta = today ? today.apo : 0;
-  const pct = target ? tv / target * 100 : 0;
-  const remain = Math.max(0, target - tv);
   const workH = today && today.workStart && today.workEnd
     ? ((Date.parse(today.workEnd.replace(' ', 'T')) - Date.parse(today.workStart.replace(' ', 'T'))) / 3600000) : null;
   const score = mo && mo.score != null ? mo.score : null;
@@ -2312,18 +2280,14 @@ async function loadToday() {
         <div class="muted" style="font-size:10px">${mo.confidence === 'low' ? '（データ少・暫定）' : '/ 1000'}</div></div>` : ''}
     </div>
     <div style="display:flex;gap:20px;align-items:center;margin-top:16px;flex-wrap:wrap">
-      ${today ? ring(pct) : ''}
       <div style="display:grid;grid-template-columns:repeat(4,auto);gap:14px 22px">
-        ${foStat('訪問', `${tv}`, today && target ? `/ ${target}` : '件')}
+        ${foStat('訪問', `${tv}`, '件')}
         ${foStat('アポ', `${ta}`, '件')}
         ${foStat('稼働', workH != null ? workH.toFixed(1) : '—', workH != null ? 'h' : '')}
         ${foStat('連続', streak, '日')}
       </div>
     </div>
-    ${today ? (remain > 0
-      ? `<div class="fo-chip" style="margin-top:16px">あと ${remain} 訪問で今日の目標達成</div>${d.forecast ? `<span class="muted" style="font-size:12px;margin-left:8px">現在ペースで ${d.forecast.etaText}</span>` : ''}`
-      : `<div class="fo-chip" style="margin-top:16px">今日の訪問目標を達成しています</div>`)
-      : `<div style="margin-top:16px"><span class="muted" style="font-size:13px">今日の記録はこれからです。回った分だけここに積み上がります。</span></div>`}
+    ${today ? '' : `<div style="margin-top:16px"><span class="muted" style="font-size:13px">今日の記録はこれからです。回った分だけここに積み上がります。</span></div>`}
     <div class="muted" style="font-size:11px;margin-top:10px">${today && today.date ? today.date + ' の実績' : ''}${today ? ` ・ <span onclick="nav('field')" style="color:var(--primary);cursor:pointer">1日を振り返る →</span>` : ''}</div>
   </div>`;
 
@@ -2416,148 +2380,15 @@ async function delPost(id) { if (confirm('この投稿を削除しますか？')
 window.doReact = doReact; window.delPost = delPost;
 
 /* 目標設定モーダル */
-function openGoal() {
-  const g = (window.__dash && window.__dash.goal) || { visits: 50, apo: null };
-  const m = document.createElement('div');
-  m.id = 'goalModal';
-  m.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px';
-  m.innerHTML = `<div class="fo-card" style="padding:20px;max-width:360px;width:100%" onclick="event.stopPropagation()">
-    <div style="font-size:16px;font-weight:700;color:var(--text)">今日の目標</div>
-    <label style="display:block;margin-top:14px;font-size:13px" class="muted">1日の訪問目標（件）</label>
-    <input id="gVisits" type="number" value="${g.visits}" style="width:100%;margin-top:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:15px;color:var(--text)">
-    <label style="display:block;margin-top:12px;font-size:13px" class="muted">1日のアポ目標（件・任意）</label>
-    <input id="gApo" type="number" value="${g.apo ?? ''}" placeholder="任意" style="width:100%;margin-top:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:15px;color:var(--text)">
-    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
-      <button class="fo-btn ghost" onclick="closeGoal()">キャンセル</button><button class="fo-btn" onclick="saveGoal()">保存</button></div>
-  </div>`;
-  m.onclick = closeGoal;
-  document.body.appendChild(m);
-}
-function closeGoal() { const m = document.getElementById('goalModal'); if (m) m.remove(); }
-async function saveGoal() {
-  const visits = parseInt(document.getElementById('gVisits').value) || 50;
-  const apoV = document.getElementById('gApo').value; const apo = apoV === '' ? null : parseInt(apoV);
-  try { await API.setGoal({ visits, apo }); API.track('goal_updated'); closeGoal(); if (currentView === 'today') loadToday(); else if (currentView === 'me') loadMePerf(); loadRail(); } catch (e) { alert(e.message); }
-}
-window.openGoal = openGoal; window.closeGoal = closeGoal; window.saveGoal = saveGoal;
 
 /* ---------- 自分の目標（/goals） ---------- */
-function viewGoalPage() { return `${h1('自分の目標')}<div id="goalPage"><div class="fo-card muted" style="padding:20px">読み込み中…</div></div>`; }
-async function loadGoalPage() {
-  const wrap = document.getElementById('goalPage'); if (!wrap) return;
-  const d = await API.dashboard() || {}; window.__dash = d;
-  const g = d.goal || { visits: 50, apo: null, why: '' };
-  const today = d.today, cz = d.cyzen, mo = d.momentum;
-  const tv = today ? today.visits : 0, ta = today ? today.apo : 0;
-  const pct = g.visits ? tv / g.visits * 100 : 0;
-  const apoPct = g.apo ? ta / g.apo * 100 : null;
-
-  const progress = `<div class="fo-card" style="padding:20px">
-    <div class="muted" style="font-size:11px;font-weight:700">今日の進捗${today && today.date ? ' ・ ' + today.date : ''}</div>
-    <div style="display:flex;gap:20px;align-items:center;margin-top:14px;flex-wrap:wrap">
-      ${ring(pct)}
-      <div style="display:grid;grid-template-columns:repeat(2,auto);gap:14px 24px">
-        ${foStat('訪問', `${tv}`, `/ ${g.visits}`)}
-        ${g.apo != null ? foStat('アポ', `${ta}`, `/ ${g.apo}`) : foStat('アポ', `${ta}`, '件')}
-      </div>
-    </div>
-    ${today ? (tv < g.visits ? `<div class="fo-chip" style="margin-top:14px">あと ${g.visits - tv} 訪問で目標</div>` : `<div class="fo-chip" style="margin-top:14px">今日の訪問目標クリア</div>`) : `<div class="muted" style="font-size:13px;margin-top:14px">今日のcyzen記録はまだありません。</div>`}
-  </div>`;
-
-  // チームの中での位置。個人の順位は出さず、中央値とトップ層だけを物差しにする。
-  let bench = null; try { bench = await API.teamBench(); } catch (e) {}
-  const myVpd = cz ? cz.visitsPerDay : null;
-  const myApoRate = (cz && cz.visits) ? +(cz.apo / cz.visits * 100).toFixed(1) : null;
-  const scale = (v, top) => Math.max(2, Math.min(100, (v / Math.max(1, top * 1.15)) * 100));
-  // 自分の実績がまだ無い人にも、追いかける先（中央値・トップ層）は見せる。
-  const cmpRow = (label, mine, st, unit) => {
-    if (!st || st.median == null) return '';
-    const top = st.top ?? st.median;
-    const diff = mine == null ? null : +(mine - st.median).toFixed(1);
-    const state = diff == null
-      ? '<span class="muted" style="font-size:12px">あなたの記録がまだありません</span>'
-      : diff >= 0
-        ? `<span style="color:var(--primary);font-weight:700">中央値を ${diff === 0 ? '同水準' : '+' + diff + unit} 上回る</span>`
-        : `<span style="color:#e11d48;font-weight:700">中央値まで あと ${Math.abs(diff)}${unit}</span>`;
-    return `<div style="margin-top:14px">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;gap:8px;flex-wrap:wrap">
-        <span style="color:var(--text);font-weight:600">${label}</span>${state}</div>
-      <div style="position:relative;height:10px;border-radius:6px;background:var(--surface-2);margin-top:6px">
-        ${mine == null ? '' : `<div style="position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--primary);width:${scale(mine, top)}%"></div>`}
-        <div title="中央値" style="position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--muted);left:${scale(st.median, top)}%"></div>
-        <div title="トップ層" style="position:absolute;top:-3px;bottom:-3px;width:2px;background:#f59e0b;left:${scale(top, top)}%"></div>
-      </div>
-      <div class="muted" style="font-size:11px;margin-top:4px">${mine == null ? '' : `あなた <b style="color:var(--text)">${mine}${unit}</b> ・ `}中央値 ${st.median}${unit} ・ <span style="color:#b45309">トップ層 ${top}${unit}</span></div>
-    </div>`;
-  };
-  const benchCard = (bench && bench.ready) ? `<div class="fo-card" style="padding:18px;margin-top:14px">
-    <div style="font-weight:700;color:var(--text)">チームの中での位置</div>
-    <div class="muted" style="font-size:12px;margin-top:4px">稼働している ${bench.people}人の中央値と、トップ層（上位25%）を物差しにしています。順位は出しません。</div>
-    ${cmpRow('訪問 / 日', myVpd, bench.vpd, '件')}
-    ${cmpRow('アポ率', myApoRate, bench.apoRate, '%')}
-  </div>` : '';
-
-  // 目標の当てはめ。中央値とトップ層をワンタップで入れられるようにする。
-  const suggest = (bench && bench.ready && bench.vpd.median != null) ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-      <button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="applyGoalSuggest(${Math.ceil(bench.vpd.median)})">中央値に合わせる（${Math.ceil(bench.vpd.median)}件）</button>
-      <button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="applyGoalSuggest(${Math.ceil(bench.vpd.top ?? bench.vpd.median)})">トップ層を狙う（${Math.ceil(bench.vpd.top ?? bench.vpd.median)}件）</button>
-    </div>` : '';
-
-  const editor = `<div class="fo-card" style="padding:18px;margin-top:14px">
-    <div style="font-weight:700;color:var(--text)">目標を決める</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
-      <label style="font-size:12px" class="muted">1日の訪問目標（件）
-        <input id="gpVisits" type="number" value="${g.visits}" style="display:block;width:100%;margin-top:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:16px;color:var(--text)"></label>
-      <label style="font-size:12px" class="muted">1日のアポ目標（件・任意）
-        <input id="gpApo" type="number" value="${g.apo ?? ''}" placeholder="任意" style="display:block;width:100%;margin-top:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:16px;color:var(--text)"></label>
-    </div>
-    <label style="font-size:12px;display:block;margin-top:12px" class="muted">なぜこの目標？
-      <textarea id="gpWhy" rows="3" placeholder="自分の言葉で" style="display:block;width:100%;margin-top:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:14px;color:var(--text);line-height:1.6">${(g.why || '').replace(/</g, '&lt;')}</textarea></label>
-    ${suggest}
-    <div style="margin-top:14px;display:flex;gap:8px;align-items:center"><button class="fo-btn" onclick="saveGoalPage()">保存</button><span id="gpMsg" class="muted" style="font-size:12px"></span>
-      ${g.updatedAt ? `<span class="muted" style="font-size:11px;margin-left:auto">更新 ${(g.updatedAt || '').slice(0, 10)}</span>` : ''}</div>
-  </div>`;
-
-  const recent = cz ? `<div class="fo-card" style="padding:18px;margin-top:14px">
-    <div style="font-weight:700;color:var(--text)">直近${cz.periodDays}日の実績 vs 目標</div>
-    <div style="margin-top:12px">
-      ${goalBar('訪問/日', cz.visitsPerDay, g.visits, '件')}
-      ${g.apo != null ? goalBar('アポ/日', +(cz.apo / Math.max(1, cz.days)).toFixed(1), g.apo, '件') : ''}
-    </div>
-    <div class="muted" style="font-size:12px;margin-top:10px">稼働 ${cz.days}日 ・ 連続 ${d.streak || 0}日</div>
-  </div>` : '';
-
-  const contrib = mo && mo.parts ? `<div class="fo-card" style="padding:18px;margin-top:14px">
-    <div style="font-weight:700;color:var(--text)">Momentum への寄与</div>
-    
-    <div style="margin-top:10px">${goalBar('行動目標達成', Math.round(mo.parts.goal * 100), 100, '%')}</div>
-    <div style="margin-top:8px"><span class="mx-more" onclick="nav('me')">Momentum内訳を見る »</span></div>
-  </div>` : '';
-
-  wrap.innerHTML = progress + benchCard + editor + recent + contrib;
-}
 function goalBar(label, val, target, unit) {
   const pct = target ? Math.min(100, Math.round(val / target * 100)) : 0;
   const over = val >= target;
   return `<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="color:var(--text)">${label}</span><span class="num" style="color:${over ? 'var(--primary)' : 'var(--text)'}">${val}<span class="muted"> / ${target}${unit}</span></span></div>
     <div style="height:8px;border-radius:5px;background:var(--surface-2);margin-top:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--primary)"></div></div></div>`;
 }
-/* 中央値／トップ層をそのまま訪問目標に入れる。 */
-function applyGoalSuggest(v) {
-  const el = document.getElementById('gpVisits'); if (!el) return;
-  el.value = v; el.focus();
-  const msg = document.getElementById('gpMsg'); if (msg) msg.textContent = '入れました。保存を押すと確定します。';
-}
 
-async function saveGoalPage() {
-  const visits = parseInt(document.getElementById('gpVisits').value) || 50;
-  const apoV = document.getElementById('gpApo').value; const apo = apoV === '' ? null : parseInt(apoV);
-  const why = document.getElementById('gpWhy').value;
-  const msg = document.getElementById('gpMsg');
-  try { await API.setGoal({ visits, apo, why }); API.track('goal_updated'); if (msg) { msg.textContent = '保存しました'; msg.style.color = 'var(--primary)'; } loadRail(); setTimeout(() => { if (msg) msg.textContent = ''; }, 1500); }
-  catch (e) { if (msg) { msg.textContent = e.message; msg.style.color = 'var(--danger)'; } }
-}
-window.saveGoalPage = saveGoalPage;
 
 /* ---------- MY PERFORMANCE（/me） ---------- */
 function viewMePerf() { return `<div id="mePerf"><div class="fo-card muted" style="padding:20px">読み込み中…</div></div>`; }
@@ -2579,12 +2410,6 @@ async function loadMePerf() {
     ${mo && mo.confidence === 'low' ? '<div class="muted" style="font-size:11px">※データが少なく暫定値です</div>' : ''}
     ${bars}
     ${u.role === 'owner' ? `<div style="margin-top:14px;text-align:right"><button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="openWeights()">重みを設定</button></div>` : ''}
-  </div>`;
-
-  const g = d.goal || { visits: 50 };
-  const goalCard = `<div class="fo-card" style="padding:16px;margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700;color:var(--text)">目標</div><button class="fo-btn ghost" style="padding:5px 12px;font-size:12px" onclick="nav('goals')">変更</button></div>
-    <div style="font-size:13px;margin-top:8px;color:var(--text)">訪問 <b class="num">${g.visits}</b> 件/日${g.apo != null ? ` ・ アポ <b class="num">${g.apo}</b> 件/日` : ''}</div>
   </div>`;
 
   const statCard = cz ? `<div class="fo-card" style="padding:16px;margin-top:14px">
@@ -2613,7 +2438,7 @@ async function loadMePerf() {
     <div id="dcBody" style="margin-top:12px"><div class="muted" style="font-size:13px">読み込み中…</div></div>
   </div>`;
 
-  wrap.innerHTML = `${h1('My Performance')}<div id="portalCard" class="mb-4"></div><div id="weekMove" class="mb-4"></div>${moCard}${dayCard}${goalCard}${statCard}`
+  wrap.innerHTML = `${h1('My Performance')}<div id="portalCard" class="mb-4"></div><div id="weekMove" class="mb-4"></div>${moCard}${dayCard}${statCard}`
     + `<div id="terakoyaCard" style="margin-top:14px"></div><div id="diaryCard" style="margin-top:14px"></div>${xpCard}${recCard}`;
   loadDayCoach();
   // マイページから移した3カード（本人確認・寺子屋・日記）。器を描いてから読み込む。
@@ -2952,12 +2777,12 @@ async function loadRail() {
   const rail = document.getElementById('rail'); if (!rail) return;
   if (!window.__user) { rail.innerHTML = ''; return; }
   const d = window.__dash || (await API.dashboard()) || {};
-  const today = d.today, mo = d.momentum, target = (d.goal && d.goal.visits) || 50;
+  const today = d.today, mo = d.momentum;
   const tv = today ? today.visits : 0;
   const goalCard = `<div class="fo-card" style="padding:14px">
-    <div class="muted" style="font-size:11px;font-weight:700">今日の目標進捗</div>
-    <div style="display:flex;align-items:center;gap:12px;margin-top:8px">${ring(target ? tv / target * 100 : 0, 16)}
-      <div><div style="font-size:20px;font-weight:700;color:var(--text)" class="num">${tv}<span class="muted" style="font-size:12px"> / ${target}</span></div><div class="muted" style="font-size:11px">訪問 ・ 連続${d.streak || 0}日</div></div></div>
+    <div class="muted" style="font-size:11px;font-weight:700">今日</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+      <div><div style="font-size:20px;font-weight:700;color:var(--text)" class="num">${tv}<span class="muted" style="font-size:12px"> 件</span></div><div class="muted" style="font-size:11px">訪問 ・ 連続${d.streak || 0}日</div></div></div>
   </div>`;
   const moCard = mo && mo.score != null ? `<div class="fo-card" style="padding:14px">
     <div class="muted" style="font-size:11px;font-weight:700">Momentum</div>
