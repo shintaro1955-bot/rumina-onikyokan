@@ -2229,7 +2229,7 @@ async function loadTodayFocus() {
         ${drill && f.rung === 'トーク' ? `<div style="font-size:12.5px;color:var(--text);margin-top:5px">直す所：<b>${esc(drill.title)}</b></div>` : ''}
         <div style="margin-top:9px">${rungAction}</div>
       </div>` : ''}
-      <div class="muted" style="font-size:11px;margin-top:8px">あるべき姿＝上位2%の水準（直近30日の${tp.sampleDays || 0}人日から）・ みんなの平均＝${esc(g.date)}に動いている${t.people}人</div>
+      <div class="muted" style="font-size:11px;margin-top:8px">あるべき姿＝上位2%の水準（直近30日で5日以上出ている${tp.samplePeople || 0}人の1日あたり平均から）・ みんなの平均＝${esc(g.date)}に動いている${t.people}人</div>
     </div>`;
   }
 
