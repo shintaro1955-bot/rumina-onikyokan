@@ -1726,7 +1726,7 @@ async function loadApoCoach() {
     ${d.enabled ? '' : `<div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[12.5px] text-neutral-700">まだ自動送信はOFFです。上のリストで問題なければ、本番の環境変数 <b>APO_COACH_ON=1</b> を立てると翌朝から本人LINEへ届き始めます（1日1回・上限${d.dailyMax || 20}名）。</div>`}`;
 }
 
-const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, terakoya: viewTerakoya, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay, apocoach: viewApoCoach };
+const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, training: viewTraining, terakoya: viewTerakoya, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay, apocoach: viewApoCoach };
 // 新IA(today/field/academy/league/me)は同一currentViewでnav-activeを共有させる別名解決
 const NAV_ALIAS = { ranking: 'league', my: 'me' };
 function nav(v) {
@@ -1748,6 +1748,7 @@ function nav(v) {
   if (v === 'apocoach') loadApoCoach();
   if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
   if (v === 'me') loadMePerf();
+  if (v === 'training') loadTraining();
   if (v === 'academy') loadAcademy();
   if (v === 'terakoya') loadTerakoya();
   loadRail();
@@ -2070,7 +2071,7 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  const allowed = ['today', 'field', 'academy', 'league', 'me', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
+  const allowed = ['today', 'field', 'academy', 'league', 'me', 'training', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
   if (!allowed.includes(currentView) || currentView === 'login') currentView = 'today';   // 常にTodayから
   nav(currentView);
   updateSync();
@@ -2533,6 +2534,186 @@ async function saveWeights() {
   catch (e) { const el = document.getElementById('wMsg'); if (el) { el.textContent = e.message; el.style.color = 'var(--danger)'; } }
 }
 window.openWeights = openWeights; window.saveWeights = saveWeights;
+
+
+/* ---------- 初心者研修「営業解禁ゲート」 ---------- */
+const TR_STATUS = {
+  locked:      { label: '未解禁',       cls: 'bg-neutral-100 text-neutral-600 border-neutral-200' },
+  in_training: { label: '研修中',       cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  pending:     { label: '上長承認待ち', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+  cleared:     { label: '営業解禁',     cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  suspended:   { label: '停止中',       cls: 'bg-rose-50 text-rose-600 border-rose-200' },
+};
+let TR = { exam: null, idx: 0, answers: [], timer: null, left: 0 };
+
+function viewTraining() {
+  return `${h1('研修（営業解禁ゲート）', '合格するまで現場には出さない。ここを通ってから玄関に立つ。')}
+    <div id="trWrap"><div class="fo-card muted" style="padding:20px">読み込み中…</div></div>`;
+}
+
+async function loadTraining() {
+  const wrap = document.getElementById('trWrap'); if (!wrap) return;
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  let d; try { d = await API.trainingOverview(); } catch (e) { wrap.innerHTML = `<div class="fo-card" style="padding:20px;color:#e11d48">${esc(e.message)}</div>`; return; }
+  const c = d.cert, st = TR_STATUS[c.status] || TR_STATUS.locked;
+  const u = window.__user || {};
+
+  const steps = [1, 2, 3, 4].map(n => {
+    const b = d.best[n], g = d.gates[n] || {}, done = n < d.unlocked, now = n === d.unlocked;
+    const av = (d.availability || []).find(a => a && a.step === n);
+    const col = done ? 'var(--primary)' : now ? 'var(--text)' : 'var(--muted)';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border)">
+      <span style="width:26px;height:26px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;
+        background:${done ? 'var(--primary)' : 'var(--surface-2)'};color:${done ? '#fff' : 'var(--muted)'}">${done ? '✓' : n}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:700;color:${col}">STEP${n}　${esc(b.title)}</div>
+        <div class="muted" style="font-size:11.5px">${b.best != null ? `ベスト ${b.best}/${b.total}　` : ''}受験 ${b.attempts}回${
+          av && !av.ok ? `　<span style="color:#b45309">確認済みの問題が ${av.have}/${av.need}問</span>` : ''}</div>
+      </div>
+      ${done ? '<span class="muted" style="font-size:11px;flex:none">合格</span>'
+        : n === 4 ? `<span class="muted" style="font-size:11px;flex:none">${now ? '準備中' : '—'}</span>`
+        : now && g.ok ? `<button class="fo-btn" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="trStart(${n})">受験する</button>`
+        : now ? `<span style="font-size:11px;color:#b45309;flex:none;max-width:200px;text-align:right">${esc(g.why || '')}</span>`
+        : '<span class="muted" style="font-size:11px;flex:none">—</span>'}
+    </div>`;
+  }).join('');
+
+  const expires = c.step3Expires ? new Date(c.step3Expires) : null;
+  const daysLeft = expires ? Math.ceil((expires - Date.now()) / 86400000) : null;
+
+  wrap.innerHTML = `
+    <div class="fo-card" style="padding:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div>
+          <div class="muted" style="font-size:11px;font-weight:700">現在の状態</div>
+          <div style="font-size:22px;font-weight:700;color:var(--text);margin-top:2px">${esc(u.name || '')}さん</div>
+        </div>
+        <span style="padding:7px 16px;border-radius:999px;border:1px solid;font-size:14px;font-weight:700" class="${st.cls}">${st.label}</span>
+      </div>
+      ${c.status === 'cleared'
+        ? `<div style="font-size:13px;color:var(--text);margin-top:12px">営業解禁です。${daysLeft != null ? `特商法認定の有効期限まであと <b>${daysLeft}日</b>（${expires.toISOString().slice(0, 10)}）。` : ''}</div>`
+        : c.status === 'suspended'
+          ? `<div style="font-size:13px;color:#e11d48;margin-top:12px">停止中：${esc(c.suspendedReason || '')}　再認定するまで現場に出ないこと。</div>`
+          : c.status === 'pending'
+            ? '<div style="font-size:13px;color:var(--text);margin-top:12px">STEP4まで合格。上長の承認を待っています。</div>'
+            : `<div style="font-size:13px;color:var(--text);margin-top:12px">営業解禁まで あと ${5 - d.unlocked + 1} ステップ。</div>`}
+      <div style="margin-top:14px">${steps}</div>
+      ${d.reviewLeft ? `<div style="margin-top:14px;padding:12px;border:1px solid #f59e0b;border-radius:12px;background:rgba(245,158,11,.06)">
+        <div style="font-size:12.5px;font-weight:700;color:#b45309">復習キュー ${d.reviewLeft}問</div>
+        <div class="muted" style="font-size:12px;margin-top:2px">2回連続で正解すると卒業します。全部卒業するまでSTEP2は受け直せません。</div>
+        <div style="margin-top:9px"><button class="fo-btn" style="padding:7px 14px;font-size:12.5px" onclick="trReview()">復習する</button></div>
+      </div>` : ''}
+    </div>`;
+}
+
+/* ---- 受験 ---- */
+async function trStart(step) {
+  let d; try { d = await API.trainingStart(step); } catch (e) { alert(e.message); return; }
+  if (!d.ok) { alert(d.why || '受験できません'); return; }
+  TR = { exam: d, idx: 0, answers: [], timer: null, left: 60, started: Date.now() };
+  window.onbeforeunload = () => '受験中です。閉じると1回ぶんとして記録されます。';
+  trRenderQ();
+}
+
+function trRenderQ() {
+  const wrap = document.getElementById('trWrap'); if (!wrap || !TR.exam) return;
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const q = TR.exam.questions[TR.idx];
+  if (!q) return trFinish();
+  TR.left = 60; TR.qStart = Date.now();
+  wrap.innerHTML = `<div class="fo-card" style="padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <div class="muted" style="font-size:12px;font-weight:700">${TR.idx + 1} / ${TR.exam.total}</div>
+      <div id="trTimer" style="font-size:13px;font-weight:700;color:var(--text)">60秒</div>
+    </div>
+    <div style="height:5px;border-radius:3px;background:var(--surface-2);margin-top:8px;overflow:hidden">
+      <div style="height:100%;background:var(--primary);width:${Math.round(TR.idx / TR.exam.total * 100)}%"></div></div>
+    <div style="font-size:16px;font-weight:600;color:var(--text);margin-top:16px;line-height:1.6">${esc(q.question)}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+      ${q.choices.map((ch, i) => `<button onclick="trAnswer(${i})" style="text-align:left;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;line-height:1.5">${esc(ch)}</button>`).join('')}
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:12px">時間切れは不正解になります。途中で閉じると1回ぶんとして記録されます。</div>
+  </div>`;
+  if (TR.timer) clearInterval(TR.timer);
+  TR.timer = setInterval(() => {
+    TR.left--;
+    const el = document.getElementById('trTimer');
+    if (el) { el.textContent = TR.left + '秒'; el.style.color = TR.left <= 10 ? '#e11d48' : 'var(--text)'; }
+    if (TR.left <= 0) { clearInterval(TR.timer); trAnswer(-1); }
+  }, 1000);
+}
+
+function trAnswer(i) {
+  if (!TR.exam) return;
+  if (TR.timer) clearInterval(TR.timer);
+  const q = TR.exam.questions[TR.idx];
+  TR.answers.push({ questionId: q.id, choiceText: i >= 0 ? q.choices[i] : '', ms: Date.now() - (TR.qStart || Date.now()) });
+  TR.idx++;
+  trRenderQ();
+}
+
+async function trFinish() {
+  const wrap = document.getElementById('trWrap');
+  if (TR.timer) clearInterval(TR.timer);
+  window.onbeforeunload = null;
+  if (wrap) wrap.innerHTML = '<div class="fo-card muted" style="padding:20px">採点しています…</div>';
+  let r; try { r = await API.trainingGrade(TR.exam.attemptId, TR.answers); } catch (e) { if (wrap) wrap.innerHTML = `<div class="fo-card" style="padding:20px;color:#e11d48">${e.message}</div>`; return; }
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const miss = (r.detail || []).filter(d => !d.correct);
+  const cats = Object.entries(r.byCategory || {}).map(([k, v]) => `<span class="muted" style="font-size:11.5px">${esc(k)} ${v.rate}%</span>`).join(' ・ ');
+  if (wrap) wrap.innerHTML = `<div class="fo-card" style="padding:20px">
+    <div style="padding:14px 16px;border-radius:14px;border:1px solid ${r.passed ? 'var(--primary)' : '#e11d48'};background:${r.passed ? 'rgba(22,199,132,.06)' : 'rgba(225,29,72,.05)'}">
+      <div style="font-size:22px;font-weight:700;color:${r.passed ? 'var(--primary)' : '#e11d48'}">${r.passed ? '合格' : '不合格'}</div>
+      <div style="font-size:14px;color:var(--text);margin-top:4px">${r.score} / ${r.total}（${r.rate}%）</div>
+      ${r.safetyMiss ? `<div style="font-size:12.5px;color:#e11d48;margin-top:4px">安全・法令の問題を${r.safetyMiss}問間違えています。ここは1問も落とせません。</div>` : ''}
+    </div>
+    ${cats ? `<div style="margin-top:12px">${cats}</div>` : ''}
+    ${miss.length ? `<div style="margin-top:16px"><div style="font-size:12.5px;font-weight:700;color:var(--text)">間違えた問題（${miss.length}問）</div>
+      ${miss.map(m => `<div style="margin-top:10px;padding:11px 13px;border-left:3px solid #e11d48;background:var(--surface-2);border-radius:0 10px 10px 0">
+        <div class="muted" style="font-size:11px">${esc(m.code)}</div>
+        <div style="font-size:12.5px;color:var(--text);margin-top:2px">あなたの答え：${esc(m.chosen || '（無回答）')}</div>
+        <div style="font-size:13px;color:var(--text);margin-top:2px"><b>正解：</b>${esc(m.answer)}</div>
+        <div class="muted" style="font-size:12px;margin-top:3px">${esc(m.explanation)}</div>
+        ${m.talkExample ? `<div style="font-size:12px;color:var(--text);margin-top:3px">現場ではこう使う：${esc(m.talkExample)}</div>` : ''}
+      </div>`).join('')}</div>` : '<div style="font-size:13px;color:var(--primary);margin-top:14px">全問正解。</div>'}
+    ${r.reviewLeft ? `<div class="muted" style="font-size:12px;margin-top:14px">間違えた問題は復習キューに入りました（${r.reviewLeft}問）。</div>` : ''}
+    <div style="margin-top:16px"><button class="fo-btn" onclick="nav('training')">研修トップへ</button></div>
+  </div>`;
+  TR = { exam: null, idx: 0, answers: [], timer: null, left: 0 };
+}
+
+/* ---- 復習 ---- */
+async function trReview() {
+  const wrap = document.getElementById('trWrap'); if (!wrap) return;
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  let d; try { d = await API.trainingReview(); } catch (e) { alert(e.message); return; }
+  const q = (d.items || [])[0];
+  if (!q) { loadTraining(); return; }
+  wrap.innerHTML = `<div class="fo-card" style="padding:20px">
+    <div class="muted" style="font-size:12px;font-weight:700">復習　残り ${d.items.length}問　（この問題はあと${2 - (q.consecutive || 0)}回連続正解で卒業）</div>
+    <div style="font-size:16px;font-weight:600;color:var(--text);margin-top:14px;line-height:1.6">${esc(q.question)}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+      ${q.choices.map(ch => `<button onclick="trReviewAnswer('${q.id}', this.dataset.c)" data-c="${esc(ch).replace(/"/g, '&quot;')}" style="text-align:left;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;line-height:1.5">${esc(ch)}</button>`).join('')}
+    </div>
+    <div style="margin-top:14px"><button class="fo-btn ghost" style="padding:6px 12px;font-size:12px" onclick="nav('training')">やめる</button></div>
+  </div>`;
+}
+async function trReviewAnswer(qid, choiceText) {
+  const wrap = document.getElementById('trWrap');
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  let r; try { r = await API.trainingReviewAnswer(qid, choiceText); } catch (e) { alert(e.message); return; }
+  if (wrap) wrap.innerHTML = `<div class="fo-card" style="padding:20px">
+    <div style="font-size:18px;font-weight:700;color:${r.correct ? 'var(--primary)' : '#e11d48'}">${r.correct ? '正解' : '不正解'}</div>
+    ${r.correct ? '' : `<div style="font-size:13px;color:var(--text);margin-top:6px"><b>正解：</b>${esc(r.answer)}</div>`}
+    <div class="muted" style="font-size:12.5px;margin-top:6px">${esc(r.explanation)}</div>
+    ${r.talkExample ? `<div style="font-size:12.5px;color:var(--text);margin-top:4px">現場ではこう使う：${esc(r.talkExample)}</div>` : ''}
+    <div class="muted" style="font-size:12px;margin-top:10px">残り ${r.left}問</div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      ${r.left ? '<button class="fo-btn" onclick="trReview()">次へ</button>' : ''}
+      <button class="fo-btn ghost" onclick="nav('training')">研修トップへ</button></div>
+  </div>`;
+}
+window.trStart = trStart; window.trAnswer = trAnswer; window.trReview = trReview; window.trReviewAnswer = trReviewAnswer;
 
 /* ---------- 通知 ---------- */
 // 通知の種別ラベル（絵文字は使わない）
