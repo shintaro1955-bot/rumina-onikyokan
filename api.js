@@ -182,6 +182,7 @@ window.API = (function () {
   const trainingApprove = (user, comment) => trPost('/api/training/admin/approve', { user, comment });
   const trainingSuspend = (user, reason) => trPost('/api/training/admin/suspend', { user, reason });
   const trainingLawAlert = (reason) => trPost('/api/training/admin/law-alert', { reason });
+  const trainingAudit = (limit) => trJson('/api/training/admin/audit?limit=' + (limit || 200));
 
   async function teamBench() {
     const r = await fetch('/api/team/bench');
@@ -225,7 +226,7 @@ window.API = (function () {
   async function getLineUsers() { const r = await fetch('/api/admin/line-users'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'LINEユーザー一覧の取得に失敗しました'); return j.users || []; }
   async function linkRep(username, repId) { const r = await fetch('/api/admin/link-rep', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, repId }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '紐付けに失敗しました'); return j; }
 
-  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenTrends, cyzenReminders, cyzenReminderRun, cyzenWalk, cyzenUpload, portalProfile, apoCoachView, dayCoach, recSubmissions, recRemind, recMine, coachDrill, todayGap, getBuildup, teamBench, trainingOverview, trainingStart, trainingGrade, trainingAbort, trainingReview, trainingReviewAnswer, trainingRoster, trainingQuestions, trainingVerify, trainingApprove, trainingSuspend, trainingLawAlert, weeklyMine, weeklyNotify, lineUnlinkedDiag,
+  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenTrends, cyzenReminders, cyzenReminderRun, cyzenWalk, cyzenUpload, portalProfile, apoCoachView, dayCoach, recSubmissions, recRemind, recMine, coachDrill, todayGap, getBuildup, teamBench, trainingOverview, trainingStart, trainingGrade, trainingAbort, trainingReview, trainingReviewAnswer, trainingRoster, trainingQuestions, trainingVerify, trainingApprove, trainingSuspend, trainingLawAlert, trainingAudit, weeklyMine, weeklyNotify, lineUnlinkedDiag,
     dashboard, today, integrations, setGoal, getWeights, setWeights, completeDrill, academyProgress, getPosts, addPost, deletePost, react, markRead,
     getComments, addComment, deleteComment, notifications, readNotifs, setNotifSettings, track };
 })();

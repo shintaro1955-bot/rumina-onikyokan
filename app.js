@@ -1726,7 +1726,7 @@ async function loadApoCoach() {
     ${d.enabled ? '' : `<div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[12.5px] text-neutral-700">まだ自動送信はOFFです。上のリストで問題なければ、本番の環境変数 <b>APO_COACH_ON=1</b> を立てると翌朝から本人LINEへ届き始めます（1日1回・上限${d.dailyMax || 20}名）。</div>`}`;
 }
 
-const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, training: viewTraining, terakoya: viewTerakoya, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay, apocoach: viewApoCoach };
+const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, training: viewTraining, trainadmin: viewTrainingAdmin, terakoya: viewTerakoya, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay, apocoach: viewApoCoach };
 // 新IA(today/field/academy/league/me)は同一currentViewでnav-activeを共有させる別名解決
 const NAV_ALIAS = { ranking: 'league', my: 'me' };
 function nav(v) {
@@ -1749,6 +1749,7 @@ function nav(v) {
   if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
   if (v === 'me') loadMePerf();
   if (v === 'training') loadTraining();
+  if (v === 'trainadmin') loadTrainingAdmin();
   if (v === 'academy') loadAcademy();
   if (v === 'terakoya') loadTerakoya();
   loadRail();
@@ -2071,8 +2072,20 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  const allowed = ['today', 'field', 'academy', 'league', 'me', 'training', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
-  if (!allowed.includes(currentView) || currentView === 'login') currentView = 'today';   // 常にTodayから
+  const allowed = ['today', 'field', 'academy', 'league', 'me', 'training', 'trainadmin', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
+  // 管理者専用の画面。別の人でログインし直した時にそのまま残ると、
+  // 中身の出ない空の管理画面に着地してしまう（データはサーバが401で止める）。
+  const ownerOnly = ['trainadmin', 'log', 'linkrep', 'cyzen', 'compliance', 'apocoach', 'admin', 'reps', 'issues'];
+  if (!allowed.includes(currentView) || currentView === 'login') currentView = 'today';   // 既定はToday
+  if (user.role !== 'owner' && ownerOnly.includes(currentView)) currentView = 'today';
+  // 新人はこのアプリの研修から始める。営業解禁されるまでは研修を最初に出す。
+  if (user.role !== 'owner') {
+    try {
+      const t = await API.trainingOverview();
+      window.__cert = t.cert;
+      if (t.cert && t.cert.status !== 'cleared') currentView = 'training';
+    } catch (e) { window.__cert = null; }
+  }
   nav(currentView);
   updateSync();
   updateBell();
@@ -2107,13 +2120,28 @@ const foGreet = () => { const h = new Date().getHours(); return h < 11 ? 'GOOD M
 
 /* ---------- TODAY（中央フィード） ---------- */
 function viewToday() {
-  return `<div id="askRec"></div><div class="space-y-3.5" id="todayWrap"><div class="fo-card" style="padding:20px" class="muted">読み込み中…</div></div>`;
+  return `<div id="certBar"></div><div id="askRec"></div><div class="space-y-3.5" id="todayWrap"><div class="fo-card" style="padding:20px" class="muted">読み込み中…</div></div>`;
 }
 
 /* トップ＝今日の数字と、みんなとの差。
    自分の訪問・アポ・歩いた距離を、今日動いているみんなの平均と並べ、
    足りない分を出す。夕方以降は録音の提出を前に出す。 */
+/* 未解禁の人には、Todayの一番上で研修へ戻す。 */
+function renderCertBar() {
+  const el = document.getElementById('certBar'); if (!el) return;
+  const c = window.__cert; if (!c || c.status === 'cleared') { el.innerHTML = ''; return; }
+  const msg = c.status === 'suspended' ? `営業が停止中です（${String(c.suspendedReason || '').replace(/</g, '&lt;')}）。再認定するまで現場に出ないこと。`
+    : c.status === 'pending' ? 'STEP4まで合格。上長の承認を待っています。'
+    : 'まだ営業解禁されていません。研修を終えてから現場に出ること。';
+  const col = c.status === 'suspended' ? '#e11d48' : '#b45309';
+  el.innerHTML = `<div style="margin:0 0 14px;padding:12px 14px;border:1px solid ${col};border-radius:12px;background:${c.status === 'suspended' ? 'rgba(225,29,72,.05)' : 'rgba(245,158,11,.06)'};display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px;font-size:13px;color:${col};font-weight:700">${msg}</div>
+    <button class="fo-btn" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="nav('training')">研修へ</button>
+  </div>`;
+}
+
 async function loadTodayFocus() {
+  renderCertBar();
   const el = document.getElementById('askRec'); if (!el) return;
   const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
   const [mine, g, dc] = await Promise.all([
@@ -2714,6 +2742,161 @@ async function trReviewAnswer(qid, choiceText) {
   </div>`;
 }
 window.trStart = trStart; window.trAnswer = trAnswer; window.trReview = trReview; window.trReviewAnswer = trReviewAnswer;
+
+
+/* ---------- 研修管理（owner専用） ---------- */
+function viewTrainingAdmin() {
+  return `${h1('研修管理', '誰がどこまで進んでいるか、問題が確認済みかを見る。確認者名を入れるまで問題は出題されない。')}
+    <div id="traRoster" class="mb-4"></div>
+    <div id="traQ" class="mb-4"></div>
+    <div id="traAudit"></div>`;
+}
+
+const TRA_ST = {
+  locked: ['未解禁', 'text-neutral-500'], in_training: ['研修中', 'text-amber-700'],
+  pending: ['承認待ち', 'text-sky-700'], cleared: ['営業解禁', 'text-emerald-600'], suspended: ['停止中', 'text-rose-600'],
+};
+
+async function loadTrainingAdmin() {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const box = document.getElementById('traRoster');
+  let d; try { d = await API.trainingRoster(); } catch (e) { if (box) box.innerHTML = `<div class="fo-card" style="padding:18px;color:#e11d48">${esc(e.message)}</div>`; return; }
+  const rows = d.rows || [];
+  const cnt = k => rows.filter(r => r.status === k).length;
+
+  const tr = rows.map(r => {
+    const [lab, cls] = TRA_ST[r.status] || TRA_ST.locked;
+    const dot = n => r['step' + n + 'At'] ? '<span style="color:var(--primary)">✓</span>' : '<span class="muted">—</span>';
+    const exp = r.step3Expires ? new Date(r.step3Expires) : null;
+    const days = exp ? Math.ceil((exp - Date.now()) / 86400000) : null;
+    return `<tr class="border-t border-neutral-200">
+      <td class="px-3 py-2 text-neutral-800 whitespace-nowrap">${esc(r.name)}<div class="text-[10.5px] text-neutral-400">${esc(r.user)}</div></td>
+      <td class="px-3 py-2 whitespace-nowrap"><span class="${cls} font-semibold text-[12.5px]">${lab}</span></td>
+      <td class="px-3 py-2 text-center text-[13px] whitespace-nowrap">${dot(1)} ${dot(2)} ${dot(3)} ${dot(4)}</td>
+      <td class="px-3 py-2 text-[12px] text-neutral-500 whitespace-nowrap">${days == null ? '—' : days < 0 ? '<span class="text-rose-600">期限切れ</span>' : `あと${days}日`}</td>
+      <td class="px-3 py-2 text-[12px] text-neutral-500 whitespace-nowrap">${r.attempts}回${r.reviewLeft ? ` ・ 復習${r.reviewLeft}` : ''}</td>
+      <td class="px-3 py-2 whitespace-nowrap">
+        ${r.status === 'pending' ? `<button onclick="traApprove('${esc(r.user)}')" class="px-3 py-1 rounded-lg bg-emerald-600 text-white text-[12px] font-semibold">承認する</button>` : ''}
+        ${r.status === 'cleared' ? `<button onclick="traSuspend('${esc(r.user)}')" class="px-3 py-1 rounded-lg border border-neutral-300 text-neutral-600 text-[12px]">停止</button>` : ''}
+      </td></tr>`;
+  }).join('');
+
+  box.innerHTML = card(`<div class="p-4">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div><div class="font-semibold text-neutral-800">研修の進み</div>
+        <div class="text-[12px] text-neutral-500 mt-0.5">営業解禁 ${cnt('cleared')}人 ・ 承認待ち ${cnt('pending')}人 ・ 研修中 ${cnt('in_training')}人 ・ 未解禁 ${cnt('locked')}人 ・ 停止中 ${cnt('suspended')}人</div></div>
+      <div class="flex gap-2">
+        <button onclick="traCsv()" class="px-3 py-1.5 rounded-lg border border-neutral-300 text-neutral-700 text-[12.5px]">CSVで出す</button>
+        <button onclick="traLawAlert()" class="px-3 py-1.5 rounded-lg border border-rose-300 text-rose-600 text-[12.5px]">法改正アラート</button>
+      </div>
+    </div>
+    <div class="overflow-x-auto mt-3"><table class="w-full text-[13px] min-w-[720px]">
+      <thead class="bg-neutral-50 text-neutral-500 text-[11.5px]"><tr>
+        <th class="px-3 py-2 text-left font-medium">氏名</th><th class="px-3 py-2 text-left font-medium">状態</th>
+        <th class="px-3 py-2 text-center font-medium">STEP 1234</th><th class="px-3 py-2 text-left font-medium">特商法の期限</th>
+        <th class="px-3 py-2 text-left font-medium">受験</th><th class="px-3 py-2 text-left font-medium"></th></tr></thead>
+      <tbody>${tr || '<tr><td class="px-3 py-4 text-neutral-500" colspan="6">対象者がいません。</td></tr>'}</tbody></table></div>
+  </div>`);
+  window.__traRows = rows;
+  loadTrainingQuestions();
+  loadTrainingAudit();
+}
+
+async function loadTrainingQuestions(type) {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const box = document.getElementById('traQ'); if (!box) return;
+  const t = type || window.__traType || 'must30';
+  window.__traType = t;
+  let st, q;
+  try { st = (await API.trainingRoster()).questions; q = await API.trainingQuestions(t); }
+  catch (e) { box.innerHTML = ''; return; }
+  const by = (st.by || {})[t] || { total: 0, active: 0 };
+  const TABS = { must30: '鬼の30箇条', basic100: '基礎知識100問', law: '特商法' };
+  const tabs = Object.entries(TABS).map(([k, v]) => {
+    const b = (st.by || {})[k] || { total: 0, active: 0 };
+    return `<button onclick="loadTrainingQuestions('${k}')" class="px-3 py-1.5 rounded-lg text-[12.5px] border ${k === t ? 'bg-emerald-600 text-white border-emerald-600 font-bold' : 'bg-white text-neutral-600 border-neutral-300'}">${v} ${b.active}/${b.total}</button>`;
+  }).join(' ');
+
+  const items = (q.items || []).map(x => `<div class="border-t border-neutral-200 px-3 py-2.5">
+    <div class="flex items-start gap-2 flex-wrap">
+      <span class="text-[10.5px] text-neutral-400 font-mono">${esc(x.code)}</span>
+      ${x.isActive ? '<span class="text-[10.5px] text-emerald-600 font-semibold">確認済み</span>' : '<span class="text-[10.5px] text-amber-700 font-semibold">確認待ち</span>'}
+      ${(x.tags || []).includes('safety_law') ? '<span class="text-[10.5px] text-rose-600 font-semibold">安全・法令</span>' : ''}
+      ${x.verifiedBy ? `<span class="text-[10.5px] text-neutral-400">確認者 ${esc(x.verifiedBy)}</span>` : ''}
+    </div>
+    <div class="text-[13px] text-neutral-800 mt-1">${esc(x.question)}</div>
+    <div class="text-[12.5px] text-emerald-700 mt-0.5">正解：${esc(x.answer)}</div>
+    <div class="text-[12px] text-neutral-500 mt-0.5">${esc(x.explanation)}</div>
+    ${x.sourceNote ? `<div class="text-[11px] text-neutral-400 mt-0.5">根拠：${esc(x.sourceNote)}</div>` : ''}
+  </div>`).join('');
+
+  box.innerHTML = card(`<div class="p-4">
+    <div class="font-semibold text-neutral-800">問題バンク</div>
+    <div class="text-[12px] text-neutral-500 mt-0.5">確認者名を入れるまで出題されません。中身を読んでから有効にしてください。</div>
+    <div class="flex gap-2 flex-wrap mt-3">${tabs}</div>
+    <div class="flex gap-2 items-center flex-wrap mt-3 p-2.5 rounded-lg bg-neutral-50 border border-neutral-200">
+      <input id="traVerifier" placeholder="確認者名（例：濱西）" class="border border-neutral-200 rounded-lg px-3 py-1.5 text-[12.5px] flex-1 min-w-[160px]">
+      <button onclick="traVerifyAll()" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[12.5px] font-semibold">この${TABS[t]}を確認済みにする（${by.total}問）</button>
+    </div>
+    <div class="mt-2 max-h-[420px] overflow-auto border border-neutral-200 rounded-lg">${items || '<div class="px-3 py-4 text-[13px] text-neutral-500">問題がありません。</div>'}</div>
+  </div>`);
+}
+
+async function loadTrainingAudit() {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const box = document.getElementById('traAudit'); if (!box) return;
+  let d; try { d = await API.trainingAudit(60); } catch (e) { box.innerHTML = ''; return; }
+  const A = { start: '受験開始', pass: '合格', fail: '不合格', abort: '中断', approve: '承認', suspend: '停止', law_alert: '法改正アラート', question_verify: '問題を確認' };
+  const rows = (d.rows || []).map(r => `<tr class="border-t border-neutral-200">
+    <td class="px-3 py-1.5 text-[11.5px] text-neutral-400 whitespace-nowrap">${esc(String(r.at).replace('T', ' ').slice(0, 16))}</td>
+    <td class="px-3 py-1.5 text-[12px] text-neutral-700 whitespace-nowrap">${esc(A[r.action] || r.action)}</td>
+    <td class="px-3 py-1.5 text-[12px] text-neutral-600 whitespace-nowrap">${esc(r.target || '—')}</td>
+    <td class="px-3 py-1.5 text-[11.5px] text-neutral-500">${esc(JSON.stringify(r.detail || {}).slice(1, -1).replace(/"/g, '').slice(0, 90))}</td></tr>`).join('');
+  box.innerHTML = card(`<div class="p-4">
+    <div class="font-semibold text-neutral-800">記録</div>
+    <div class="text-[12px] text-neutral-500 mt-0.5">受験・合否・承認・問題の確認をすべて残しています。消せません。</div>
+    <div class="overflow-x-auto mt-3 max-h-[320px] overflow-y-auto"><table class="w-full text-[13px] min-w-[560px]"><tbody>${rows || '<tr><td class="px-3 py-3 text-neutral-500">まだ記録がありません。</td></tr>'}</tbody></table></div>
+  </div>`);
+}
+
+async function traVerifyAll() {
+  const v = (document.getElementById('traVerifier') || {}).value || '';
+  if (!v.trim()) { alert('確認者名を入れてください。誰が確認したかを記録します。'); return; }
+  const t = window.__traType || 'must30';
+  const q = await API.trainingQuestions(t);
+  const codes = (q.items || []).map(x => x.code);
+  if (!codes.length) return;
+  if (!confirm(`${codes.length}問を「${v}」の確認済みとして有効にします。中身は確認しましたか？`)) return;
+  try { await API.trainingVerify(codes, v.trim()); loadTrainingAdmin(); } catch (e) { alert(e.message); }
+}
+async function traApprove(user) {
+  const c = prompt('承認コメント（面談内容など）'); if (c === null) return;
+  try { const r = await API.trainingApprove(user, c); if (!r.ok) { alert(r.why || '承認できません'); return; } loadTrainingAdmin(); } catch (e) { alert(e.message); }
+}
+async function traSuspend(user) {
+  const r = prompt('停止の理由（必須）'); if (!r) return;
+  try { const x = await API.trainingSuspend(user, r); if (!x.ok) { alert(x.why || '停止できません'); return; } loadTrainingAdmin(); } catch (e) { alert(e.message); }
+}
+async function traLawAlert() {
+  const r = prompt('法改正アラートの理由（全員の特商法認定を失効させます）'); if (!r) return;
+  if (!confirm('全員の特商法認定を失効させ、再受験を求めます。よろしいですか？')) return;
+  try { const x = await API.trainingLawAlert(r); alert(`${x.affected}人の認定を失効させました。`); loadTrainingAdmin(); } catch (e) { alert(e.message); }
+}
+function traCsv() {
+  const rows = window.__traRows || [];
+  const head = ['ログイン名', '氏名', '状態', 'STEP1合格', 'STEP2合格', 'STEP3合格', '特商法期限', 'STEP4合格', '承認日', '受験回数'];
+  const esc = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const body = rows.map(r => [r.user, r.name, (TRA_ST[r.status] || [])[0] || r.status,
+    (r.step1At || '').slice(0, 10), (r.step2At || '').slice(0, 10), (r.step3At || '').slice(0, 10),
+    (r.step3Expires || '').slice(0, 10), (r.step4At || '').slice(0, 10), (r.approvedAt || '').slice(0, 10), r.attempts].map(esc).join(','));
+  const csv = '﻿' + [head.map(esc).join(','), ...body].join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `研修実施記録_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+window.loadTrainingQuestions = loadTrainingQuestions; window.traVerifyAll = traVerifyAll;
+window.traApprove = traApprove; window.traSuspend = traSuspend; window.traLawAlert = traLawAlert; window.traCsv = traCsv;
 
 /* ---------- 通知 ---------- */
 // 通知の種別ラベル（絵文字は使わない）
