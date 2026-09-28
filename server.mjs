@@ -353,7 +353,7 @@ function persistReport(id, result, userName) {
 
 // 研修の問題バンクを投入（既にある問題は触らない。全問 verifiedBy 未設定＝出題されない）
 (function seedTraining() {
-  try { const r = training.seedQuestions(); if (r.seeded) console.log(`✓ 研修の問題を${r.seeded}問投入（確認待ち）／合計${r.total}問`); }
+  try { const r = training.seedQuestions(); if (r.seeded || r.updated) console.log(`✓ 研修の問題：新規${r.seeded}問投入／確認待ちの${r.updated}問を更新（合計${r.total}問）`); }
   catch (e) { console.error('研修seed失敗:', e.message); }
 })();
 

@@ -2825,18 +2825,30 @@ async function loadTrainingQuestions(type) {
       <span class="text-[10.5px] text-neutral-400 font-mono">${esc(x.code)}</span>
       ${x.isActive ? '<span class="text-[10.5px] text-emerald-600 font-semibold">確認済み</span>' : '<span class="text-[10.5px] text-amber-700 font-semibold">確認待ち</span>'}
       ${(x.tags || []).includes('safety_law') ? '<span class="text-[10.5px] text-rose-600 font-semibold">安全・法令</span>' : ''}
+      ${x.needsOwnerCheck ? '<span class="text-[10.5px] text-orange-700 font-semibold">社内の運用の確認が要る</span>' : ''}
       ${x.verifiedBy ? `<span class="text-[10.5px] text-neutral-400">確認者 ${esc(x.verifiedBy)}</span>` : ''}
     </div>
     <div class="text-[13px] text-neutral-800 mt-1">${esc(x.question)}</div>
     <div class="text-[12.5px] text-emerald-700 mt-0.5">正解：${esc(x.answer)}</div>
     <div class="text-[12px] text-neutral-500 mt-0.5">${esc(x.explanation)}</div>
     ${x.sourceNote ? `<div class="text-[11px] text-neutral-400 mt-0.5">根拠：${esc(x.sourceNote)}</div>` : ''}
+    ${x.needsOwnerCheck ? `<div class="text-[11.5px] text-orange-800 mt-1.5 px-2 py-1.5 rounded bg-orange-50 border border-orange-200">確認してください：${esc(x.needsOwnerCheck)}</div>` : ''}
   </div>`).join('');
+
+  // 社内の運用に依るものは、法令や製品知識と違って外から確かめようがない。
+  // 65問を端から読み直すのではなく、ここだけ見れば済むようにする。
+  const need = (q.items || []).filter(x => x.needsOwnerCheck);
+  const needBox = need.length ? `<div class="mt-3 p-3 rounded-lg bg-orange-50 border border-orange-200">
+    <div class="text-[12.5px] font-semibold text-orange-900">この${need.length}問だけ、社内の運用と合っているか見てください</div>
+    <div class="text-[11.5px] text-orange-800 mt-0.5">法令と製品知識は条文・仕様と照合できますが、当社の決めごとはここからは確かめられません。違っていれば言ってください。直します。</div>
+    <ul class="text-[12px] text-orange-900 mt-1.5 list-disc pl-5 space-y-0.5">${need.map(x => `<li><span class="font-mono text-[10.5px] text-orange-700">${esc(x.code)}</span> ${esc(x.needsOwnerCheck)}</li>`).join('')}</ul>
+  </div>` : '';
 
   box.innerHTML = card(`<div class="p-4">
     <div class="font-semibold text-neutral-800">問題バンク</div>
     <div class="text-[12px] text-neutral-500 mt-0.5">確認者名を入れるまで出題されません。中身を読んでから有効にしてください。</div>
     <div class="flex gap-2 flex-wrap mt-3">${tabs}</div>
+    ${needBox}
     <div class="flex gap-2 items-center flex-wrap mt-3 p-2.5 rounded-lg bg-neutral-50 border border-neutral-200">
       <input id="traVerifier" placeholder="確認者名（例：濱西）" class="border border-neutral-200 rounded-lg px-3 py-1.5 text-[12.5px] flex-1 min-w-[160px]">
       <button onclick="traVerifyAll()" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[12.5px] font-semibold">この${TABS[t]}を確認済みにする（${by.total}問）</button>
