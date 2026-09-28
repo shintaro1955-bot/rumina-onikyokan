@@ -2590,7 +2590,11 @@ async function loadTraining() {
   const u = window.__user || {};
 
   const steps = [1, 2, 3, 4].map(n => {
-    const b = d.best[n], g = d.gates[n] || {}, done = n < d.unlocked, now = n === d.unlocked;
+    const b = d.best[n], g = d.gates[n] || {};
+    // 口頭試問が未整備のときは unlocked が5まで進む。そのまま描くとSTEP4が「合格」に
+    // 見えてしまうので、受けていない口頭試問を合格扱いしない。
+    const oralPending = n === 4 && !d.oralReady && !c.step4At;
+    const done = n < d.unlocked && !oralPending, now = n === d.unlocked;
     const av = (d.availability || []).find(a => a && a.step === n);
     const col = done ? 'var(--primary)' : now ? 'var(--text)' : 'var(--muted)';
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border)">
@@ -2599,10 +2603,11 @@ async function loadTraining() {
       <div style="flex:1;min-width:0">
         <div style="font-size:13.5px;font-weight:700;color:${col}">STEP${n}　${esc(b.title)}</div>
         <div class="muted" style="font-size:11.5px">${b.best != null ? `ベスト ${b.best}/${b.total}　` : ''}受験 ${b.attempts}回${
-          av && !av.ok ? `　<span style="color:#b45309">確認済みの問題が ${av.have}/${av.need}問</span>` : ''}</div>
+          n === 4 && !d.oralReady ? '　<span style="color:#b45309">口頭試問は準備中。STEP3まで合格した方は面談で判断します</span>'
+          : av && !av.ok ? `　<span style="color:#b45309">確認済みの問題が ${av.have}/${av.need}問</span>` : ''}</div>
       </div>
       ${done ? '<span class="muted" style="font-size:11px;flex:none">合格</span>'
-        : n === 4 ? `<span class="muted" style="font-size:11px;flex:none">${now ? '準備中' : '—'}</span>`
+        : n === 4 ? `<span class="muted" style="font-size:11px;flex:none">${oralPending ? '面談で判断' : now ? '準備中' : '—'}</span>`
         : now && g.ok ? `<button class="fo-btn" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="trStart(${n})">受験する</button>`
         : now ? `<span style="font-size:11px;color:#b45309;flex:none;max-width:200px;text-align:right">${esc(g.why || '')}</span>`
         : '<span class="muted" style="font-size:11px;flex:none">—</span>'}
@@ -2626,8 +2631,8 @@ async function loadTraining() {
         : c.status === 'suspended'
           ? `<div style="font-size:13px;color:#e11d48;margin-top:12px">停止中：${esc(c.suspendedReason || '')}　再認定するまで現場に出ないこと。</div>`
           : c.status === 'pending'
-            ? '<div style="font-size:13px;color:var(--text);margin-top:12px">STEP4まで合格。上長の承認を待っています。</div>'
-            : `<div style="font-size:13px;color:var(--text);margin-top:12px">営業解禁まで あと ${5 - d.unlocked + 1} ステップ。</div>`}
+            ? `<div style="font-size:13px;color:var(--text);margin-top:12px">${d.oralReady ? 'STEP4まで合格' : 'STEP3まで合格'}。承認を待っています。</div>`
+            : `<div style="font-size:13px;color:var(--text);margin-top:12px">残りのテストは あと ${Math.max(0, (d.oralReady ? 4 : 3) - d.unlocked + 1)} つ。${d.oralReady ? '' : '（口頭試問は準備中のため、STEP3まで合格したら面談で判断します）'}</div>`}
       <div style="margin-top:14px">${steps}</div>
       ${d.reviewLeft ? `<div style="margin-top:14px;padding:12px;border:1px solid #f59e0b;border-radius:12px;background:rgba(245,158,11,.06)">
         <div style="font-size:12.5px;font-weight:700;color:#b45309">復習キュー ${d.reviewLeft}問</div>

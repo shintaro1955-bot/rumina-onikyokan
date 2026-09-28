@@ -2889,5 +2889,294 @@
     "difficulty": 1,
     "source_note": "特定商取引法 第74条",
     "verified_by": null
+  },
+  {
+    "code": "G-001",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "固定価格買取制度（FIT）が始まったのは？",
+    "choices": [
+      "2012年",
+      "2000年",
+      "2016年",
+      "2020年"
+    ],
+    "answer_index": 0,
+    "explanation": "再生可能エネルギー特別措置法にもとづき2012年7月に開始。再エネ賦課金もこのとき始まった。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-002",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "FITより前、2009年から住宅用の太陽光に適用されていた制度は？",
+    "choices": [
+      "余剰電力買取制度",
+      "全量買取制度",
+      "FIP制度",
+      "自己託送制度"
+    ],
+    "answer_index": 0,
+    "explanation": "2009年11月開始。この制度で設置した家が10年を迎えたのが、のちの卒FITの始まり。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-003",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "住宅用の買取単価は、制度開始以降どう推移してきたか？",
+    "choices": [
+      "年度ごとに下がってきた",
+      "年度ごとに上がってきた",
+      "ずっと変わっていない",
+      "上下を繰り返している"
+    ],
+    "answer_index": 0,
+    "explanation": "設備価格の低下に合わせて毎年見直されてきた。当年度の金額は必ずその年の公表値を確認する。",
+    "talk_example": "「たしかに昔のほうが高く売れました。ただ設置費用も当時よりずいぶん下がっています」",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-004",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "買取単価が年々下げられてきた主な理由は？",
+    "choices": [
+      "設備の価格が下がり、それに合わせて見直されてきたため",
+      "発電量が減ったため",
+      "国が制度をやめたいため",
+      "電力会社の都合"
+    ],
+    "answer_index": 0,
+    "explanation": "「昔のほうが得だった」と言われたときは、売電単価だけでなく設置費用も一緒に比べる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-005",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "いわゆる「2019年問題」とは？",
+    "choices": [
+      "2009年に始まった住宅用の買取期間が満了し始めたこと",
+      "太陽光が禁止されたこと",
+      "パネルが一斉に故障したこと",
+      "補助金が廃止されたこと"
+    ],
+    "answer_index": 0,
+    "explanation": "最初の卒FIT。ここから「ためて使う」提案が本格的に必要になった。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-006",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "家庭でも電力会社を自由に選べるようになったのは？",
+    "choices": [
+      "2016年の電力小売全面自由化",
+      "2012年",
+      "2020年",
+      "まだ選べない"
+    ],
+    "answer_index": 0,
+    "explanation": "プランが多様化したことで、同じ設備でも削減額の出方が家ごとに変わるようになった。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-007",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "大手電力会社の送配電部門が法的に分離されたのは？",
+    "choices": [
+      "2020年",
+      "2012年",
+      "2016年",
+      "分離されていない"
+    ],
+    "answer_index": 0,
+    "explanation": "発電・小売と送配電を分ける仕組み。系統連系の手続きが送配電会社側になる背景。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-008",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "FIP制度が始まったのは？",
+    "choices": [
+      "2022年",
+      "2012年",
+      "2016年",
+      "まだ始まっていない"
+    ],
+    "answer_index": 0,
+    "explanation": "市場価格に連動した売電にプレミアムを上乗せする制度。主に事業用。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-009",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "2017年の改正FIT法で変わったことは？",
+    "choices": [
+      "設備認定から事業計画認定になり、保守管理などの義務が加わった",
+      "買取価格が固定された",
+      "住宅用が対象外になった",
+      "賦課金が廃止された"
+    ],
+    "answer_index": 0,
+    "explanation": "認定を受けたあとの管理まで求められるようになった。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-010",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "家庭用蓄電池が広く求められるようになった背景として大きいのは？",
+    "choices": [
+      "災害による停電の経験と、卒FITによる自家消費への移行",
+      "蓄電池が無料になったから",
+      "法律で義務化されたから",
+      "売電が禁止されたから"
+    ],
+    "answer_index": 0,
+    "explanation": "「停電の備え」と「ためて使う」の二つが動機。お客様がどちらを重く見ているかで提案が変わる。",
+    "talk_example": "「備えとして持っておきたいのか、電気代を抑えたいのか。どちらを重く考えられていますか」",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-011",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "日本が「2050年カーボンニュートラル」を表明したのは？",
+    "choices": [
+      "2020年",
+      "2012年",
+      "2016年",
+      "2024年"
+    ],
+    "answer_index": 0,
+    "explanation": "国の方針として再エネの導入拡大が掲げられている。補助制度の背景でもある。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-012",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "世界全体で温暖化対策の枠組みを定めた、2015年に採択された協定は？",
+    "choices": [
+      "パリ協定",
+      "京都議定書",
+      "ジュネーブ条約",
+      "ワシントン条約"
+    ],
+    "answer_index": 0,
+    "explanation": "各国が削減目標を掲げる枠組み。国内の政策もこの流れの中にある。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-013",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "東京都が新築住宅への太陽光設置を求める制度について正しいのは？",
+    "choices": [
+      "一定規模以上の住宅供給事業者に義務づけられ、2025年4月に始まった",
+      "全国の全世帯に義務づけられた",
+      "施主個人に罰則がある",
+      "制度は存在しない"
+    ],
+    "answer_index": 0,
+    "explanation": "義務の相手は施主ではなく事業者。地域によって制度が異なるので、当地の扱いを確認してから話す。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-014",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「今さら太陽光は遅い」と言われたときに、事実として示せることは？",
+    "choices": [
+      "売電単価は下がったが、設備価格も下がり、買う電気の単価は上がってきたこと",
+      "今も昔と同じ単価で売れること",
+      "今後も必ず電気代が上がること",
+      "遅いので勧められないこと"
+    ],
+    "answer_index": 0,
+    "explanation": "有利な面だけを並べない。前提が変われば結果が変わることまで含めて話す。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "G-015",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "制度の話をお客様にするときの正しい態度は？",
+    "choices": [
+      "年度で変わるものは「今年度はこうです」と区切って話し、確認して伝える",
+      "一度覚えた内容をそのまま使い続ける",
+      "細かいので触れない",
+      "有利な年度の数字を使う"
+    ],
+    "answer_index": 0,
+    "explanation": "制度は毎年変わる。古い数字をそのまま言うと不実告知になりうる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
   }
 ]
