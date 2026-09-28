@@ -3333,7 +3333,16 @@ async function loadRail() {
   const d = window.__dash || (await API.dashboard()) || {};
   const today = d.today, mo = d.momentum;
   const tv = today ? today.visits : 0;
-  const goalCard = `<div class="fo-card" style="padding:14px">
+  // 研修中の人に「訪問0件・連続0日」を見せても意味がない（まだ現場に出ていない）。
+  // 右のレールは、その人がいまやっていることに合わせて中身を差し替える。
+  const inTraining = (window.__cert && window.__cert.status !== 'cleared');
+  const stInfo = window.__stageInfo || null;
+  const goalCard = inTraining ? `<div class="fo-card" style="padding:14px">
+    <div class="muted" style="font-size:11px;font-weight:700">いまの段</div>
+    <div style="font-size:17px;font-weight:700;color:var(--primary);margin-top:4px">${stInfo ? esc0(stInfo.label) : '研修前'}</div>
+    <div class="muted" style="font-size:11.5px;margin-top:4px;line-height:1.6">${stInfo && stInfo.next ? esc0(stInfo.next) : '研修を進めると現場の画面が開きます'}</div>
+    <div style="margin-top:9px"><button class="fo-btn" style="padding:6px 13px;font-size:12px" onclick="nav('training')">研修へ</button></div>
+  </div>` : `<div class="fo-card" style="padding:14px">
     <div class="muted" style="font-size:11px;font-weight:700">今日</div>
     <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
       <div><div style="font-size:20px;font-weight:700;color:var(--text)" class="num">${tv}<span class="muted" style="font-size:12px"> 件</span></div><div class="muted" style="font-size:11px">訪問 ・ 連続${d.streak || 0}日</div></div></div>
@@ -3343,13 +3352,17 @@ async function loadRail() {
     <div style="font-size:24px;font-weight:700;color:var(--primary);margin-top:4px" class="num">${mo.score}<span class="muted" style="font-size:11px;font-weight:500"> / 1000</span></div>
     <div style="margin-top:6px"><span class="mx-more" onclick="nav('me')">内訳を見る »</span></div>
   </div>` : '';
-  const learnCard = `<div class="fo-card" style="padding:14px">
+  // Academyは研修を通すまで開かない。押せるのに開かないボタンは置かない。
+  const canAcademy = !Array.isArray(window.__allowedViews) || window.__allowedViews.includes('academy');
+  const learnCard = inTraining ? '' : `<div class="fo-card" style="padding:14px">
     <div class="muted" style="font-size:11px;font-weight:700">本日の学習</div>
     <div style="font-size:13px;margin-top:6px;color:var(--text)">XP ${d.xp || 0}${d.dueReviews ? ` ・ 復習${d.dueReviews}件` : ''}</div>
-    <div style="margin-top:8px"><button class="fo-btn ghost" style="padding:5px 12px;font-size:12px" onclick="nav('academy')">Academyへ</button></div>
+    ${canAcademy ? `<div style="margin-top:8px"><button class="fo-btn ghost" style="padding:5px 12px;font-size:12px" onclick="nav('academy')">Academyへ</button></div>` : ''}
   </div>`;
   let trendCard = '';
+  // 研修中は他人の行動量を見られない（サーバが403で止める）。呼ばないようにする。
   try {
+    if (inTraining) throw new Error('skip');
     const t = await API.cyzenTrends(7);
     const up = (t.rows || []).filter(r => r.deltaVpd > 0 && r.recVpd >= 8).slice(0, 3);
     if (up.length) trendCard = `<div class="fo-card" style="padding:14px">
@@ -3541,6 +3554,7 @@ async function traSaveQuestion() {
    テストだけあって学ぶ場所が無かった。確認済みの問題は
    設問・正解・解説・根拠が揃っている＝そのまま教材になる。受験の前に読む。
    ============================================================ */
+const esc0 = t => String(t == null ? '' : t).replace(/</g, '&lt;');
 const CATNAME = {
   MUST30: '鬼の30箇条', LAW: '特定商取引法ほか',
   A_basic: '太陽光の基礎', B_battery: '蓄電池', C_equipment: '機器・工事',

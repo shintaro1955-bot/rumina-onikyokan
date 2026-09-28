@@ -463,12 +463,15 @@ const server = createServer(async (req, res) => {
          画面のナビを閉じるだけでは、APIを直接叩けば同じものが取れてしまう。
          「合格するまで現場に出さない」を、見た目ではなくデータの側で守る。
          ここを通ってよいのは、認証まわりと研修そのもの、本人の情報だけ。 */
-      const gateOk = [
-        '/api/health', '/api/login', '/api/logout', '/api/me', '/api/consent',
-        '/api/training/', '/api/line/', '/api/roleplay/', '/api/dispatch/mine', '/api/academy',
+      /* 止めるのは**他人の現場データ**だけ。画面の土台（自分の情報・通知・同意・教材）まで
+         止めると、研修画面そのものが403だらけで動かなくなる（一度それで壊した）。 */
+      const FIELD_ONLY = [
+        '/api/cyzen/', '/api/today/', '/api/weekly/', '/api/rec/', '/api/coach/',
+        '/api/buildup', '/api/team/', '/api/apocoach', '/api/walk', '/api/hot',
+        '/api/dispatch/plan', '/api/dispatch/run', '/api/reps', '/api/issues',
       ];
       const meGate = GATE_API ? currentUser(req) : null;
-      if (meGate && meGate.role !== 'owner' && !gateOk.some(p2 => path === p2 || path.startsWith(p2))) {
+      if (meGate && meGate.role !== 'owner' && FIELD_ONLY.some(p2 => path === p2 || path.startsWith(p2))) {
         let stage = 'start';
         try { stage = training.stageOf(meGate.username); } catch (e) {}
         if (stage !== 'field') {
