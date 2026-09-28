@@ -757,6 +757,35 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { ok: true, ...training.overview(meT.username) });
       }
       /* 受験開始。返す問題に正解は含まない。 */
+      /* 必修教材（受験の前に読む）。確認が済んでいない問題は出さない。 */
+      if (path === '/api/training/study' && req.method === 'GET') {
+        const meS = currentUser(req); if (!meS) return json(res, 401, { error: 'ログインが必要です' });
+        const st = Math.max(1, Math.min(4, +(url.searchParams.get('step') || 1)));
+        // 自分が到達していない段の教材は出さない（順番に学ばせる）
+        let un = 1; try { un = training.unlockedStep(meS.username); } catch (e) {}
+        if (st > un) return json(res, 403, { error: `STEP${un}を通すと開きます`, unlocked: un });
+        return json(res, 200, training.study(st));
+      }
+      /* 質問を出す／自分の質問を見る */
+      if (path === '/api/training/ask' && req.method === 'POST') {
+        const meA = currentUser(req); if (!meA) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readBody(req);
+        return json(res, 200, training.ask(meA.username, b.kind, b.body));
+      }
+      if (path === '/api/training/ask' && req.method === 'GET') {
+        const meA = currentUser(req); if (!meA) return json(res, 401, { error: 'ログインが必要です' });
+        return json(res, 200, { ok: true, rows: training.myAsks(meA.username) });
+      }
+      if (path === '/api/training/admin/asks' && req.method === 'GET') {
+        const meA = currentUser(req); if (!meA || meA.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        return json(res, 200, { ok: true, rows: training.askList({}) });
+      }
+      if (path === '/api/training/admin/asks' && req.method === 'POST') {
+        const meA = currentUser(req); if (!meA || meA.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const b = await readBody(req);
+        return json(res, 200, training.answerAsk(meA.username, b.id, b.answer));
+      }
+
       if (path === '/api/training/start' && req.method === 'POST') {
         const meT = currentUser(req); if (!meT) return json(res, 401, { error: 'ログインが必要です' });
         const b = await readJson(req) || {};

@@ -1757,7 +1757,7 @@ function nav(v) {
   if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
   if (v === 'me') loadMePerf();
   if (v === 'training') loadTraining();
-  if (v === 'trainadmin') { loadFieldCheck(); loadTrainingAdmin(); }
+  if (v === 'trainadmin') { loadAsks(); loadFieldCheck(); loadTrainingAdmin(); }
   if (v === 'dispatch') loadDispatch();
   if (v === 'academy') loadAcademy();
   if (v === 'terakoya') loadTerakoya();
@@ -2108,6 +2108,88 @@ function stageBox(d) {
     <div style="margin-top:6px">${steps}</div></div>`;
 }
 
+/* 一番上に「いま何をすればいいか」を1つだけ置く。
+   説明を読まないと次の行動が分からない画面にしない。 */
+function todoBox(d) {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const c = d.cert || {}, n = d.unlocked;
+  if (c.status === 'cleared') return '';
+  if (c.status === 'suspended') return '';
+  if (c.status === 'pending') return '';
+  const M = (d.steps || {})[n] || {};
+  const g = (d.gates || {})[n] || {};
+  const av = (d.availability || []).find(a => a && a.step === n);
+  const b = (d.best || {})[n] || {};
+  let head, body, btns;
+  if (av && !av.ok) {
+    head = '教材の準備が終わるのを待っています';
+    body = `管理者が中身を確認しています（${av.have}/${av.need}問）。準備ができたら、ここから始められます。`;
+    btns = `<button class="fo-btn" style="padding:9px 18px;font-size:13.5px" onclick="trAsk('教材が開かない')">問い合わせる</button>`;
+  } else if (g.reviewLeft) {
+    head = `今日やること：復習キューを片づける（残り${g.reviewLeft}問）`;
+    body = '2回連続で正解すると卒業します。全部終わるまでSTEP2は受け直せません。';
+    btns = `<button class="fo-btn" style="padding:9px 18px;font-size:13.5px" onclick="trReview()">復習する</button>`;
+  } else if (g.retryAt) {
+    const m = Math.max(1, Math.ceil((Date.parse(g.retryAt) - Date.now()) / 60000));
+    head = `今日やること：教材を読み直す（再受験まであと約${m}分）`;
+    body = '間違えたところを確かめてから、もう一度受けてください。';
+    btns = `<button class="fo-btn" style="padding:9px 18px;font-size:13.5px" onclick="trStudy(${n})">教材を読む</button>`;
+  } else if (!b.attempts) {
+    head = `今日やること：STEP${n} の教材を読む`;
+    body = `${esc(M.title || '')}　読むのに約${M.studyMin}分、受験は約${M.examMin}分です。教材に出ているものがそのまま出題されます。`;
+    btns = `<button class="fo-btn" style="padding:9px 18px;font-size:13.5px" onclick="trStudy(${n})">学習を始める</button>
+            <button onclick="trStart(${n})" style="padding:9px 18px;font-size:13.5px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);cursor:pointer">先に受験する</button>`;
+  } else {
+    head = `今日やること：STEP${n} に合格する`;
+    body = `${esc(M.passRule || '')}　ベスト ${b.best != null ? b.best : '—'}/${b.total}。`;
+    btns = `<button class="fo-btn" style="padding:9px 18px;font-size:13.5px" onclick="trStudy(${n})">続きから学ぶ</button>
+            <button onclick="trStart(${n})" style="padding:9px 18px;font-size:13.5px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);cursor:pointer">もう一度受ける</button>`;
+  }
+  return `<div style="margin-top:14px;padding:16px 18px;border:1px solid var(--primary);border-radius:14px;background:var(--primary-soft)">
+    <div style="font-size:15px;font-weight:700;color:var(--primary)">${esc(head)}</div>
+    <div style="font-size:12.5px;margin-top:5px;line-height:1.8;color:var(--text)">${body}</div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${btns}</div>
+    <div style="margin-top:10px"><button onclick="trAsk('操作が分からない')" style="padding:0;border:0;background:none;color:var(--muted);font-size:11.5px;text-decoration:underline;cursor:pointer">困ったときは質問する</button></div>
+  </div>`;
+}
+
+/* その画面がいつ開くかを一言で。「未開放」だけだと、条件も見込みも分からない。 */
+function opensAt(view) {
+  const stages = (window.__stages || {});
+  const ORDER = ['start', 'practice', 'pending', 'field'];
+  const LABEL = { practice: 'STEP1合格後', pending: 'STEP3合格後', field: '営業解禁後' };
+  for (const k of ORDER) {
+    const v = (stages[k] || {}).views;
+    if (v === null) return LABEL.field;               // 制限なし＝解禁後
+    if (Array.isArray(v) && v.includes(view)) return LABEL[k] || '解禁後';
+  }
+  return '営業解禁後';
+}
+
+/* 受けられない理由を、誰が動けば解けるのかで書き分ける。
+   「確認済みの問題が足りません」だけだと、自分の落ち度に見えて問い合わせもできない。 */
+function blockedNote(n, g, av, d) {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const wrap = (main, sub, btn) => `<div style="flex:none;max-width:280px;text-align:right">
+    <div style="font-size:12px;color:#b45309;font-weight:700">${main}</div>
+    ${sub ? `<div class="muted" style="font-size:11px;margin-top:2px">${sub}</div>` : ''}
+    ${btn || ''}</div>`;
+  // 管理者の準備待ち：本人は何もできない。問い合わせ先を出す。
+  if (av && !av.ok) {
+    return wrap('教材を準備中です', `管理者が中身を確認しています（${av.have}/${av.need}問）。準備ができると受けられます。`,
+      `<button onclick="trAsk('教材が開かない')" style="margin-top:6px;padding:5px 11px;font-size:11.5px;border:1px solid #f59e0b;border-radius:9px;background:#fff;color:#b45309;font-weight:600;cursor:pointer">問い合わせる</button>`);
+  }
+  // 本人の段階
+  if (g && g.reviewLeft) return wrap('先に復習を終えてください', `残り${g.reviewLeft}問。2回連続で正解すると卒業します。`,
+    `<button onclick="trReview()" style="margin-top:6px;padding:5px 11px;font-size:11.5px;border:1px solid var(--primary);border-radius:9px;background:#fff;color:var(--primary);font-weight:600;cursor:pointer">復習する</button>`);
+  if (g && g.retryAt) {
+    const m = Math.max(1, Math.ceil((Date.parse(g.retryAt) - Date.now()) / 60000));
+    return wrap('再受験までお待ちください', `あと約${m}分。その間に教材を読み直してください。`,
+      `<button onclick="trStudy(${n})" style="margin-top:6px;padding:5px 11px;font-size:11.5px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--text);font-weight:600;cursor:pointer">教材を読む</button>`);
+  }
+  return wrap(esc((g && g.why) || '受けられません'), '');
+}
+
 /* 研修の段に応じて、左のナビを開け閉めする。
    隠さずに鍵で見せるのは、次に何が待っているかが分かる方が前に進むため。
    押せてしまうと中身の無い画面に着地するので、押したら理由を出して研修へ戻す。 */
@@ -2122,7 +2204,7 @@ function applyStage() {
     el.classList.toggle('lb-locked', locked);
     if (locked) {
       const s = document.createElement('span');
-      s.className = 'lb-lock'; s.textContent = '未開放';
+      s.className = 'lb-lock'; s.textContent = opensAt(v);
       el.appendChild(s);
     }
   });
@@ -2171,6 +2253,7 @@ async function boot() {
     try {
       const t = await API.trainingOverview();
       window.__cert = t.cert;
+      window.__stages = t.stages || {};
       const st = (t.stages || {})[t.stage] || null;
       window.__stageInfo = st ? { key: t.stage, ...st } : null;
       window.__allowedViews = st ? st.views : null;      // null＝制限なし（営業解禁）
@@ -2658,9 +2741,9 @@ window.openWeights = openWeights; window.saveWeights = saveWeights;
 
 /* ---------- 初心者研修「営業解禁ゲート」 ---------- */
 const TR_STATUS = {
-  locked:      { label: '未解禁',       cls: 'bg-neutral-100 text-neutral-600 border-neutral-200' },
+  locked:      { label: '研修前',       cls: 'bg-neutral-100 text-neutral-600 border-neutral-200' },
   in_training: { label: '研修中',       cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  pending:     { label: '上長承認待ち', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+  pending:     { label: '面談待ち',     cls: 'bg-sky-50 text-sky-700 border-sky-200' },
   cleared:     { label: '営業解禁',     cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   suspended:   { label: '停止中',       cls: 'bg-rose-50 text-rose-600 border-rose-200' },
 };
@@ -2677,6 +2760,7 @@ async function loadTraining() {
   let d; try { d = await API.trainingOverview(); } catch (e) { wrap.innerHTML = `<div class="fo-card" style="padding:20px;color:#e11d48">${esc(e.message)}</div>`; return; }
   // 合格した直後に段が変わる。ナビの鍵もその場で開ける（再ログインを待たせない）。
   if ((window.__user || {}).role !== 'owner') {
+    window.__stages = d.stages || {};
     const S = (d.stages || {})[d.stage] || null;
     window.__stageInfo = S ? { key: d.stage, ...S } : null;
     window.__allowedViews = S ? S.views : null;
@@ -2690,6 +2774,7 @@ async function loadTraining() {
     // 口頭試問が未整備のときは unlocked が5まで進む。そのまま描くとSTEP4が「合格」に
     // 見えてしまうので、受けていない口頭試問を合格扱いしない。
     const oralPending = n === 4 && !d.oralReady && !c.step4At;
+    const M = (d.steps || {})[n] || {};
     const done = n < d.unlocked && !oralPending, now = n === d.unlocked;
     const av = (d.availability || []).find(a => a && a.step === n);
     const col = done ? 'var(--primary)' : now ? 'var(--text)' : 'var(--muted)';
@@ -2698,14 +2783,22 @@ async function loadTraining() {
         background:${done ? 'var(--primary)' : 'var(--surface-2)'};color:${done ? '#fff' : 'var(--muted)'}">${done ? '✓' : n}</span>
       <div style="flex:1;min-width:0">
         <div style="font-size:13.5px;font-weight:700;color:${col}">STEP${n}　${esc(b.title)}</div>
-        <div class="muted" style="font-size:11.5px">${b.best != null ? `ベスト ${b.best}/${b.total}　` : ''}受験 ${b.attempts}回${
-          n === 4 && !d.oralReady ? '　<span style="color:#b45309">口頭試問は準備中。STEP3まで合格した方は面談で判断します</span>'
-          : av && !av.ok ? `　<span style="color:#b45309">確認済みの問題が ${av.have}/${av.need}問</span>` : ''}</div>
+        <div class="muted" style="font-size:11.5px">${b.best != null ? `ベスト ${b.best}/${b.total}　` : ''}受験 ${b.attempts}回</div>
+        ${(now || done) ? `<div style="margin-top:6px;font-size:11.5px;line-height:1.75;color:var(--muted)">
+          ${M.purpose ? `<div><b style="color:var(--text)">目的</b>　${esc(M.purpose)}</div>` : ''}
+          ${M.contents ? `<div><b style="color:var(--text)">内容</b>　${esc(M.contents)}</div>` : ''}
+          ${M.studyMin ? `<div><b style="color:var(--text)">目安</b>　教材 約${M.studyMin}分／受験 約${M.examMin}分</div>` : ''}
+          ${M.passRule ? `<div><b style="color:var(--text)">合格</b>　${esc(M.passRule)}</div>` : ''}
+          ${M.retryRule && M.retryRule !== '—' ? `<div><b style="color:var(--text)">不合格のとき</b>　${esc(M.retryRule)}</div>` : ''}
+          ${M.note ? `<div style="color:#b45309">${esc(M.note)}</div>` : ''}
+        </div>` : ''}
       </div>
       ${done ? '<span class="muted" style="font-size:11px;flex:none">合格</span>'
         : n === 4 ? `<span class="muted" style="font-size:11px;flex:none">${oralPending ? '面談で判断' : now ? '準備中' : '—'}</span>`
-        : now && g.ok ? `<button class="fo-btn" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="trStart(${n})">受験する</button>`
-        : now ? `<span style="font-size:11px;color:#b45309;flex:none;max-width:200px;text-align:right">${esc(g.why || '')}</span>`
+        : now && g.ok ? `<div style="display:flex;gap:8px;flex:none">
+            <button onclick="trStudy(${n})" style="padding:7px 14px;font-size:12.5px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-weight:600;cursor:pointer">教材を読む</button>
+            <button class="fo-btn" style="padding:7px 14px;font-size:12.5px" onclick="trStart(${n})">${b.attempts ? 'もう一度受ける' : '受験する'}</button></div>`
+        : now ? blockedNote(n, g, av, d)
         : '<span class="muted" style="font-size:11px;flex:none">—</span>'}
     </div>`;
   }).join('');
@@ -2727,8 +2820,19 @@ async function loadTraining() {
         : c.status === 'suspended'
           ? `<div style="font-size:13px;color:#e11d48;margin-top:12px">停止中：${esc(c.suspendedReason || '')}　再認定するまで現場に出ないこと。</div>`
           : c.status === 'pending'
-            ? `<div style="font-size:13px;color:var(--text);margin-top:12px">${d.oralReady ? 'STEP4まで合格' : 'STEP3まで合格'}。承認を待っています。</div>`
+            ? `<div style="margin-top:12px;padding:12px 14px;border:1px solid var(--primary);border-radius:12px;background:var(--primary-soft)">
+                <div style="font-size:13px;font-weight:700;color:var(--primary)">${d.oralReady ? 'STEP4まで合格' : 'STEP3まで合格'}。あとは面談だけです</div>
+                <div style="font-size:12.5px;margin-top:6px;line-height:1.8;color:var(--text)">
+                  <b>見られること</b>　玄関先の第一声／断られたときの引き際／クーリングオフの説明／明細の読み方を、自分の言葉で言えるか<br>
+                  <b>決めるひと</b>　管理者（研修運営）<br>
+                  <b>申し込み</b>　下のボタンから。日時は担当者から連絡します<br>
+                  <b>結果</b>　承認されるとこの画面が「営業解禁」に変わり、現場の画面がすべて開きます
+                </div>
+                <div style="margin-top:10px"><button class="fo-btn" style="padding:8px 16px;font-size:13px" onclick="trAsk('面談を申し込む')">面談を申し込む</button></div>
+              </div>`
             : `<div style="font-size:13px;color:var(--text);margin-top:12px">残りのテストは あと ${Math.max(0, (d.oralReady ? 4 : 3) - d.unlocked + 1)} つ。${d.oralReady ? '' : '（口頭試問は準備中のため、STEP3まで合格したら面談で判断します）'}</div>`}
+      ${todoBox(d)}
+      <div id="trMyAsks"></div>
       ${stageBox(d)}
       <div style="margin-top:14px">${steps}</div>
       ${d.reviewLeft ? `<div style="margin-top:14px;padding:12px;border:1px solid #f59e0b;border-radius:12px;background:rgba(245,158,11,.06)">
@@ -2737,6 +2841,7 @@ async function loadTraining() {
         <div style="margin-top:9px"><button class="fo-btn" style="padding:7px 14px;font-size:12.5px" onclick="trReview()">復習する</button></div>
       </div>` : ''}
     </div>`;
+  loadMyAsks();   // trWrap を書き換えた後でないと消える
 }
 
 /* ---- 受験 ---- */
@@ -2852,6 +2957,7 @@ window.trStart = trStart; window.trAnswer = trAnswer; window.trReview = trReview
 /* ---------- 研修管理（owner専用） ---------- */
 function viewTrainingAdmin() {
   return `${h1('研修管理', '誰がどこまで進んでいるか、問題が確認済みかを見る。確認者名を入れるまで問題は出題されない。')}
+    <div id="traAsks" class="mb-4"></div>
     <div id="traField" class="mb-4"></div>
     <div id="traRoster" class="mb-4"></div>
     <div id="traQ" class="mb-4"></div>
@@ -3428,4 +3534,118 @@ async function traSaveQuestion() {
     ['qCode', 'qQ', 'qC0', 'qC1', 'qC2', 'qC3', 'qE', 'qSrc'].forEach(x => { const e = document.getElementById(x); if (e) e.value = ''; });
     loadTrainingQuestions(window.__traType || 'must30');
   } catch (e) { msg.className = 'text-[12px] mt-2 text-rose-600'; msg.textContent = e.message; }
+}
+
+/* ============================================================
+   必修教材（学習モード）
+   テストだけあって学ぶ場所が無かった。確認済みの問題は
+   設問・正解・解説・根拠が揃っている＝そのまま教材になる。受験の前に読む。
+   ============================================================ */
+const CATNAME = {
+  MUST30: '鬼の30箇条', LAW: '特定商取引法ほか',
+  A_basic: '太陽光の基礎', B_battery: '蓄電池', C_equipment: '機器・工事',
+  D_system: '制度と電気料金', E_economics: '経済性', F_compliance: '法令順守', G_history: '業界と制度の歴史',
+};
+async function trStudy(step) {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const wrap = document.getElementById('trWrap'); if (!wrap) return;
+  wrap.innerHTML = `<div class="fo-card muted" style="padding:20px">教材を開いています…</div>`;
+  let d; try { d = await API.trainingStudy(step); } catch (e) { wrap.innerHTML = `<div class="fo-card" style="padding:20px;color:#e11d48">${esc(e.message)}</div>`; return; }
+  if (!d.ready) {
+    wrap.innerHTML = `<div class="fo-card" style="padding:20px">
+      <div style="font-weight:700;color:#b45309">教材を準備中です</div>
+      <div style="font-size:13px;margin-top:6px;line-height:1.8">管理者が中身を確認しています（${d.have}/${d.need}問）。確認が済むと、ここで読めるようになります。<br>急ぎの場合は問い合わせてください。</div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="fo-btn" style="padding:8px 16px;font-size:13px" onclick="trAsk('教材が開かない')">問い合わせる</button>
+        <button onclick="loadTraining()" style="padding:8px 16px;font-size:13px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);cursor:pointer">研修トップへ</button>
+      </div></div>`;
+    return;
+  }
+  const groups = Object.entries(d.groups || {}).map(([cat, rows]) => `
+    <div style="margin-top:18px">
+      <div style="font-size:13px;font-weight:700;color:var(--primary)">${esc(CATNAME[cat] || cat)}　<span class="muted" style="font-weight:600">${rows.length}項目</span></div>
+      ${rows.map(r => `<div style="border-top:1px solid var(--border);padding:12px 0">
+        <div style="font-size:13.5px;font-weight:600;color:var(--text);line-height:1.6">${esc(r.question)}</div>
+        <div style="font-size:13px;color:var(--primary);font-weight:600;margin-top:4px">${esc(r.answer)}</div>
+        <div class="muted" style="font-size:12.5px;margin-top:4px;line-height:1.7">${esc(r.explanation)}</div>
+        ${r.talkExample ? `<div style="font-size:12.5px;margin-top:5px;padding:8px 10px;border-left:3px solid var(--border);color:var(--text);line-height:1.7">${esc(r.talkExample)}</div>` : ''}
+        ${r.sourceNote ? `<div class="muted" style="font-size:11px;margin-top:4px">根拠：${esc(r.sourceNote)}</div>` : ''}
+      </div>`).join('')}
+    </div>`).join('');
+  wrap.innerHTML = `<div class="fo-card" style="padding:20px">
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
+      <div style="min-width:0">
+        <div style="font-size:11.5px;font-weight:700;color:var(--muted)">STEP${d.step} の教材</div>
+        <div style="font-size:19px;font-weight:700;color:var(--text)">${esc(d.title)}</div>
+      </div>
+      <button onclick="loadTraining()" style="padding:7px 14px;font-size:12.5px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);cursor:pointer;flex:none">研修トップへ</button>
+    </div>
+    <div style="margin-top:10px;font-size:12.5px;line-height:1.85;color:var(--muted)">
+      <div><b style="color:var(--text)">目的</b>　${esc(d.purpose || '')}</div>
+      <div><b style="color:var(--text)">目安</b>　読むのに約${d.studyMin}分／受験は約${d.examMin}分</div>
+      <div><b style="color:var(--text)">合格</b>　${esc(d.passRule || '')}</div>
+    </div>
+    <div class="muted" style="font-size:11.5px;margin-top:8px">全${d.total}項目。ここに出ているものがそのまま出題されます（並びと選択肢は毎回変わります）。</div>
+    ${groups}
+    <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="fo-btn" style="padding:9px 18px;font-size:13.5px" onclick="trStart(${d.step})">読み終わったので受験する</button>
+      <button onclick="trAsk('教材が分からない')" style="padding:9px 18px;font-size:13.5px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);cursor:pointer">分からないところを質問する</button>
+    </div>
+  </div>`;
+  window.scrollTo(0, 0);
+}
+
+/* 分からないまま止まらせない。宛先を持たないアプリなので、受け取って管理者に見せる。 */
+async function trAsk(kind) {
+  const body = prompt(`${kind}\n\n困っていることを書いてください。担当者に届きます。`, '');
+  if (body == null || !body.trim()) return;
+  try { const r = await API.trainingAsk(kind, body); alert(r.ok ? '送りました。担当者が確認します。' : (r.why || '送れませんでした')); }
+  catch (e) { alert(e.message); }
+}
+
+/* 新人からの質問（owner）。受け取りっぱなしにしない。 */
+async function loadAsks() {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const box = document.getElementById('traAsks'); if (!box) return;
+  let d; try { d = await API.trainingAsksAdmin(); } catch (e) { box.innerHTML = ''; return; }
+  const rows = (d.rows || []);
+  const open = rows.filter(r => !r.answeredAt);
+  if (!rows.length) { box.innerHTML = ''; return; }
+  box.innerHTML = card(`<div class="p-4">
+    <div class="font-semibold text-neutral-800">新人からの質問${open.length ? `　<span class="text-rose-600">未対応 ${open.length}件</span>` : ''}</div>
+    <div class="text-[12px] text-neutral-500 mt-0.5">研修画面の「質問する」から届きます。答えると本人の画面に出ます。</div>
+    <div class="mt-3 max-h-[300px] overflow-auto">
+      ${rows.slice(0, 30).map(r => `<div class="border-t border-neutral-200 px-1 py-2.5">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-[12.5px] font-semibold text-neutral-800">${esc(r.user)}</span>
+          <span class="text-[11px] px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">${esc(r.kind)}</span>
+          <span class="text-[11px] text-neutral-400">${esc(String(r.at).slice(0, 16).replace('T', ' '))}</span>
+          ${r.answeredAt ? '<span class="text-[11px] text-emerald-600 font-semibold">回答済み</span>' : '<span class="text-[11px] text-rose-600 font-semibold">未対応</span>'}
+        </div>
+        <div class="text-[13px] text-neutral-700 mt-1 whitespace-pre-wrap">${esc(r.body)}</div>
+        ${r.answer ? `<div class="text-[12.5px] text-emerald-800 mt-1.5 pl-3 border-l-2 border-emerald-300 whitespace-pre-wrap">${esc(r.answer)}</div>`
+          : `<button onclick="traAnswerAsk(${r.id})" class="mt-1.5 px-3 py-1 rounded-lg border border-neutral-300 bg-white text-[12px] font-semibold text-neutral-700">答える</button>`}
+      </div>`).join('')}
+    </div></div>`);
+}
+async function traAnswerAsk(id) {
+  const a = prompt('本人に返す内容を書いてください。');
+  if (a == null || !a.trim()) return;
+  try { await API.trainingAnswerAsk(id, a); loadAsks(); } catch (e) { alert(e.message); }
+}
+
+/* 自分が出した質問と、返ってきた答え。 */
+async function loadMyAsks() {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const box = document.getElementById('trMyAsks'); if (!box) return;
+  let d; try { d = await API.trainingMyAsks(); } catch (e) { box.innerHTML = ''; return; }
+  const rows = (d.rows || []).slice(0, 5);
+  if (!rows.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div style="margin-top:14px;padding:14px 16px;border:1px solid var(--border);border-radius:12px">
+    <div style="font-size:12.5px;font-weight:700;color:var(--text)">出した質問</div>
+    ${rows.map(r => `<div style="border-top:1px dotted var(--border);padding:8px 0;margin-top:6px">
+      <div class="muted" style="font-size:11px">${esc(r.kind)}　${esc(String(r.at).slice(0, 16).replace('T', ' '))}${r.answeredAt ? '' : '　返事を待っています'}</div>
+      <div style="font-size:12.5px;color:var(--text);margin-top:2px;white-space:pre-wrap">${esc(r.body)}</div>
+      ${r.answer ? `<div style="font-size:12.5px;margin-top:5px;padding-left:10px;border-left:3px solid var(--primary);color:var(--text);white-space:pre-wrap">${esc(r.answer)}</div>` : ''}
+    </div>`).join('')}</div>`;
 }
