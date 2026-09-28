@@ -1303,5 +1303,1591 @@
     "difficulty": 1,
     "source_note": "特定商取引法 第7条・施行規則",
     "verified_by": null
+  },
+  {
+    "code": "A-007",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "パネルの「変換効率」が表しているものは？",
+    "choices": [
+      "受けた光のうち電気に変えられる割合",
+      "1日に発電する時間の割合",
+      "故障しない確率",
+      "売電できる割合"
+    ],
+    "answer_index": 0,
+    "explanation": "同じ面積でも変換効率が高いほど多く発電できる。屋根が狭い家ほど効きやすい。",
+    "talk_example": "「屋根が広く取れないお宅では、効率の高いパネルのほうが載せられる量が増えます」",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "A-008",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "日本の住宅で、発電量が最も多くなりやすい設置角度の目安は？",
+    "choices": [
+      "0度（水平）",
+      "約30度",
+      "約60度",
+      "90度（垂直）"
+    ],
+    "answer_index": 1,
+    "explanation": "緯度によって最適角は変わるが、日本の住宅ではおおむね30度前後。実際は屋根の勾配に合わせる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "A-009",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "パワーコンディショナで直流を交流に変えるとき、電気はどうなる？",
+    "choices": [
+      "変換時に数%が失われる",
+      "increaseして増える",
+      "全く失われない",
+      "半分になる"
+    ],
+    "answer_index": 0,
+    "explanation": "変換効率は概ね95%前後。カタログの発電量は、この損失を見込んだ数字かどうかを確認する。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "A-010",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "パネルの温度が上がると出力はどうなる？",
+    "choices": [
+      "下がる",
+      "上がる",
+      "変わらない",
+      "倍になる"
+    ],
+    "answer_index": 0,
+    "explanation": "日射が強くても、モジュール温度が高いと出力は落ちる。真夏より春のほうが発電量が伸びやすいのはこのため。",
+    "talk_example": "「暑い日ほど発電するわけではなく、よく晴れて涼しい春が一番伸びます」",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "A-011",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "「日照時間」と「日射量」の違いとして正しいものは？",
+    "choices": [
+      "日照時間は日が照った長さ、日射量は降り注いだエネルギーの量",
+      "どちらも同じ",
+      "日照時間のほうが発電量に直結する",
+      "日射量は夜も計測される"
+    ],
+    "answer_index": 0,
+    "explanation": "発電量に効くのは日射量。日照時間が長くても弱い光なら発電量は伸びない。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "A-012",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "太陽光パネルの出力保証は一般に何年程度か？",
+    "choices": [
+      "1〜3年",
+      "5年",
+      "20〜25年",
+      "50年"
+    ],
+    "answer_index": 2,
+    "explanation": "メーカーや製品で異なるため、必ずその製品の保証書で確認する。年数だけでなく「何%まで下がったら保証か」も見る。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null,
+    "needs_owner_check": "出力保証の年数は当社の取扱メーカーの実際の条件と合っているか"
+  },
+  {
+    "code": "A-013",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "パワーコンディショナについて、お客様に必ず伝えるべきことは？",
+    "choices": [
+      "パネルより寿命が短く、途中で交換費用がかかる可能性がある",
+      "一生交換不要である",
+      "パネルと同時に必ず壊れる",
+      "交換は法律で禁止されている"
+    ],
+    "answer_index": 0,
+    "explanation": "おおむね10〜15年で交換を検討する機器。長期の試算をするなら交換費用を入れずに「元が取れる」と言わない。",
+    "talk_example": "「パワコンは途中で交換が要ることがあります。そこも入れた上での試算をお出しします」",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "A-014",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "複数のパネルを直列につないだまとまりを何という？",
+    "choices": [
+      "ストリング",
+      "クラスター",
+      "ユニット",
+      "ブロック"
+    ],
+    "answer_index": 0,
+    "explanation": "直列なので、1枚が影になるとそのストリング全体の出力が落ちることがある。影の確認が重要なのはこのため。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "A-015",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "1kWのパネルを載せるのに必要な屋根面積の目安は？",
+    "choices": [
+      "約1㎡",
+      "約6〜8㎡",
+      "約30㎡",
+      "約100㎡"
+    ],
+    "answer_index": 1,
+    "explanation": "製品の変換効率で変わる目安。実際に何kW載るかは現地調査と図面で確定する。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "A-016",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "発電した電気を電力会社の電線につなぐことを何という？",
+    "choices": [
+      "系統連系",
+      "自家発電",
+      "独立運転",
+      "逆潮流"
+    ],
+    "answer_index": 0,
+    "explanation": "系統連系には電力会社への申請と承諾が必要。工事日程はここに左右される。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "A-017",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "余った電気が電力会社側へ流れることを何という？",
+    "choices": [
+      "逆潮流",
+      "順潮流",
+      "漏電",
+      "放電"
+    ],
+    "answer_index": 0,
+    "explanation": "売電はこの逆潮流を計量して行われる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "A-018",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "売電量と買電量を計量する機器は？",
+    "choices": [
+      "スマートメーター",
+      "分電盤",
+      "パワーコンディショナ",
+      "HEMS"
+    ],
+    "answer_index": 0,
+    "explanation": "売電を始めるにはスマートメーターへの交換が必要になる場合がある。交換は電力会社の作業。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "A-019",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "曇りや雨の日の発電について正しいのは？",
+    "choices": [
+      "発電はするが、晴天時より大きく落ちる",
+      "まったく発電しない",
+      "晴天時と変わらない",
+      "雨のほうがよく発電する"
+    ],
+    "answer_index": 0,
+    "explanation": "「雨の日は発電しない」と言うと不正確。落ちる、が正しい。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "A-020",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "積雪でパネルが覆われている間の発電は？",
+    "choices": [
+      "ほとんど発電しない",
+      "雪を通して通常どおり発電する",
+      "雪があるほうが増える",
+      "変わらない"
+    ],
+    "answer_index": 0,
+    "explanation": "積雪地域では冬の発電量を低く見込む。年間の試算に反映されているかを確認する。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "B-005",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "カタログの「定格容量」と、実際に使える量の関係は？",
+    "choices": [
+      "実際に使える量は定格容量より少ない",
+      "定格容量がそのまま使える",
+      "実際のほうが多い",
+      "同じとは限らないが必ず9割は使える"
+    ],
+    "answer_index": 0,
+    "explanation": "機器保護のため全量は使い切らない。「実効容量」で説明しないと、停電時に思ったより早く切れたと言われる。",
+    "talk_example": "「カタログの容量すべてを使い切れるわけではないので、実際に使える量でご説明します」",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "B-006",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "蓄電池の寿命の目安を表す指標は？",
+    "choices": [
+      "サイクル数",
+      "重量",
+      "電圧",
+      "設置面積"
+    ],
+    "answer_index": 0,
+    "explanation": "充放電1回で1サイクル。サイクル数と保証年数の両方を見る。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "B-007",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "家庭用蓄電池で主流の電池の種類は？",
+    "choices": [
+      "リチウムイオン電池",
+      "鉛蓄電池",
+      "ニッケル水素電池",
+      "乾電池"
+    ],
+    "answer_index": 0,
+    "explanation": "同じリチウムイオンでも材料によって特性が違う。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "B-008",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "停電したとき、蓄電池が自動で家に電気を送る動作を何という？",
+    "choices": [
+      "自立運転",
+      "系統連系運転",
+      "逆潮流",
+      "充電運転"
+    ],
+    "answer_index": 0,
+    "explanation": "自動で切り替わるか手動かは機種で違う。手動の機種は操作方法をお客様に必ず説明する。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "B-009",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "全負荷型を入れれば、停電時にどの家電も必ず使えるか？",
+    "choices": [
+      "使えない場合がある。出力と200V対応の有無で決まる",
+      "必ずすべて使える",
+      "照明だけ使える",
+      "停電時は使えない"
+    ],
+    "answer_index": 0,
+    "explanation": "200V非対応の機種ではIHクッキングヒーターやエコキュートが動かない。全負荷型＝全部使える、と説明しない。",
+    "talk_example": "「家全体に電気は届きますが、IHやエコキュートは200Vに対応した機種が必要です」",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "B-010",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "蓄電池の設置場所を決めるとき確認すべきことは？",
+    "choices": [
+      "屋内用か屋外用か、温度条件、設置スペースと重量",
+      "パネルの色との相性",
+      "近所の設置件数",
+      "電柱からの距離だけ"
+    ],
+    "answer_index": 0,
+    "explanation": "据付には基礎や補強が必要な場合がある。現地調査で確認する。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "B-011",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "既に太陽光があり、パワコンがまだ新しい家に蓄電池を足す場合、選びやすいのは？",
+    "choices": [
+      "単機能型（既設パワコンをそのまま使う）",
+      "ハイブリッド型一択",
+      "蓄電池は設置できない",
+      "太陽光を撤去してから"
+    ],
+    "answer_index": 0,
+    "explanation": "既設パワコンが更新時期ならハイブリッド型でまとめる選択もある。年数を確認してから提案する。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "B-012",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "太陽光が無い家に蓄電池だけ設置する価値として正しいのは？",
+    "choices": [
+      "停電への備えと、安い時間帯の電気をためて使うこと",
+      "発電できるようになる",
+      "電気代が必ずゼロになる",
+      "価値はない"
+    ],
+    "answer_index": 0,
+    "explanation": "時間帯別のプランでないと後者の効果は出にくい。契約プランを確認してから話す。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "B-013",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "蓄電池の運転モードで「経済モード」が想定しているのは？",
+    "choices": [
+      "安い時間帯にためて高い時間帯に使い、電気代を抑える",
+      "常に満充電を保ち停電に備える",
+      "充電しない",
+      "売電を最大化する"
+    ],
+    "answer_index": 0,
+    "explanation": "停電への備えを重視するモードとは狙いが違う。お客様の優先順位を聞いてから設定を決める。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "B-014",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "蓄電池の保証について説明するとき正しいのは？",
+    "choices": [
+      "機器保証と容量（性能）保証を分けて説明する",
+      "保証は一種類しかない",
+      "保証は口頭で足りる",
+      "保証内容は各社同じ"
+    ],
+    "answer_index": 0,
+    "explanation": "何年で何%までの低下なら保証対象か、は製品ごとに違う。保証書で確認する。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "B-015",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「蓄電池を入れれば停電しても今までどおり暮らせます」という説明は？",
+    "choices": [
+      "不正確。容量と出力の範囲でしか使えないことを必ず伝える",
+      "正しい",
+      "全負荷型なら正しい",
+      "容量が大きければ正しい"
+    ],
+    "answer_index": 0,
+    "explanation": "停電時の使い方は最も苦情になりやすいところ。できることとできないことを先に伝える。",
+    "talk_example": "「冷蔵庫と照明とスマホの充電なら◯時間ほど。エアコンを付けっぱなしにすると短くなります」",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "C-003",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "積雪地域での設置にあたって確認すべきことは？",
+    "choices": [
+      "積雪荷重に耐える架台・工法か、メーカーの設置条件に合うか",
+      "パネルの色",
+      "近所の設置件数",
+      "確認は不要"
+    ],
+    "answer_index": 0,
+    "explanation": "積雪荷重は地域で定められている。条件を外れると保証の対象外になる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "C-004",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "屋根材によって工法が変わる理由は？",
+    "choices": [
+      "固定方法と防水処理が屋根材ごとに違うため",
+      "色が違うため",
+      "値段が違うため",
+      "変わらない"
+    ],
+    "answer_index": 0,
+    "explanation": "スレート・瓦・金属屋根・陸屋根で工法が異なる。屋根材を確認せずに工期や金額を確定しない。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "C-005",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "陸屋根（平らな屋根）に設置する場合の一般的な方法は？",
+    "choices": [
+      "架台で角度をつけて設置する",
+      "そのまま平置きしかできない",
+      "設置できない",
+      "壁に付ける"
+    ],
+    "answer_index": 0,
+    "explanation": "架台の固定方法（アンカー・置き基礎）は防水層への影響を確認して決める。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "C-006",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "屋根工事で最も慎重に扱うべきリスクは？",
+    "choices": [
+      "雨漏り",
+      "パネルの色あせ",
+      "重量による燃費",
+      "騒音"
+    ],
+    "answer_index": 0,
+    "explanation": "穴を開ける工法では防水処理が要。工事保証の範囲を必ず説明する。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "C-007",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "パワーコンディショナの設置場所を決めるときの注意点は？",
+    "choices": [
+      "屋内用か屋外用か、放熱と動作音、メンテナンススペース",
+      "見た目だけ",
+      "どこでも同じ",
+      "必ず寝室に置く"
+    ],
+    "answer_index": 0,
+    "explanation": "動作音を気にされる方がいる。寝室のそばを避けるなど、事前に置き場所を合意しておく。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "C-008",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "設置前の現地調査で屋根について確認することは？",
+    "choices": [
+      "屋根材・勾配・方角・劣化の状態・影",
+      "築年数だけ",
+      "外壁の色",
+      "確認は不要"
+    ],
+    "answer_index": 0,
+    "explanation": "劣化が進んでいる屋根は先に補修が要る場合がある。写真だけで可否を確定しない。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "C-009",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "設置にあたって分電盤まわりで確認することは？",
+    "choices": [
+      "主幹ブレーカーの容量と空き回路",
+      "分電盤の色",
+      "設置年だけ",
+      "確認は不要"
+    ],
+    "answer_index": 0,
+    "explanation": "容量が足りなければ分電盤の交換が必要になり、費用と工期に影響する。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "C-010",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "電気工事を行えるのは？",
+    "choices": [
+      "電気工事士の資格を持つ者",
+      "誰でも可能",
+      "営業担当者",
+      "施主本人"
+    ],
+    "answer_index": 0,
+    "explanation": "無資格者による工事は法令違反。営業が現場で配線に触れない。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "C-011",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "お客様から「何年で壊れますか」と聞かれたときの正しい対応は？",
+    "choices": [
+      "機器ごとの保証年数と、交換が想定される時期を事実として伝える",
+      "「壊れません」と答える",
+      "「わかりません」で終える",
+      "一番長い年数だけ伝える"
+    ],
+    "answer_index": 0,
+    "explanation": "断定も回避もしない。保証書に書いてある事実を示す。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "C-012",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "設置後のメンテナンスについて正しい説明は？",
+    "choices": [
+      "定期的な点検が必要で、費用がかかる場合があることを伝える",
+      "一切不要",
+      "毎月の清掃が必須",
+      "メーカーがすべて無償で行う"
+    ],
+    "answer_index": 0,
+    "explanation": "メンテナンス費用を伝えずに回収年数を示すと、後で話が違うと言われる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null,
+    "needs_owner_check": "定期点検の周期と費用負担が当社の実際の運用と合っているか"
+  },
+  {
+    "code": "D-005",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "FIT制度とは？",
+    "choices": [
+      "再生可能エネルギーの電気を、国が定めた価格で一定期間買い取る制度",
+      "設置費用を国が全額負担する制度",
+      "電気を無料にする制度",
+      "電力会社を選ぶ制度"
+    ],
+    "answer_index": 0,
+    "explanation": "固定価格買取制度。買取価格と期間は認定を受けた年度の条件が適用される。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-006",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "FIP制度の特徴は？",
+    "choices": [
+      "市場価格に応じた売電収入に、上乗せ（プレミアム）が付く",
+      "固定価格で買い取られる",
+      "売電できない",
+      "家庭用の制度である"
+    ],
+    "answer_index": 0,
+    "explanation": "FITが固定価格なのに対し、FIPは市場連動。主に事業用の制度。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-007",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "住宅用（10kW未満）と、10kW以上の買取期間の違いは？",
+    "choices": [
+      "10kW未満は10年、10kW以上は20年",
+      "どちらも10年",
+      "どちらも20年",
+      "10kW未満が20年"
+    ],
+    "answer_index": 0,
+    "explanation": "住宅用は余剰売電で10年。期間終了後が卒FIT。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-008",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "再エネ賦課金を負担しているのは？",
+    "choices": [
+      "電気を使うすべての人",
+      "太陽光を設置した人だけ",
+      "電力会社だけ",
+      "国だけ"
+    ],
+    "answer_index": 0,
+    "explanation": "使用量（kWh）に応じて全需要家が負担する。単価は年度ごとに改定される。",
+    "talk_example": "「太陽光を付けていない方も、電気を使う全員が明細で払っている項目です」",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-009",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "売電を始めるために必要な手続きは？",
+    "choices": [
+      "電力会社への系統連系の申込みと、国の事業計画認定",
+      "手続きは不要",
+      "市役所への届出だけ",
+      "メーカーへの登録だけ"
+    ],
+    "answer_index": 0,
+    "explanation": "手続きに時間がかかるため、工事完了＝即売電開始ではない。工期の説明で誤解を生みやすい。",
+    "talk_example": "「工事が終わってすぐ売電が始まるわけではなく、電力会社の手続きに期間がかかります」",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-010",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "買取価格はいつの時点の条件が適用されるか？",
+    "choices": [
+      "認定を受けた年度の条件",
+      "工事が終わった日の条件",
+      "契約した日の翌年の条件",
+      "毎年変わり続ける"
+    ],
+    "answer_index": 0,
+    "explanation": "年度で単価が変わるため、「来年でも同じ単価」とは言えない。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-011",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "卒FIT後の主な選択肢は？",
+    "choices": [
+      "自家消費に切り替える、または買取事業者と個別に契約する",
+      "撤去するしかない",
+      "国が引き続き同じ価格で買う",
+      "売電が禁止される"
+    ],
+    "answer_index": 0,
+    "explanation": "単価が大きく下がるため、蓄電池で自家消費に回す提案が成り立ちやすい。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-012",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "電力の小売全面自由化によって可能になったことは？",
+    "choices": [
+      "家庭でも電力会社やプランを選べるようになった",
+      "電気が無料になった",
+      "送電線が個人所有になった",
+      "売電が不要になった"
+    ],
+    "answer_index": 0,
+    "explanation": "お客様の契約プランによって、蓄電池の効果の出方が変わる。明細でプランを確認する。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-013",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "時間帯別の電気料金プランを契約している家で、蓄電池が効きやすい理由は？",
+    "choices": [
+      "安い時間帯にためて、高い時間帯に使えるため",
+      "プランと蓄電池は無関係",
+      "売電単価が上がるため",
+      "基本料金がゼロになるため"
+    ],
+    "answer_index": 0,
+    "explanation": "一律単価のプランではこの効果が出にくい。契約内容を確認せずに削減額を言わない。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-014",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "HEMSとは？",
+    "choices": [
+      "家庭のエネルギー使用を見える化し、機器を制御する仕組み",
+      "蓄電池の一種",
+      "補助金の名前",
+      "電力会社の名称"
+    ],
+    "answer_index": 0,
+    "explanation": "Home Energy Management System。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-015",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "国の補助金と自治体の補助金の関係について正しいのは？",
+    "choices": [
+      "併用できるかは制度ごとに異なるため、その年度の要件を確認する",
+      "必ず両方もらえる",
+      "必ずどちらか一方",
+      "併用は法律で禁止"
+    ],
+    "answer_index": 0,
+    "explanation": "「両方使えます」と先に言わない。対象か確認する、が正しい伝え方。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-016",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "補助金の申請でよくある注意点は？",
+    "choices": [
+      "着工前の申請が必要な制度があり、順序を誤ると対象外になる",
+      "いつ申請しても同じ",
+      "工事後のほうが有利",
+      "申請期限はない"
+    ],
+    "answer_index": 0,
+    "explanation": "予算上限に達した時点で締め切られる制度もある。段取りを誤ると金額の話が崩れる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-017",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "お客様が電力会社を切り替えた場合、既存の売電契約は？",
+    "choices": [
+      "契約内容によって扱いが変わるため、確認が必要",
+      "自動的に消滅する",
+      "必ずそのまま継続する",
+      "売電単価が上がる"
+    ],
+    "answer_index": 0,
+    "explanation": "推測で答えない。確認して折り返す。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "D-018",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「電気代はこれからも必ず上がります」という説明は？",
+    "choices": [
+      "断定はしない。過去の推移と、変動する前提であることを伝える",
+      "正しいので言ってよい",
+      "国が保証しているので問題ない",
+      "契約書に書けば問題ない"
+    ],
+    "answer_index": 0,
+    "explanation": "将来の価格は断定できない。断定的判断の提供と取られるおそれがある。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "E-003",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [],
+    "question": "「自家消費率」とは？",
+    "choices": [
+      "発電した電気のうち、売電せず自宅で使った割合",
+      "電気代の削減率",
+      "売電した割合",
+      "設備の稼働率"
+    ],
+    "answer_index": 0,
+    "explanation": "自家消費率が高いほど、買う電気を減らせる。在宅時間や生活パターンで変わる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "E-004",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [],
+    "question": "初期費用として説明に入れるべきものは？",
+    "choices": [
+      "機器代・工事費・申請費用・必要な場合の付帯工事",
+      "機器代だけ",
+      "工事費だけ",
+      "説明は不要"
+    ],
+    "answer_index": 0,
+    "explanation": "付帯工事（分電盤交換・屋根補修など）が後から出ると、金額の話が崩れる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "E-005",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [],
+    "question": "長期の回収試算に入れておくべき費用は？",
+    "choices": [
+      "パワコンの交換費用や定期点検の費用",
+      "入れる必要はない",
+      "固定資産税だけ",
+      "引越し費用"
+    ],
+    "answer_index": 0,
+    "explanation": "交換費用を入れずに「元が取れる」と言うと、実態と違う説明になる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "E-006",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "削減額の試算に使うべき数字は？",
+    "choices": [
+      "そのお客様の明細にある実際の使用量と単価",
+      "全国平均",
+      "他のお客様の数字",
+      "営業担当の感覚"
+    ],
+    "answer_index": 0,
+    "explanation": "平均や他人の数字で出した金額を、そのお客様の削減額として示さない。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "E-007",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「実質0円」という表現の問題点は？",
+    "choices": [
+      "条件を満たさないと成立しないのに、負担が無いと誤解させるおそれがある",
+      "問題はない",
+      "金額が小さいので問題ない",
+      "書面に書けば問題ない"
+    ],
+    "answer_index": 0,
+    "explanation": "前提条件を示さない有利表示は、景品表示法・特商法上の問題になりうる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "E-008",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "ローンで契約する場合に必ず伝えることは？",
+    "choices": [
+      "支払総額と金利、支払期間",
+      "月々の支払額だけ",
+      "金利は伝えなくてよい",
+      "総額は伝えなくてよい"
+    ],
+    "answer_index": 0,
+    "explanation": "月々だけを示して総額を伝えないのは、重要事項の説明として不十分。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "E-009",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [],
+    "question": "売電収入を試算に入れるときの注意は？",
+    "choices": [
+      "買取期間が終われば単価が下がる前提で示す",
+      "同じ単価が永久に続く前提でよい",
+      "売電収入は入れない",
+      "高めに見積もってよい"
+    ],
+    "answer_index": 0,
+    "explanation": "10年で条件が変わることを織り込まないと、長期の試算が実態と合わなくなる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "E-010",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "お客様が他社の見積と比べたいと言ったときの対応は？",
+    "choices": [
+      "比較は当然のこととして受け止め、内容の違いを事実で説明する",
+      "他社の悪口を言う",
+      "比較させない",
+      "今日中の契約を迫る"
+    ],
+    "answer_index": 0,
+    "explanation": "契約を急がせる言動は、それ自体が問題になる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "F-003",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "一度断られた家に、日を改めて再訪問することは？",
+    "choices": [
+      "契約しない意思を示された相手への再勧誘にあたり禁止",
+      "期間を空ければ問題ない",
+      "担当者を変えれば問題ない",
+      "3回までなら可"
+    ],
+    "answer_index": 0,
+    "explanation": "再勧誘の禁止。断られた時点で終了し、記録に残す。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "F-004",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "夜遅い時間の訪問や長時間の居座りは？",
+    "choices": [
+      "迷惑を覚えさせる勧誘として問題になりうる",
+      "成約率が上がるので推奨",
+      "本人が起きていれば問題ない",
+      "規制はない"
+    ],
+    "answer_index": 0,
+    "explanation": "時間帯と滞在時間は、それ自体が指導・処分の対象になりうる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "F-005",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "契約を急がせるために「今日決めてもらわないと」と言うことは？",
+    "choices": [
+      "事実でない限定で判断を歪める行為にあたり、してはならない",
+      "営業手法として問題ない",
+      "上司の許可があれば可",
+      "書面に残せば可"
+    ],
+    "answer_index": 0,
+    "explanation": "正規のキャンペーンがある場合でも、その条件を正しく伝える。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "F-006",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "商談中の録音や写真撮影について正しいのは？",
+    "choices": [
+      "お客様に目的を伝えて同意を得てから行う",
+      "黙って録ってよい",
+      "会社の指示があれば同意は不要",
+      "撮影は一切禁止"
+    ],
+    "answer_index": 0,
+    "explanation": "屋根の写真も個人の住居の情報。用途を説明して了解を得る。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "F-007",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "お客様から預かった個人情報の扱いとして正しいのは？",
+    "choices": [
+      "目的の範囲で使い、社外に持ち出さず、決められた方法で保管する",
+      "個人のスマホに保存してよい",
+      "同僚に共有してよい",
+      "不要になれば放置してよい"
+    ],
+    "answer_index": 0,
+    "explanation": "明細や図面も個人情報。紛失は会社の信用に直結する。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null,
+    "needs_owner_check": "明細や写真の保管先・持ち出しの可否が当社の実際のルールと合っているか"
+  },
+  {
+    "code": "F-008",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "他社製品や他社の施工を説明するときの正しい態度は？",
+    "choices": [
+      "事実に基づいて違いを説明し、根拠のない中傷はしない",
+      "悪口を言って比較する",
+      "他社の話は一切しない",
+      "事実でなくても不利に言う"
+    ],
+    "answer_index": 0,
+    "explanation": "根拠のない誹謗は、景品表示法や信用毀損の問題になりうる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "F-009",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "契約後にお客様から「話が違う」と言われたときの正しい初動は？",
+    "choices": [
+      "その日のうちに上長へ報告し、記録を残す",
+      "自分で解決してから報告する",
+      "様子を見る",
+      "記録しない"
+    ],
+    "answer_index": 0,
+    "explanation": "初動が遅れるほど大きくなる。隠さない。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null,
+    "needs_owner_check": "クレームの一次報告先と期限が当社の実際のルールと合っているか"
+  },
+  {
+    "code": "F-010",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "自分の説明に誤りがあったと後で気づいたときは？",
+    "choices": [
+      "速やかに訂正して伝え、上長にも報告する",
+      "黙っておく",
+      "次回の訪問で触れる",
+      "お客様が気づかなければよい"
+    ],
+    "answer_index": 0,
+    "explanation": "放置した誤りは不実告知として扱われうる。訂正した記録を残す。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-016",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "特定商取引法上の「訪問販売」にあたるのは？",
+    "choices": [
+      "営業所等以外の場所で申込みを受け、または契約を締結する取引",
+      "店舗での販売",
+      "通信販売",
+      "新聞広告"
+    ],
+    "answer_index": 0,
+    "explanation": "自宅への訪問のほか、路上で呼び止めて営業所へ連れて行く形（キャッチセールス）なども含まれる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第2条第1項",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-017",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「良い話がある」とだけ伝えて呼び出し、目的を告げずに契約させる手口は？",
+    "choices": [
+      "アポイントメントセールスとして訪問販売に含まれ、規制の対象になる",
+      "通信販売なので対象外",
+      "規制はない",
+      "本人が来たので問題ない"
+    ],
+    "answer_index": 0,
+    "explanation": "目的を告げずに呼び出す行為は、勧誘目的の明示義務違反にもあたる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第2条第1項・第3条",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-018",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "お客様自身が来訪を請求した場合の訪問販売の扱いは？",
+    "choices": [
+      "一定の要件を満たせば適用除外となる場合がある",
+      "常に適用除外になる",
+      "必ず適用される",
+      "クーリングオフだけ適用されない"
+    ],
+    "answer_index": 0,
+    "explanation": "「呼ばれたから対象外」と自己判断しない。要件は法令で細かく定められている。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第26条",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-019",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "営業のために締結する契約（事業者間の契約）への特商法の適用は？",
+    "choices": [
+      "原則として適用除外になる",
+      "必ず適用される",
+      "クーリングオフだけ適用される",
+      "金額で決まる"
+    ],
+    "answer_index": 0,
+    "explanation": "個人事業主でも、営業のための契約と認められれば適用除外になりうる。安易に「事業用だから何をしてもよい」と考えない。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第26条第1項第1号",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-020",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "契約書面に記載しなければならない事項に含まれないものは？",
+    "choices": [
+      "担当者の個人的な連絡先",
+      "商品の種類と数量",
+      "代金と支払時期・方法",
+      "クーリングオフに関する事項"
+    ],
+    "answer_index": 0,
+    "explanation": "記載事項は法令で定められている。欠けているとクーリングオフの起算が始まらない。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第4条・第5条",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-021",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "書面を電子メール等で交付する場合に必要なことは？",
+    "choices": [
+      "お客様の承諾を、定められた方法であらかじめ得ること",
+      "承諾は不要",
+      "口頭で伝えれば足りる",
+      "電子交付は認められていない"
+    ],
+    "answer_index": 0,
+    "explanation": "2021年改正で電磁的方法による交付が可能になったが、承諾の取り方まで法令で定められている。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第4条第2項・第5条第3項",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-022",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "お客様を威迫して困惑させ、契約させたり解除を妨げたりする行為は？",
+    "choices": [
+      "禁止されており、刑事罰の対象にもなる",
+      "強く勧める範囲なら問題ない",
+      "注意されるだけ",
+      "規制はない"
+    ],
+    "answer_index": 0,
+    "explanation": "大声を出す、複数人で取り囲む、帰らないなどが該当しうる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第6条第3項",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-023",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "契約を締結させるため、お客様の判断に影響する重要な事実を故意に告げない行為は？",
+    "choices": [
+      "事実不告知として禁止され、刑事罰の対象になる",
+      "聞かれなければ問題ない",
+      "マナーの問題にとどまる",
+      "規制はない"
+    ],
+    "answer_index": 0,
+    "explanation": "不利益になる事実を黙っておくことも違反。聞かれなくても伝える。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第6条第2項",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-024",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "行政処分として特商法に定められているものの組み合わせは？",
+    "choices": [
+      "指示・業務停止命令・業務禁止命令",
+      "罰金のみ",
+      "営業許可の取消しのみ",
+      "行政処分の定めはない"
+    ],
+    "answer_index": 0,
+    "explanation": "業務禁止命令は、法人の役員等個人に対して出される。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第7条・第8条・第8条の2",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-025",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "クーリングオフされた場合に事業者ができないことは？",
+    "choices": [
+      "損害賠償や違約金を請求すること",
+      "商品を引き取ること",
+      "受領した代金を返すこと",
+      "解除の事実を記録すること"
+    ],
+    "answer_index": 0,
+    "explanation": "解除に伴う金銭的な請求はできない。引取費用も事業者の負担。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第9条第3項・第4項",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-026",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "中途解約時に事業者が請求できる額について定めているのは？",
+    "choices": [
+      "損害賠償等の額に上限を設ける規定がある",
+      "上限はなく自由に決められる",
+      "常に全額請求できる",
+      "請求は一切できない"
+    ],
+    "answer_index": 0,
+    "explanation": "契約書に高額な違約金を書いても、上限を超える部分は無効になりうる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第10条",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-027",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "広告や説明で、実際よりも著しく優良だと見せる表示は？",
+    "choices": [
+      "優良誤認表示として景品表示法上の問題になる",
+      "営業表現として問題ない",
+      "書面に注記すれば問題ない",
+      "規制はない"
+    ],
+    "answer_index": 0,
+    "explanation": "価格や取引条件を著しく有利に見せる表示は有利誤認表示。どちらも措置命令・課徴金の対象。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "景品表示法 第5条",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-028",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "重要事項について事実と異なる説明を受け、誤認して契約した消費者は？",
+    "choices": [
+      "消費者契約法により契約を取り消すことができる",
+      "取り消せない",
+      "8日以内のみ取り消せる",
+      "裁判でしか争えない"
+    ],
+    "answer_index": 0,
+    "explanation": "特商法の取消権とは別に、消費者契約法にも取消しの定めがある。不利益となる事実の不告知も対象。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "消費者契約法 第4条",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-029",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "勧誘の際に、お客様が高齢で判断力が不十分だと分かった場合は？",
+    "choices": [
+      "判断力の不足に乗じた契約は禁止行為にあたるため、その場では契約しない",
+      "簡単に説明すれば契約してよい",
+      "家族に黙って進めてよい",
+      "規制はない"
+    ],
+    "answer_index": 0,
+    "explanation": "指示の対象となる行為として定められている。会社として最も重い処分リスク。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第7条・施行規則",
+    "verified_by": null
+  },
+  {
+    "code": "LAW-030",
+    "test_type": "law",
+    "category": "LAW",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "訪問販売で違反があった場合、会社（法人）が受けうる責任は？",
+    "choices": [
+      "行政処分に加え、罰則では個人より重い罰金が科されうる",
+      "責任は担当者個人だけが負う",
+      "行政処分のみ",
+      "責任は生じない"
+    ],
+    "answer_index": 0,
+    "explanation": "法人重科の定めがあり、不実告知等の違反には1億円以下の罰金が科されうる。",
+    "talk_example": "",
+    "difficulty": 1,
+    "source_note": "特定商取引法 第74条",
+    "verified_by": null
   }
 ]
