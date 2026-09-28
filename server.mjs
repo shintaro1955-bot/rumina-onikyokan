@@ -191,6 +191,20 @@ function verifyRkToken(token) {
   if (!payload.lineId && !payload.driver) return null;
   return payload;
 }
+/** ポータルに「このLINE userIdは誰か」を聞く（本人選択まで済んだ人だけ返る）。
+    LINEの表示名はニックネームのことが多く、それでアカウントを作ると
+    cyzenの担当者とも名簿とも一生紐付かない。名寄せの正本はポータル側にある。 */
+async function nameFromPortal(lineId) {
+  if (!PORTAL_URL || !BOT_API_SECRET || !lineId) return null;
+  try {
+    const u = `${PORTAL_URL}/api/line/whoami?secret=${encodeURIComponent(BOT_API_SECRET)}&lineId=${encodeURIComponent(lineId)}`;
+    const r = await fetch(u);
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j && j.found && j.name ? { name: j.name, corp: j.corp || null } : null;
+  } catch (e) { console.error('[line] ポータル照会に失敗:', e.message); return null; }
+}
+
 /** rkのlineId／氏名で既存ユーザーを探し、無ければ作る。見つかった場合はlineIdを補完する。 */
 function userFromRk(rk) {
   const db = getDb();
@@ -1417,18 +1431,20 @@ const server = createServer(async (req, res) => {
           const pj = await pr.json();
           if (!pr.ok || !pj.userId) throw new Error('profile');
 
-          const db = getDb();
-          let user = Object.values(db.users).find(u => u.lineId === pj.userId);
-          if (!user) {
-            const isOwner = !!OWNER_LINE_ID && OWNER_LINE_ID === pj.userId;
-            const uname = uniqueUsername(db, (pj.displayName || 'LINEユーザー').trim());
-            user = { username: uname, name: (pj.displayName || uname).trim(), role: isOwner ? 'owner' : 'rep', repId: null, lineId: pj.userId, isModel: isOwner || false, pending: !isOwner };
-            db.users[uname] = user; save();
-          }
+          // ポータルが本人選択まで済んだ人なら本名が返る。返らなければLINEの表示名で作る。
+          const who = await nameFromPortal(pj.userId);
+          const user = userFromRk({ lineId: pj.userId, driver: who ? who.name : (pj.displayName || '').trim(), corp: who ? who.corp : null });
+          // ポータルが知らない人は、誰なのかを管理者が確かめる余地を残す（研修は受けられる）。
+          // viaPortal を立てたままにすると「名簿を通った人」と区別がつかなくなる。
+          if (!who) { user.viaPortal = false; if (!user.repId) user.pending = true; save(); }
+          if (OWNER_LINE_ID && OWNER_LINE_ID === pj.userId && user.role !== 'owner') { user.role = 'owner'; user.pending = false; save(); }
           setSessionCookie(req, res, signSession({ username: user.username, role: user.role }));
           res.writeHead(302, { Location: '/' }); return res.end();
         } catch (e) {
-          res.writeHead(302, { Location: '/?lineerror=auth' }); return res.end();
+          // 何が起きたか分からないまま「失敗しました」だけ出すと、直しようがない。
+          console.error('[line] コールバック失敗:', e && e.message, e && e.stack);
+          const reason = /token/.test(String(e && e.message)) ? 'token' : /profile/.test(String(e && e.message)) ? 'profile' : 'auth';
+          res.writeHead(302, { Location: '/?lineerror=' + reason }); return res.end();
         }
       }
 

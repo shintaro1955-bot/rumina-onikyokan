@@ -1960,7 +1960,15 @@ function viewLogin() {
         <div id="loginErr" class="text-xs text-rose-600"></div>
       </div>`)}
       <p class="text-[11px] text-neutral-400 text-center mt-3">${window.__lineReady ? 'LINEでログインすると自動でアカウントが作成されます。' : 'アカウントは管理者が発行します。'}</p>
-      ${new URLSearchParams(location.search).has('lineerror') ? '<p class="text-[11px] text-rose-600 text-center mt-1">LINEログインに失敗しました。もう一度お試しください。</p>' : ''}
+      ${(() => {
+        const e = new URLSearchParams(location.search).get('lineerror');
+        if (!e) return '';
+        const why = { state: '時間が経ちすぎたか、別のタブで開き直したためです。もう一度お試しください。',
+          token: 'LINEとの通信が通りませんでした。少し置いてからお試しください。',
+          profile: 'LINEからお名前を受け取れませんでした。もう一度お試しください。',
+          auth: 'ログインを完了できませんでした。もう一度お試しください。' }[e] || 'ログインを完了できませんでした。';
+        return `<p class="text-[11px] text-rose-600 text-center mt-1">${why}<br>続けて同じになるときは、この画面をそのまま知らせてください（区分：${e}）。</p>`;
+      })()}
     </div></div>`;
 }
 async function doLogin() {
