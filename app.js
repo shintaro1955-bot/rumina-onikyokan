@@ -1357,12 +1357,12 @@ async function loadBuildup() {
       <div><div class="font-semibold text-neutral-800">底上げ一覧</div>
         <div class="text-[12px] text-neutral-500 mt-0.5">稼働 ${d.pool}人。下の段から順に、手を入れる相手を並べています（各段は訪問数の多い順）。</div></div>
       <div class="text-[11.5px] text-neutral-500 text-right">
-        チームの中央値：訪問 <b class="text-neutral-700">${st.vpd.median ?? '—'}</b>件/日 ・ アポ率 <b class="text-neutral-700">${st.apoRate.median ?? '—'}</b>%<br>
-        トップ層（上位25%）：訪問 <b class="text-neutral-700">${st.vpd.top ?? '—'}</b>件/日 ・ アポ率 <b class="text-neutral-700">${st.apoRate.top ?? '—'}</b>%</div>
+        チームの中央値（止まっている段を見つける線）：訪問 <b class="text-neutral-700">${st.vpd.median ?? '—'}</b>件/日 ・ アポ率 <b class="text-neutral-700">${st.apoRate.median ?? '—'}</b>%<br>
+        ${d.std ? `あるべき姿${d.std.source === 'top' ? `（${d.std.name}さんの1日）` : ''}：訪問 <b class="text-neutral-700">${d.std.visitsPerDay}</b>件/日 ・ アポ率 <b class="text-neutral-700">${d.std.apoRate}</b>%` : ''}</div>
     </div>
     ${moveLine}
     ${sections}
-    <div class="text-[11px] text-neutral-400 mt-2">基準は平均ではなく中央値（訪問数の多い人と1日だけの人が混在し、平均が外れ値に引かれるため）。「記録」はアポ報告の抜けが疑われる人で、低調とは別に出しています。</div>
+    <div class="text-[11px] text-neutral-400 mt-2">止まっている段を見つける線は平均ではなく中央値（訪問数の多い人と1日だけの人が混在し、平均が外れ値に引かれるため）。目指す先は全営業KPI・Today と同じ「あるべき姿」1本です。「記録」はアポ報告の抜けが疑われる人で、低調とは別に出しています。</div>
   </div>`);
 }
 
@@ -1472,9 +1472,9 @@ async function loadCyzen() {
     <td class="px-3 py-2 text-[11px] text-neutral-500">${(r.attr || '').split('/').slice(0, 2).join('/')}</td>
     <td class="px-3 py-2 text-right tabular-nums">${r.days}</td>
     <td class="px-3 py-2 text-right tabular-nums">${r.visits}</td>
-    <td class="px-3 py-2 text-right tabular-nums ${r.vpd >= b.visitsPerDay ? 'text-emerald-600' : r.vpd < b.visitsPerDayMin ? 'text-rose-600' : ''}">${r.vpd}</td>
+    <td class="px-3 py-2 text-right tabular-nums ${r.vpd >= b.visitsPerDay ? 'text-emerald-600' : r.vpd < b.visitsPerDay * 0.6 ? 'text-rose-600' : ''}">${r.vpd}</td>
     <td class="px-3 py-2 text-right tabular-nums">${r.apo}</td>
-    <td class="px-3 py-2 text-right tabular-nums ${r.apoRate >= b.apoRate ? 'text-emerald-600' : r.apoRate < b.apoRateMin ? 'text-rose-600' : ''}">${r.apoRate}%</td>
+    <td class="px-3 py-2 text-right tabular-nums ${r.apoRate >= b.apoRate ? 'text-emerald-600' : r.apoRate < b.apoRate * 0.6 ? 'text-rose-600' : ''}">${r.apoRate}%</td>
     <td class="px-3 py-2 text-right tabular-nums">${r.closeRate == null ? '—' : r.closeRate + '%'}</td>
     <td class="px-3 py-2 text-[11px] text-neutral-600">${r.why}</td>
   </tr>`).join('');
@@ -1484,9 +1484,11 @@ async function loadCyzen() {
     </div>`)}
     <div class="mt-3 text-[12px] text-neutral-600">対象 ${s.total}名 ・ 期間${s.periodDays}日 ・ <b>評価できたのは ${s.evaluable}名</b>（残り${s.E}名は報告書が無く評価不能）</div>
     ${card(`<div class="p-4 mt-3">
-      <div class="text-sm font-semibold text-neutral-700 mb-1">あるべき姿（実データの上位者から導出）</div>
-      <div class="text-[13px] text-neutral-700 leading-relaxed">訪問 <b>${b.visitsPerDay}件/日</b>（下限${b.visitsPerDayMin}）・ アポ率 <b>${b.apoRate}%</b>（下限${b.apoRateMin}%）・ 稼働 <b>${b.workHours}h/日</b>・ 成約率 <b>${b.closeRate}%</b>
-      <div class="text-[11px] text-neutral-500 mt-1">※ 社内の実在の上位者が到達している水準。理想論ではなく「同じ会社で現に出ている数字」。</div></div>
+      <div class="text-sm font-semibold text-neutral-700 mb-1">あるべき姿${b.source === 'top' ? `＝${b.name}さんの1日（直近${b.days}日の平均）` : ''}</div>
+      <div class="text-[13px] text-neutral-700 leading-relaxed">訪問 <b>${b.visitsPerDay}件/日</b>・ アポ率 <b>${b.apoRate}%</b>・ 稼働 <b>${b.workHours}h/日</b>・ 成約率 <b>${b.closeRate}%</b>
+      <div class="text-[11px] text-neutral-500 mt-1">${b.source === 'top'
+        ? '※ いま社内で一番アポを取っている人の実績。Today・Momentum と同じ物差しです。量ではなく決める率で追います。稼働時間と成約率だけは比較できる実績が無いため従来の水準を残しています。'
+        : '※ cyzenのデータが足りないため、従来の水準（上位25%・上位10%）で判定しています。'}</div></div>
     </div>`)}
     <div class="mt-4">${card(`<div class="overflow-x-auto"><table class="w-full text-sm min-w-[900px]">
       <thead><tr class="text-xs text-neutral-500 bg-neutral-50">
