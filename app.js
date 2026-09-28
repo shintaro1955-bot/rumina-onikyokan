@@ -1732,6 +1732,12 @@ const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: v
 // 新IA(today/field/academy/league/me)は同一currentViewでnav-activeを共有させる別名解決
 const NAV_ALIAS = { ranking: 'league', my: 'me' };
 function nav(v) {
+  // まだ開いていない画面には入れない。研修を通した分だけ開く。
+  if (!viewAllowed(v)) {
+    const st = window.__stageInfo;
+    alert(`この画面はまだ開いていません。\n${st && st.next ? st.next : '研修を進めると開きます。'}`);
+    v = 'training';
+  }
   // ロープレ道場を離れるときはマイク/音声を止める（付けっぱなし防止）。
   if (currentView === 'roleplay' && v !== 'roleplay' && window.RP && RP._avTeardown) RP._avTeardown();
   // 画面を移ったら読み上げは必ず止める（どの経路で来ても音を残さない）
@@ -2069,6 +2075,72 @@ async function issueRep(i) {
   } catch (e) { if (box) box.innerHTML = `<div class="text-sm text-rose-600">発行失敗：${e.message}</div>`; }
 }
 
+
+/* いまどの段にいて、次に何が開くか。新人が「あと何をすれば現場に出られるか」を
+   1か所で分かるようにする。ここが無いと、鍵のかかったナビだけが並んで理由が見えない。 */
+function stageBox(d) {
+  const key = d.stage, S = (d.stages || {})[key];
+  if (!S) return '';
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const ORDER = ['start', 'practice', 'pending', 'field'];
+  const at = ORDER.indexOf(key);
+  if (key === 'suspended') {
+    return `<div style="margin-top:14px;padding:12px;border:1px solid #e11d48;border-radius:12px;background:rgba(225,29,48,.05)">
+      <div style="font-size:12.5px;font-weight:700;color:#e11d48">停止中</div>
+      <div style="font-size:12px;margin-top:2px;color:var(--text)">${esc(S.next || '')}</div></div>`;
+  }
+  const NAMES = { training: '研修', roleplay: 'ロープレ道場', academy: 'Academy（教材）', terakoya: '寺子屋', today: 'Today', field: 'Field Replay', league: 'League', me: 'My Performance' };
+  const steps = ORDER.map((k, i) => {
+    const s2 = (d.stages || {})[k] || {};
+    const done = i < at, now = i === at;
+    const open = s2.views === null ? '現場の画面がすべて' : (s2.views || []).map(v => NAMES[v] || v).join('・');
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:7px 0">
+      <span style="width:18px;height:18px;border-radius:50%;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;
+        background:${done || now ? 'var(--primary)' : 'var(--surface-2)'};color:${done || now ? '#fff' : 'var(--muted)'}">${done ? '✓' : i + 1}</span>
+      <div style="min-width:0">
+        <div style="font-size:12.5px;font-weight:${now ? '700' : '600'};color:${now ? 'var(--text)' : 'var(--muted)'}">${esc(s2.label || k)}${now ? '　← いまここ' : ''}</div>
+        <div class="muted" style="font-size:11.5px">開くもの：${esc(open)}</div>
+      </div></div>`;
+  }).join('');
+  return `<div style="margin-top:14px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2)">
+    <div style="font-size:12.5px;font-weight:700;color:var(--text)">アプリはここまで開いています</div>
+    <div class="muted" style="font-size:11.5px;margin-top:2px">段を通すごとに使える画面が増えます。${S.next ? esc(S.next) : ''}</div>
+    <div style="margin-top:6px">${steps}</div></div>`;
+}
+
+/* 研修の段に応じて、左のナビを開け閉めする。
+   隠さずに鍵で見せるのは、次に何が待っているかが分かる方が前に進むため。
+   押せてしまうと中身の無い画面に着地するので、押したら理由を出して研修へ戻す。 */
+function applyStage() {
+  const u = window.__user || {};
+  const allowed = window.__allowedViews;          // null＝制限なし
+  const owner = u.role === 'owner';
+  document.querySelectorAll('#leftbar .lb-item[data-nav]').forEach(el => {
+    const v = el.getAttribute('data-nav');
+    el.querySelectorAll('.lb-lock').forEach(x => x.remove());
+    const locked = !owner && Array.isArray(allowed) && !allowed.includes(v);
+    el.classList.toggle('lb-locked', locked);
+    if (locked) {
+      const s = document.createElement('span');
+      s.className = 'lb-lock'; s.textContent = '未開放';
+      el.appendChild(s);
+    }
+  });
+  // 上のヘッダーと下のタブにも同じ入口がある。左だけ閉めても素通りできてしまう。
+  document.querySelectorAll('#topnav [data-nav], #botnav [data-nav]').forEach(el => {
+    const v = el.getAttribute('data-nav');
+    const locked = !owner && Array.isArray(allowed) && !allowed.includes(v);
+    el.style.display = locked ? 'none' : '';
+  });
+}
+/** その画面に入ってよいか。ダメなら理由を返す。 */
+function viewAllowed(v) {
+  const u = window.__user || {};
+  if (u.role === 'owner') return true;
+  const allowed = window.__allowedViews;
+  return !Array.isArray(allowed) || allowed.includes(v);
+}
+
 /* ---------- 認証ゲート / ロール ---------- */
 function applyRole(user) {
   const owner = !!(user && user.role === 'owner');
@@ -2094,13 +2166,18 @@ async function boot() {
   if (!allowed.includes(currentView) || currentView === 'login') currentView = 'today';   // 既定はToday
   if (user.role !== 'owner' && ownerOnly.includes(currentView)) currentView = 'today';
   // 新人はこのアプリの研修から始める。営業解禁されるまでは研修を最初に出す。
+  window.__allowedViews = null; window.__stageInfo = null;
   if (user.role !== 'owner') {
     try {
       const t = await API.trainingOverview();
       window.__cert = t.cert;
+      const st = (t.stages || {})[t.stage] || null;
+      window.__stageInfo = st ? { key: t.stage, ...st } : null;
+      window.__allowedViews = st ? st.views : null;      // null＝制限なし（営業解禁）
       if (t.cert && t.cert.status !== 'cleared') currentView = 'training';
     } catch (e) { window.__cert = null; }
   }
+  applyStage();
   nav(currentView);
   updateSync();
   updateBell();
@@ -2598,6 +2675,13 @@ async function loadTraining() {
   const wrap = document.getElementById('trWrap'); if (!wrap) return;
   const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
   let d; try { d = await API.trainingOverview(); } catch (e) { wrap.innerHTML = `<div class="fo-card" style="padding:20px;color:#e11d48">${esc(e.message)}</div>`; return; }
+  // 合格した直後に段が変わる。ナビの鍵もその場で開ける（再ログインを待たせない）。
+  if ((window.__user || {}).role !== 'owner') {
+    const S = (d.stages || {})[d.stage] || null;
+    window.__stageInfo = S ? { key: d.stage, ...S } : null;
+    window.__allowedViews = S ? S.views : null;
+    applyStage();
+  }
   const c = d.cert, st = TR_STATUS[c.status] || TR_STATUS.locked;
   const u = window.__user || {};
 
@@ -2645,6 +2729,7 @@ async function loadTraining() {
           : c.status === 'pending'
             ? `<div style="font-size:13px;color:var(--text);margin-top:12px">${d.oralReady ? 'STEP4まで合格' : 'STEP3まで合格'}。承認を待っています。</div>`
             : `<div style="font-size:13px;color:var(--text);margin-top:12px">残りのテストは あと ${Math.max(0, (d.oralReady ? 4 : 3) - d.unlocked + 1)} つ。${d.oralReady ? '' : '（口頭試問は準備中のため、STEP3まで合格したら面談で判断します）'}</div>`}
+      ${stageBox(d)}
       <div style="margin-top:14px">${steps}</div>
       ${d.reviewLeft ? `<div style="margin-top:14px;padding:12px;border:1px solid #f59e0b;border-radius:12px;background:rgba(245,158,11,.06)">
         <div style="font-size:12.5px;font-weight:700;color:#b45309">復習キュー ${d.reviewLeft}問</div>

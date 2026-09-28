@@ -91,6 +91,10 @@
     font-size:14px;font-weight:600;color:var(--muted);background:transparent;border:0;cursor:pointer;transition:.12s}
   .lb-item:hover{background:var(--surface-2);color:var(--text)}
   .lb-item.nav-active{background:var(--primary-soft);color:var(--primary)}
+  /* まだ開いていない画面。隠さずに鍵で見せる＝次に何が待っているかが分かる方が前に進む */
+  .lb-item.lb-locked{opacity:.4;cursor:not-allowed}
+  .lb-item.lb-locked:hover{background:transparent;color:var(--muted)}
+  .lb-item .lb-lock{margin-left:auto;font-size:10.5px;font-weight:700;letter-spacing:.02em}
   .lb-item svg{flex:none}
   .lb-sec{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;padding:14px 12px 6px}
   #leftbar .prof{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-top:8px;border-top:1px solid var(--border)}
