@@ -36,6 +36,7 @@ import { buildup, teamStats } from './lib/buildup.mjs';
 import * as weekly from './lib/weekly.mjs';
 import * as training from './lib/training.mjs';
 import * as dispatch from './lib/dispatch.mjs';
+import * as fieldcheck from './lib/fieldcheck.mjs';
 import * as sendlog from './lib/sendlog.mjs';
 import { todayGap, topPerformer } from './lib/todaygap.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
@@ -811,6 +812,22 @@ const server = createServer(async (req, res) => {
         const live = /^(1|true|yes|on)$/i.test(url.searchParams.get('live') || '');
         const out = await weekly.runOnce({ live }).catch(e => ({ error: e.message }));
         return json(res, 200, { ok: !out.error, config: weekly.config(), ...out });
+      }
+
+      /* 問題を作る・直す（owner専用）。作った問題も確認が入るまで出題されない。 */
+      if (path === '/api/training/admin/question' && req.method === 'POST') {
+        const meQ = currentUser(req);
+        if (!meQ || meQ.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const body = await readBody(req);
+        return json(res, 200, training.upsertQuestion(meQ.username, body));
+      }
+
+      /* 営業解禁の突合：合格していない人が現場に出ていないか（owner専用） */
+      if (path === '/api/training/admin/field-check' && req.method === 'GET') {
+        const meF = currentUser(req);
+        if (!meF || meF.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const d = Math.max(1, Math.min(90, +(url.searchParams.get('days') || 14)));
+        return json(res, 200, { ok: true, ...fieldcheck.fieldCheck({ days: d }) });
       }
 
       /* ---------- 毎日の配信管制（研修が要る人へ1通だけ） ---------- */

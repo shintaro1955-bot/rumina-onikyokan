@@ -1757,7 +1757,7 @@ function nav(v) {
   if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
   if (v === 'me') loadMePerf();
   if (v === 'training') loadTraining();
-  if (v === 'trainadmin') loadTrainingAdmin();
+  if (v === 'trainadmin') { loadFieldCheck(); loadTrainingAdmin(); }
   if (v === 'dispatch') loadDispatch();
   if (v === 'academy') loadAcademy();
   if (v === 'terakoya') loadTerakoya();
@@ -2852,6 +2852,7 @@ window.trStart = trStart; window.trAnswer = trAnswer; window.trReview = trReview
 /* ---------- 研修管理（owner専用） ---------- */
 function viewTrainingAdmin() {
   return `${h1('研修管理', '誰がどこまで進んでいるか、問題が確認済みかを見る。確認者名を入れるまで問題は出題されない。')}
+    <div id="traField" class="mb-4"></div>
     <div id="traRoster" class="mb-4"></div>
     <div id="traQ" class="mb-4"></div>
     <div id="traAudit"></div>`;
@@ -2951,6 +2952,35 @@ async function loadTrainingQuestions(type) {
     <div class="text-[12px] text-neutral-500 mt-0.5">確認者名を入れるまで出題されません。中身を読んでから有効にしてください。</div>
     <div class="flex gap-2 flex-wrap mt-3">${tabs}</div>
     ${needBox}
+    <div class="mt-3">
+      <button onclick="traToggleNew()" class="px-3 py-1.5 rounded-lg border border-neutral-300 bg-white text-[12.5px] font-semibold text-neutral-700">問題を作る・直す</button>
+      <div id="traNew" style="display:none" class="mt-2 p-3 rounded-lg border border-neutral-200 bg-neutral-50">
+        <div class="text-[12px] text-neutral-600 mb-2">現場で気づいたことをその場で問題にできます。作った問題も、確認者名を入れるまで出題されません。既にあるコードを入れると上書きになり、その場合は確認がやり直しになります。</div>
+        <div class="grid gap-2" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+          <input id="qCode" placeholder="コード（例：P-023）" class="border border-neutral-200 rounded-lg px-3 py-1.5 text-[12.5px]">
+          <select id="qType" onchange="traTypeChanged()" class="border border-neutral-200 rounded-lg px-3 py-1.5 text-[12.5px]">
+            <option value="basic100">基礎知識100問</option><option value="must30">鬼の30箇条</option><option value="law">特商法</option>
+          </select>
+          <select id="qCat" class="border border-neutral-200 rounded-lg px-3 py-1.5 text-[12.5px]">
+            <option value="A_basic">A 太陽光の基礎</option><option value="B_battery">B 蓄電池</option><option value="C_equipment">C 機器・工事</option>
+            <option value="D_system">D 制度・電気料金</option><option value="E_economics">E 経済性</option><option value="F_compliance">F 法令順守</option><option value="G_history">G 業界の歴史</option>
+          </select>
+        </div>
+        <textarea id="qQ" rows="2" placeholder="設問" class="w-full mt-2 border border-neutral-200 rounded-lg px-3 py-1.5 text-[12.5px]"></textarea>
+        <div class="grid gap-2 mt-2" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+          ${[0, 1, 2, 3].map(i => `<label class="flex items-center gap-2"><input type="radio" name="qAns" value="${i}"${i === 0 ? ' checked' : ''}>
+            <input id="qC${i}" placeholder="選択肢${i + 1}${i === 0 ? '（既定で正解）' : ''}" class="border border-neutral-200 rounded-lg px-3 py-1.5 text-[12.5px] flex-1"></label>`).join('')}
+        </div>
+        <div class="text-[11.5px] text-neutral-500 mt-1">左の丸が正解です。並びは出題時に毎回シャッフルされます。</div>
+        <textarea id="qE" rows="2" placeholder="解説（なぜそれが正解か。ここが空だと保存できません）" class="w-full mt-2 border border-neutral-200 rounded-lg px-3 py-1.5 text-[12.5px]"></textarea>
+        <input id="qSrc" placeholder="根拠・出典（例：特定商取引法 第9条／SHARP(カタログ)）" class="w-full mt-2 border border-neutral-200 rounded-lg px-3 py-1.5 text-[12.5px]">
+        <div class="flex gap-2 items-center mt-2 flex-wrap">
+          <label class="text-[12px] text-neutral-600 flex items-center gap-1.5"><input type="checkbox" id="qLaw">法令・安全に関わる問題（STEP2で1問でも落とすと不合格になる）</label>
+          <button onclick="traSaveQuestion()" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[12.5px] font-semibold ml-auto">保存する</button>
+        </div>
+        <div id="qMsg" class="text-[12px] mt-2"></div>
+      </div>
+    </div>
     <div class="flex gap-2 items-center flex-wrap mt-3 p-2.5 rounded-lg bg-neutral-50 border border-neutral-200">
       <input id="traVerifier" placeholder="確認者名（例：濱西）" class="border border-neutral-200 rounded-lg px-3 py-1.5 text-[12.5px] flex-1 min-w-[160px]">
       <button onclick="traVerifyAll()" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[12.5px] font-semibold">この${TABS[t]}を確認済みにする（${by.total}問）</button>
@@ -3321,4 +3351,81 @@ async function loadDispatch() {
   box.innerHTML = card1
     + sec('今日の下書き', 'この文面のまま届きます。読んで納得できないものがあれば言ってください。直します。', sendable)
     + unreach + review + skipped + recent;
+}
+
+/* ============================================================
+   営業解禁の突合（研修管理の先頭に出す）
+   このアプリは訪問そのものを止められない。止められるのは画面まで。
+   ただし現場に出た事実は cyzen に残るので、突き合わせて名指しで出す。
+   ============================================================ */
+async function loadFieldCheck() {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const box = document.getElementById('traField'); if (!box) return;
+  let d; try { d = await API.fieldCheck(14); } catch (e) { box.innerHTML = `<div class="fo-card" style="padding:16px;color:#e11d48">${esc(e.message)}</div>`; return; }
+  if (!d.ready) { box.innerHTML = card(`<div class="p-4 text-[13px] text-neutral-500">${esc(d.why || 'データがありません')}</div>`); return; }
+  const s = d.summary;
+
+  const rows = (list, tone) => `<table style="width:100%;font-size:12.5px;border-collapse:collapse">
+    ${list.slice(0, 40).map(r => `<tr style="border-top:1px dotted #E3DED2">
+      <td style="padding:7px 4px;width:130px;font-weight:600;color:${tone}">${esc(r.name)}</td>
+      <td style="padding:7px 4px;width:150px;color:#57534e">訪問${r.visits}件・${r.days}日</td>
+      <td style="padding:7px 4px;color:#57534e">${esc(r.why || 'アプリのアカウントがありません')}</td>
+      <td style="padding:7px 4px;width:90px;color:#a8a29e;text-align:right">最終 ${esc(r.last)}</td></tr>`).join('')}
+  </table>${list.length > 40 ? `<div class="muted" style="font-size:11.5px;margin-top:6px">ほか${list.length - 40}人</div>` : ''}`;
+
+  const head = `<div class="fo-card" style="padding:16px">
+    <div style="font-weight:600">営業解禁の突合</div>
+    <div class="muted" style="font-size:12px;margin-top:2px">${esc(d.from)}〜${esc(d.to)}に訪問記録がある${s.moved}人を、研修の認定と突き合わせています。</div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:12.5px">
+      <div><span style="color:#e11d48;font-weight:700">${s.violation}人</span> 未解禁なのに現場に出ています</div>
+      <div><span style="color:#b45309;font-weight:700">${s.unregistered}人</span> アカウントがありません</div>
+      <div><span style="color:#0f7a45;font-weight:700">${s.cleared}人</span> 解禁済み</div>
+    </div>
+    <div class="muted" style="font-size:11.5px;margin-top:8px">${esc(d.note)}</div>
+  </div>`;
+
+  const v = s.violation ? `<div class="fo-card" style="padding:16px;margin-top:12px;border-color:#e11d48">
+    <div style="font-weight:600;color:#e11d48">いま止めるべき人（${s.violation}人・訪問${s.visitsByViolation}件）</div>
+    <div class="muted" style="font-size:12px;margin:2px 0 8px">アカウントはあるのに、研修が終わっていません。現場に出ています。</div>
+    ${rows(d.violation, '#e11d48')}</div>` : '';
+
+  const u = s.unregistered ? `<div class="fo-card" style="padding:16px;margin-top:12px">
+    <div style="font-weight:600">まずアカウントを出す人（${s.unregistered}人）</div>
+    <div class="muted" style="font-size:12px;margin:2px 0 8px">現場には出ていますが、アプリに登録がないので研修の状態を追えません。LINEログインしてもらうか、管理者マスタで発行してください。</div>
+    ${rows(d.unregistered, '#b45309')}</div>` : '';
+
+  box.innerHTML = head + v + u;
+}
+
+/* 問題を作る・直す（owner）。確認が入るまで出題されないのはseedと同じ。 */
+function traToggleNew() {
+  const el = document.getElementById('traNew'); if (!el) return;
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+function traTypeChanged() {
+  const t = document.getElementById('qType').value;
+  const cat = document.getElementById('qCat');
+  if (cat) cat.disabled = (t !== 'basic100');   // カテゴリ配分があるのは基礎知識だけ
+}
+async function traSaveQuestion() {
+  const v = id => (document.getElementById(id) || {}).value || '';
+  const msg = document.getElementById('qMsg');
+  const ansEl = document.querySelector('input[name="qAns"]:checked');
+  const body = {
+    code: v('qCode'), testType: v('qType'), category: v('qType') === 'basic100' ? v('qCat') : '',
+    question: v('qQ'), choices: [v('qC0'), v('qC1'), v('qC2'), v('qC3')],
+    answerIndex: ansEl ? +ansEl.value : 0,
+    explanation: v('qE'), sourceNote: v('qSrc'),
+    tags: (document.getElementById('qLaw') || {}).checked ? ['safety_law'] : [],
+  };
+  try {
+    const r = await API.saveQuestion(body);
+    if (!r.ok) { msg.className = 'text-[12px] mt-2 text-rose-600'; msg.textContent = r.why || '保存できませんでした'; return; }
+    msg.className = 'text-[12px] mt-2 text-emerald-700';
+    msg.textContent = r.mode === 'update'
+      ? `${r.code} を上書きしました。${r.reVerify ? '中身が変わったので、確認はやり直しになります。' : ''}`
+      : `${r.code} を作りました。確認者名を入れるまで出題されません。`;
+    ['qCode', 'qQ', 'qC0', 'qC1', 'qC2', 'qC3', 'qE', 'qSrc'].forEach(x => { const e = document.getElementById(x); if (e) e.value = ''; });
+    loadTrainingQuestions(window.__traType || 'must30');
+  } catch (e) { msg.className = 'text-[12px] mt-2 text-rose-600'; msg.textContent = e.message; }
 }

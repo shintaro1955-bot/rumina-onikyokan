@@ -4107,5 +4107,444 @@
     "difficulty": 2,
     "source_note": "FF インターフォン研修 2025年2月版",
     "verified_by": null
+  },
+  {
+    "code": "P-001",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "一般的な家庭向けプランで、使った量に関係なく毎月かかるのは？",
+    "choices": [
+      "基本料金",
+      "電力量料金",
+      "燃料費調整額",
+      "再エネ賦課金"
+    ],
+    "answer_index": 0,
+    "explanation": "契約アンペア（または契約容量）で決まる。電気を1kWhも使わなくてもかかる。",
+    "talk_example": "「この一番上の行は、使っても使わなくてもかかる分です」",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-002",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "関西・中国・四国・沖縄のエリアで、基本料金にあたる仕組みの名称は？",
+    "choices": [
+      "最低料金",
+      "固定従量料金",
+      "契約容量料金",
+      "基本料金は無い"
+    ],
+    "answer_index": 0,
+    "explanation": "アンペア制ではなく最低料金制。最初の一定量までが定額になる。エリアで明細の形が違うので、まず管内を確認する。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null,
+    "needs_owner_check": "当社の商圏で最低料金制エリア（関西・中国・四国・沖縄）の案件がどれくらいあるか"
+  },
+  {
+    "code": "P-003",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "従量電灯の「三段階料金」とは？",
+    "choices": [
+      "使用量の段階が上がるほど1kWhあたりの単価が高くなる仕組み",
+      "3つのプランから選べる仕組み",
+      "3ヶ月ごとに単価が変わる仕組み",
+      "3年契約で割引になる仕組み"
+    ],
+    "answer_index": 0,
+    "explanation": "第1段階が最も安く、第3段階が最も高い。省エネを促すための設計。",
+    "talk_example": "「電気は使えば使うほど1kWhの値段が上がる仕組みなんです」",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-004",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "太陽光の自家消費で減るのは、三段階料金のどの部分から？",
+    "choices": [
+      "最も単価の高い上の段から",
+      "最も単価の安い第1段階から",
+      "すべての段から均等に",
+      "段階とは関係ない"
+    ],
+    "answer_index": 0,
+    "explanation": "**削減額の話の核心**。買う量が減ると、一番高い段の電気から消える。だから同じ発電量でも、たくさん使っている家ほど削減額が大きくなる。",
+    "talk_example": "「減るのは一番高い単価の電気からです。たくさん使われているお宅ほど効くのはそのためです」",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-005",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "太陽光を設置しても基本料金はどうなるか？",
+    "choices": [
+      "原則そのままかかる。契約アンペアを下げない限り減らない",
+      "自動的にゼロになる",
+      "半額になる",
+      "発電量に応じて減る"
+    ],
+    "answer_index": 0,
+    "explanation": "「電気代がゼロになります」が成り立たない理由のひとつ。基本料金と最低限の買電は残る。",
+    "talk_example": "「基本料金は残ります。ゼロにはなりません」",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-006",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "燃料費調整額とは何に連動する項目か？",
+    "choices": [
+      "原油・LNG・石炭などの平均燃料価格",
+      "電力会社の利益",
+      "再生可能エネルギーの導入量",
+      "契約アンペア"
+    ],
+    "answer_index": 0,
+    "explanation": "燃料の輸入価格に応じて毎月変わる。会社が勝手に上げているのではない、と説明できることが信頼につながる。",
+    "talk_example": "「この行は燃料の値段に連動して毎月動きます。電力会社の都合で決めている額ではありません」",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-007",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "燃料費調整額について正しいのは？",
+    "choices": [
+      "マイナス（値引き）になることもある",
+      "必ずプラスになる",
+      "毎年1回だけ変わる",
+      "固定されている"
+    ],
+    "answer_index": 0,
+    "explanation": "燃料価格が基準より安いときはマイナスになる。「必ず上がる」と言わない。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-008",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "燃料費調整額は、いつの燃料価格が反映されるか？",
+    "choices": [
+      "数ヶ月前の実績が、遅れて反映される",
+      "その月の価格がその月に反映される",
+      "前年の平均が反映される",
+      "反映されない"
+    ],
+    "answer_index": 0,
+    "explanation": "ニュースで燃料高騰と言われた時期と、明細に出る時期はずれる。「今月上がったのはなぜ」と聞かれたときに説明できる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-009",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "再エネ賦課金の金額は何で決まるか？",
+    "choices": [
+      "その月に使った電力量（kWh）に単価をかけた額",
+      "契約アンペア",
+      "基本料金の一定割合",
+      "太陽光の設置有無"
+    ],
+    "answer_index": 0,
+    "explanation": "使用量に比例する。単価は年度ごとに改定される。",
+    "talk_example": "「使った量に比例する項目なので、買う電気が減れば、ここも減ります」",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-010",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [],
+    "question": "太陽光の自家消費で、再エネ賦課金はどうなるか？",
+    "choices": [
+      "買う電力量が減るぶん、減る",
+      "変わらない",
+      "設置すると免除される",
+      "増える"
+    ],
+    "answer_index": 0,
+    "explanation": "見落とされやすい削減効果。使用量に比例する項目なので、買電が減れば一緒に減る。",
+    "talk_example": "「買う電気が減れば、賦課金も燃料費調整も一緒に減ります」",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-011",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "再エネ賦課金の単価はどのくらいの頻度で変わるか？",
+    "choices": [
+      "年度ごとに改定される",
+      "毎月変わる",
+      "5年ごと",
+      "変わらない"
+    ],
+    "answer_index": 0,
+    "explanation": "毎月動く燃料費調整額とは別物。混同して説明しない。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-012",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "明細に直接は出ないが、電気料金の原価に含まれているものは？",
+    "choices": [
+      "送配電網の利用料（託送料金）",
+      "販売店の手数料",
+      "太陽光の設置費用",
+      "自治体の補助金"
+    ],
+    "answer_index": 0,
+    "explanation": "小売会社が送配電会社に払う網の使用料。新電力に切り替えても、この部分は必ずかかる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-013",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "オール電化向けの時間帯別プランの特徴は？",
+    "choices": [
+      "時間帯によって単価が違い、夜間が安い設計が多い",
+      "いつでも同じ単価",
+      "基本料金がかからない",
+      "売電単価が高くなる"
+    ],
+    "answer_index": 0,
+    "explanation": "このプランかどうかで、蓄電池の効き方がまるで変わる。必ず明細で契約プランを確認する。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-014",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "契約プランを確認せずに削減額を出すと、何が起きるか？",
+    "choices": [
+      "前提が違って、実際の削減額と食い違う",
+      "問題は起きない",
+      "安全側の試算になる",
+      "売電単価が変わるだけ"
+    ],
+    "answer_index": 0,
+    "explanation": "一律単価のプランと時間帯別では、蓄電池の効果がまったく違う。明細を見ずに試算しないのはこのため。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-015",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [],
+    "question": "明細で、削減額の試算に最も必要な数字は？",
+    "choices": [
+      "月ごとの使用量（kWh）と請求額",
+      "契約者の氏名",
+      "検針日",
+      "お客様番号"
+    ],
+    "answer_index": 0,
+    "explanation": "使用量と金額の両方が要る。1ヶ月だけでなく、できれば1年ぶん見る。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-016",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "明細を1ヶ月ぶんだけ見て試算するのが危ういのは？",
+    "choices": [
+      "季節で使用量が大きく変わるため、年間の姿がつかめない",
+      "明細が偽造されている可能性があるため",
+      "検針日が違うため",
+      "危うくない"
+    ],
+    "answer_index": 0,
+    "explanation": "冷暖房の月とそうでない月で倍近く違う家もある。年間で見ないと回収年数がずれる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-017",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「今の電気代の何%が減りますか」と聞かれたときの正しい答え方は？",
+    "choices": [
+      "減る部分と減らない部分を分けて説明する",
+      "「◯%減ります」と即答する",
+      "「半分になります」と答える",
+      "「わかりません」で終える"
+    ],
+    "answer_index": 0,
+    "explanation": "基本料金は減らない。電力量料金・燃料費調整額・再エネ賦課金は買電が減れば減る。この区別を言えることが、この仕事の基礎。",
+    "talk_example": "「基本料金は残ります。減るのは使った分にかかる部分で、そこは一番高い単価から減ります」",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-018",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [],
+    "question": "同じ発電量でも、削減額が大きくなりやすい家は？",
+    "choices": [
+      "昼間に在宅していて、使用量が多い家",
+      "昼間は誰もいない家",
+      "使用量が少ない家",
+      "契約アンペアが小さい家"
+    ],
+    "answer_index": 0,
+    "explanation": "自家消費率が高いほど、高い単価の買電を減らせる。生活パターンを聞く理由がここにある。",
+    "talk_example": "「日中どなたかご在宅ですか。そこで効き方が変わるんです」",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-019",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "昼間に誰もいない家に対して、正しい提案の考え方は？",
+    "choices": [
+      "蓄電池でためて、夜に使う形を検討する",
+      "太陽光は向かないので提案しない",
+      "自家消費率は関係ないので同じ試算を出す",
+      "売電だけで元が取れると説明する"
+    ],
+    "answer_index": 0,
+    "explanation": "自家消費率が低いままだと効果が出にくい。ためて夜に回す設計にするか、正直に効果が限定的だと伝える。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-020",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [],
+    "question": "電気代が上がった理由を聞かれたときに、明細で見るべき項目は？",
+    "choices": [
+      "使用量の増減と、燃料費調整額・再エネ賦課金の動き",
+      "基本料金だけ",
+      "お客様番号",
+      "検針日だけ"
+    ],
+    "answer_index": 0,
+    "explanation": "使用量が増えたのか、単価側が動いたのかで話がまったく変わる。決めつけずに明細で確かめる。",
+    "talk_example": "「使った量が増えたのか、単価が上がったのか。明細で分かりますので見せていただけますか」",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-021",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "契約アンペアを下げると何が起きるか？",
+    "choices": [
+      "基本料金は下がるが、同時に使える電気が減りブレーカーが落ちやすくなる",
+      "基本料金だけが下がる",
+      "電力量料金も下がる",
+      "何も変わらない"
+    ],
+    "answer_index": 0,
+    "explanation": "安易に勧めない。使い方を聞かずに下げさせると生活に支障が出る。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
+  },
+  {
+    "code": "P-022",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "新電力に切り替えれば必ず安くなる、という説明は？",
+    "choices": [
+      "プランと使用量によるため、断定してはいけない",
+      "正しい",
+      "基本料金が無いので正しい",
+      "契約アンペアが大きい家では正しい"
+    ],
+    "answer_index": 0,
+    "explanation": "託送料金は誰が売っても乗る。使用量の少ない家では高くなることもある。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "電気料金の構成（明細の読み方）",
+    "verified_by": null
   }
 ]
