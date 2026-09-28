@@ -367,7 +367,8 @@ function persistReport(id, result, userName) {
 
 // 研修の問題バンクを投入（既にある問題は触らない。全問 verifiedBy 未設定＝出題されない）
 (function seedTraining() {
-  try { const r = training.seedQuestions(); if (r.seeded || r.updated) console.log(`✓ 研修の問題：新規${r.seeded}問投入／確認待ちの${r.updated}問を更新（合計${r.total}問）`); }
+  // 何も変わらなかった時も件数は出す。出ないと「投入されたのか」を外から確かめられない。
+  try { const r = training.seedQuestions(); console.log(`✓ 研修の問題：合計${r.total}問（新規${r.seeded}／更新${r.updated}）`); }
   catch (e) { console.error('研修seed失敗:', e.message); }
 })();
 
@@ -437,7 +438,7 @@ const server = createServer(async (req, res) => {
     // ---------- API ----------
     if (path.startsWith('/api/')) {
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, cyzenUserKeys: globalThis.__cyzenUserKeys || null, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET,
+      if (path === '/api/health') return json(res, 200, { ok: true, cyzenUserKeys: globalThis.__cyzenUserKeys || null, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET, trainingQuestions: (() => { try { return training.questionStats().total; } catch (e) { return null; } })(),
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
