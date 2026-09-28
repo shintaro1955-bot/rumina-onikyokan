@@ -35,6 +35,8 @@ import * as recmind from './lib/recmind.mjs';
 import { buildup, teamStats } from './lib/buildup.mjs';
 import * as weekly from './lib/weekly.mjs';
 import * as training from './lib/training.mjs';
+import * as dispatch from './lib/dispatch.mjs';
+import * as sendlog from './lib/sendlog.mjs';
 import { todayGap, topPerformer } from './lib/todaygap.mjs';
 import { normalizeSegments } from './lib/janorm.mjs';
 import { buildMessage as buildDigest, buildFacts as digestFacts } from './lib/digest.mjs';
@@ -794,6 +796,28 @@ const server = createServer(async (req, res) => {
         const live = /^(1|true|yes|on)$/i.test(url.searchParams.get('live') || '');
         const out = await weekly.runOnce({ live }).catch(e => ({ error: e.message }));
         return json(res, 200, { ok: !out.error, config: weekly.config(), ...out });
+      }
+
+      /* ---------- 毎日の配信管制（研修が要る人へ1通だけ） ---------- */
+      /* 下書きの確認。実送信はしない。 */
+      if (path === '/api/dispatch/plan' && req.method === 'GET') {
+        const meD = currentUser(req);
+        if (!meD || meD.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const out = await dispatch.plan().catch(e => ({ error: e.message }));
+        return json(res, 200, { ok: !out.error, config: dispatch.config(), recent: sendlog.recent(7), ...out });
+      }
+      /* 実行。live=1 でも DISPATCH_ENABLED と LINEトークンが揃っていなければ送らない。 */
+      if (path === '/api/dispatch/run' && (req.method === 'POST' || req.method === 'GET')) {
+        const meD = currentUser(req);
+        if (!meD || meD.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const live = /^(1|true|yes|on)$/i.test(url.searchParams.get('live') || '');
+        const out = await dispatch.runOnce({ live }).catch(e => ({ error: e.message }));
+        return json(res, 200, { ok: !out.error, config: dispatch.config(), ...out });
+      }
+      /* 本人ぶん。自分に来た連絡だけを返す（他人のものは返さない）。 */
+      if (path === '/api/dispatch/mine' && req.method === 'GET') {
+        const meD = currentUser(req); if (!meD) return json(res, 401, { error: 'ログインが必要です' });
+        return json(res, 200, { ok: true, rows: sendlog.historyOf(meD.name || meD.username) });
       }
 
       /* チームの物差し（全員が見てよい。個人の数字は含まない）。目標ページで自分との差を出すため。 */
@@ -1791,6 +1815,9 @@ server.listen(PORT, () => {
   console.log(API_KEY ? '✓ Whisper 接続可（OPENAI_API_KEY 検出）' : '⚠ OPENAI_API_KEY 未設定 → モックUIのみ動作');
   // cyzenデータがある時だけ入力リマインドのスケジューラを起動（実送信はenv+トークンで有効化）
   if (cyzen.ready()) reminders.startScheduler();
+  // 毎日1回の配信管制。研修が要る人へ1通だけ送る（既定はドライラン）。
+  // 研修ゲートはcyzenが無くても回るので、cyzenの有無に関わらず起動する。
+  dispatch.startScheduler();
   // cyzen API があれば5分ごとに報告書ベースの行動量を最新化（空データは適用しない安全弁つき）
   if (cyzenApi.ready() && !/^(0|off|false)$/i.test(process.env.CYZEN_LIVE_REFRESH || '')) {
     const MIN = Math.max(1, Number(process.env.CYZEN_REFRESH_MINUTES || 5));

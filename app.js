@@ -1728,7 +1728,7 @@ async function loadApoCoach() {
     ${d.enabled ? '' : `<div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[12.5px] text-neutral-700">まだ自動送信はOFFです。上のリストで問題なければ、本番の環境変数 <b>APO_COACH_ON=1</b> を立てると翌朝から本人LINEへ届き始めます（1日1回・上限${d.dailyMax || 20}名）。</div>`}`;
 }
 
-const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, training: viewTraining, trainadmin: viewTrainingAdmin, terakoya: viewTerakoya, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay, apocoach: viewApoCoach };
+const VIEWS = { login: viewLogin, today: viewToday, field: viewField, academy: viewAcademy, league: viewRanking, me: viewMePerf, training: viewTraining, trainadmin: viewTrainingAdmin, dispatch: viewDispatch, terakoya: viewTerakoya, home: viewHome, upload: viewUpload, analyzing: viewAnalyzing, report: viewReport, submit: viewSubmit, reps: viewReps, issues: viewIssues, admin: viewAdmin, log: viewLog, linkrep: viewLinkRep, cyzen: viewCyzen, compliance: viewCompliance, ranking: viewRanking, roleplay: viewRoleplay, apocoach: viewApoCoach };
 // 新IA(today/field/academy/league/me)は同一currentViewでnav-activeを共有させる別名解決
 const NAV_ALIAS = { ranking: 'league', my: 'me' };
 function nav(v) {
@@ -1752,6 +1752,7 @@ function nav(v) {
   if (v === 'me') loadMePerf();
   if (v === 'training') loadTraining();
   if (v === 'trainadmin') loadTrainingAdmin();
+  if (v === 'dispatch') loadDispatch();
   if (v === 'academy') loadAcademy();
   if (v === 'terakoya') loadTerakoya();
   loadRail();
@@ -2074,10 +2075,10 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  const allowed = ['today', 'field', 'academy', 'league', 'me', 'training', 'trainadmin', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
+  const allowed = ['today', 'field', 'academy', 'league', 'me', 'training', 'trainadmin', 'dispatch', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
   // 管理者専用の画面。別の人でログインし直した時にそのまま残ると、
   // 中身の出ない空の管理画面に着地してしまう（データはサーバが401で止める）。
-  const ownerOnly = ['trainadmin', 'log', 'linkrep', 'cyzen', 'compliance', 'apocoach', 'admin', 'reps', 'issues'];
+  const ownerOnly = ['trainadmin', 'dispatch', 'log', 'linkrep', 'cyzen', 'compliance', 'apocoach', 'admin', 'reps', 'issues'];
   if (!allowed.includes(currentView) || currentView === 'login') currentView = 'today';   // 既定はToday
   if (user.role !== 'owner' && ownerOnly.includes(currentView)) currentView = 'today';
   // 新人はこのアプリの研修から始める。営業解禁されるまでは研修を最初に出す。
@@ -3126,3 +3127,84 @@ window.doLogin = doLogin; window.doLogout = doLogout; window.issueRep = issueRep
 window.nav = nav; window.startAnalyze = startAnalyze;
 initTheme();
 boot();
+
+/* ============================================================
+   配信プレビュー（owner）
+   毎日1回、研修が要る人へLINEで1通だけ送る。その下書きをそのまま見せる。
+   送る前に必ず人が読む。ここで納得できない文面は送らない。
+   ============================================================ */
+function viewDispatch() {
+  return `${h1('配信プレビュー', '毎日1回、研修が要る人へLINEで1通だけ送ります。送る前の下書きをそのまま出しています。')}
+    <div id="dpWrap"></div>`;
+}
+
+const DP_REASON = {
+  training: ['研修が止まっている', '#0f7a45'],
+  talk: ['トークの質', '#b45309'],
+  record: ['報告の抜けの疑い', '#6b7280'],
+};
+
+async function loadDispatch() {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const box = document.getElementById('dpWrap'); if (!box) return;
+  box.innerHTML = `<div class="fo-card" style="padding:18px" class="muted">読み込み中…</div>`;
+  let d; try { d = await API.dispatchPlan(); } catch (e) { box.innerHTML = `<div class="fo-card" style="padding:18px;color:#e11d48">${esc(e.message)}</div>`; return; }
+
+  const c = d.config || {}, s = d.summary || {};
+  const state = c.canSend
+    ? `<b style="color:#e11d48">実送信が有効です</b>（JST ${c.hour}時台に自動で送られます）`
+    : `<b>送信は止まっています</b>（下書きを作るだけ。有効にするには DISPATCH_ENABLED=on と LINEトークンが必要です）`;
+
+  const card1 = `<div class="fo-card" style="padding:16px">
+    <div style="font-weight:600;margin-bottom:6px">いまの状態</div>
+    <div style="font-size:13px;line-height:1.7">${state}<br>
+      1人1日1通・週${c.weekCap}通まで・同じ内容は中${c.cooldownDays}日あける。他の連絡（入力リマインド・録音の催促・先週比）と重ならないよう、送った記録は1か所で共有しています。</div>
+    <div style="font-size:12.5px;margin-top:10px;color:#57534e">
+      今日の対象 <b>${(s.training || 0) + (s.talk || 0)}人</b>（研修が止まっている ${s.training || 0}・トークの質 ${s.talk || 0}）
+      ・ うちLINEで届く <b>${s.reachable || 0}人</b>／未連携で届かない <b>${s.unreachable || 0}人</b>
+      ・ 自動送信せず人が確認 <b>${s.review || 0}人</b>
+      ・ 送りすぎになるので今日は見送り <b>${s.skipped || 0}人</b></div>
+  </div>`;
+
+  const msgCard = (r, reachable) => `<div style="border:1px solid #DDD8CC;border-radius:4px;padding:12px;margin-bottom:8px;background:#fff">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px">
+      <div style="font-weight:600">${esc(r.name)}</div>
+      <div style="font-size:11px;font-weight:700;color:${(DP_REASON[r.reason] || ['', '#666'])[1]}">${(DP_REASON[r.reason] || [r.reason])[0]}${reachable ? '' : ' ・ LINE未連携で届きません'}</div>
+    </div>
+    <div style="font-size:12.5px;white-space:pre-wrap;line-height:1.75;color:#3f3f46;border-left:3px solid #E3DED2;padding-left:10px">${esc(r.message)}</div>
+  </div>`;
+
+  const sec = (title, note, html) => `<div class="fo-card" style="padding:16px;margin-top:12px">
+    <div style="font-weight:600">${title}</div>
+    ${note ? `<div class="muted" style="font-size:12px;margin:2px 0 10px">${note}</div>` : '<div style="height:8px"></div>'}
+    ${html}</div>`;
+
+  const sendable = (d.reachable || []).map(r => msgCard(r, true)).join('') || '<div class="muted" style="font-size:12.5px">今日送る相手はいません。</div>';
+  const unreach = (d.unreachable || []).length
+    ? sec('LINEが繋がっていないため届かない人', '本人がポータルでLINEログインと氏名の選択を済ませると届くようになります。こちらでは解決できません。',
+      (d.unreachable || []).map(r => msgCard(r, false)).join(''))
+    : '';
+  const review = (d.review || []).length
+    ? sec('自動送信しない人（人が確認する）', '機械が判断してはいけない相手です。営業教育部の決めごとに沿って、ここは人が見ます。',
+      `<table style="width:100%;font-size:12.5px;border-collapse:collapse">${(d.review || []).map(r => `<tr style="border-top:1px dotted #E3DED2">
+        <td style="padding:7px 4px;width:120px;font-weight:600">${esc(r.name)}</td>
+        <td style="padding:7px 4px;color:#57534e">${esc(r.why)}</td></tr>`).join('')}</table>`)
+    : '';
+  const skipped = (d.skipped || []).length
+    ? sec('今日は送らない人', '送りすぎると読まれなくなります。理由を残しています。',
+      `<table style="width:100%;font-size:12.5px;border-collapse:collapse">${(d.skipped || []).map(r => `<tr style="border-top:1px dotted #E3DED2">
+        <td style="padding:7px 4px;width:120px;font-weight:600">${esc(r.name)}</td>
+        <td style="padding:7px 4px;color:#57534e">${esc(r.why)}</td></tr>`).join('')}</table>`)
+    : '';
+  const recent = (d.recent || []).length
+    ? sec('直近7日に実際に送ったもの', '入力リマインド・録音の催促・先週比も含めた全経路ぶんです。',
+      `<table style="width:100%;font-size:12.5px;border-collapse:collapse">${(d.recent || []).slice(0, 40).map(r => `<tr style="border-top:1px dotted #E3DED2">
+        <td style="padding:6px 4px;width:96px;color:#78716c">${esc(r.day)}</td>
+        <td style="padding:6px 4px;width:120px;font-weight:600">${esc(r.name)}</td>
+        <td style="padding:6px 4px;color:#57534e">${esc((DP_REASON[r.reason] || [r.reason])[0])}（${esc(r.by)}）</td></tr>`).join('')}</table>`)
+    : '';
+
+  box.innerHTML = card1
+    + sec('今日の下書き', 'この文面のまま届きます。読んで納得できないものがあれば言ってください。直します。', sendable)
+    + unreach + review + skipped + recent;
+}
