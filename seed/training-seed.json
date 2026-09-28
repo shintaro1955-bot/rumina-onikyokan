@@ -3178,5 +3178,934 @@
     "difficulty": 1,
     "source_note": "",
     "verified_by": null
+  },
+  {
+    "code": "S-001",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "シャープのHEMSサービスの名称は？",
+    "choices": [
+      "COCORO ENERGY",
+      "COCORO HOME",
+      "Eeeコネクト",
+      "BLACKSOLAR"
+    ],
+    "answer_index": 0,
+    "explanation": "クラウド上のAIがHEMSと連携して機器を制御するサービス。スマートフォンアプリは COCORO HOME で、別物なので混同しない。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP(カタログ)",
+    "verified_by": null
+  },
+  {
+    "code": "S-002",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "シャープの「Eeeコネクト」の3つのEが指すものは？",
+    "choices": [
+      "Energy・environment・economy",
+      "Electric・Eco・Easy",
+      "Energy・Efficiency・EV",
+      "Earth・Energy・Economy"
+    ],
+    "answer_index": 0,
+    "explanation": "エネルギー・地球環境・経済性。太陽光と蓄電池とEVと家電をつないで最適化するという考え方の名前。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP(カタログ)",
+    "verified_by": null
+  },
+  {
+    "code": "S-003",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "シャープが新エネ大賞を受賞した太陽電池モジュールの名称は？",
+    "choices": [
+      "BLACKSOLAR ZERO",
+      "SUNVISTA ONE",
+      "COCORO SOLAR",
+      "NQ ZERO"
+    ],
+    "answer_index": 0,
+    "explanation": "「高い意匠性とムダなく設置・たっぷり発電」が評価された。屋根の見た目を気にされるお客様に出す製品。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP(カタログ)",
+    "verified_by": null
+  },
+  {
+    "code": "S-004",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "シャープの「蓄電池あんしん運転」が地震に反応する条件は？",
+    "choices": [
+      "震度4以上の地震が発生したとき",
+      "どんな地震でも",
+      "震度6以上",
+      "地震には反応しない"
+    ],
+    "answer_index": 0,
+    "explanation": "地震情報を受け取って自動で充電する。雷注意報の発令にも連携する。停電への備えを重く見ているお客様に効く機能。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP(カタログ)",
+    "verified_by": null
+  },
+  {
+    "code": "S-005",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "シャープの3連携システムで、EVの電気を直接やり取りする仕組みの呼び方は？",
+    "choices": [
+      "EVダイレクト充放電",
+      "EVスルーチャージ",
+      "ダイレクトV2G",
+      "EVパススルー"
+    ],
+    "answer_index": 0,
+    "explanation": "太陽光・蓄電池・EVを直流のままつなぐ考え方。変換の回数が減るぶんロスが少ない。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP(カタログ)",
+    "verified_by": null
+  },
+  {
+    "code": "S-006",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "シャープのHEMSが対応している、家電をつなぐための共通規格は？",
+    "choices": [
+      "ECHONET Lite",
+      "Wi-SUN",
+      "Zigbee",
+      "Matter"
+    ],
+    "answer_index": 0,
+    "explanation": "国内のHEMSで使われる規格。他社機器とつなげるかを聞かれたときは、規格対応と実際の対応機種は別物なので確認して答える。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP(カタログ)",
+    "verified_by": null
+  },
+  {
+    "code": "S-007",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "シャープの蓄電池で、給湯器についてできることは？",
+    "choices": [
+      "給湯器も制御して余剰電力を活用できる",
+      "給湯器は制御できない",
+      "給湯器の交換が必須になる",
+      "ガス給湯器にしか対応しない"
+    ],
+    "answer_index": 0,
+    "explanation": "蓄電池と給湯器を合わせて運転する。オール電化のお客様に余剰の使い道として話せる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP(カタログ)",
+    "verified_by": null
+  },
+  {
+    "code": "S-008",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「シャープは太陽電池をいつから手がけているか」と聞かれたときの答え方は？",
+    "choices": [
+      "60年以上の歴史があると事実として答える",
+      "創業以来と答える",
+      "分からないので答えない",
+      "100年以上と答える"
+    ],
+    "answer_index": 0,
+    "explanation": "カタログに記載のある事実。数字を盛らず、資料に書いてある通りに言う。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP(カタログ)",
+    "verified_by": null
+  },
+  {
+    "code": "K-001",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "北面に設置したパネルの発電効率は、南面と比べておおよそどのくらいか？",
+    "choices": [
+      "約75%",
+      "約20%",
+      "約95%",
+      "発電しない"
+    ],
+    "answer_index": 0,
+    "explanation": "「北面は発電しない」は誤り。南面の75%程度は見込める。ただし屋根角度と遮蔽の影響を現地で確認してから確定する。",
+    "talk_example": "「実は北面でも南面の75%くらいは発電します。北だからダメ、ではないんです」",
+    "difficulty": 2,
+    "source_note": "FF 北面パネル研修資料",
+    "verified_by": null
+  },
+  {
+    "code": "K-002",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "夏場に北面の発電が伸びる理由として説明されているのは？",
+    "choices": [
+      "散乱光が多くなるため",
+      "気温が高いため",
+      "日照時間が短いため",
+      "湿度が高いため"
+    ],
+    "answer_index": 0,
+    "explanation": "夏の日中は北面のほうが効率的に発電することもある。ただし年間を通して南面が有利であることは変わらない。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF 北面パネル研修資料",
+    "verified_by": null
+  },
+  {
+    "code": "K-003",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "北面設置で使う長州産業のモジュールの特徴は？",
+    "choices": [
+      "低反射（防眩）で、反射光の問題を抑えられる",
+      "軽量で屋根を選ばない",
+      "両面発電で裏からも発電する",
+      "色が選べる"
+    ],
+    "answer_index": 0,
+    "explanation": "北面は反射光が近隣に向きやすい。防眩仕様であることが近隣対策の根拠になる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF 北面パネル研修資料",
+    "verified_by": null
+  },
+  {
+    "code": "K-004",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "北面増設の提案で、最初に必ず確認しなければならないことは？",
+    "choices": [
+      "既設パネルのメーカーと型番（写真または型番で確認）",
+      "お客様の年収",
+      "近隣の設置件数",
+      "屋根の色"
+    ],
+    "answer_index": 0,
+    "explanation": "パワコンの容量や系統の仕様によって増設できないことがある。確認前に「増設できます」と言わない。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF 北面パネル研修資料",
+    "verified_by": null
+  },
+  {
+    "code": "K-005",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "北面増設の提案プロセスで、屋根の可否をどう確定させるか？",
+    "choices": [
+      "航空写真で事前確認したうえで、現地訪問で角度と遮蔽を最終判断する",
+      "航空写真だけで確定する",
+      "お客様の申告で確定する",
+      "築年数から推測する"
+    ],
+    "answer_index": 0,
+    "explanation": "事前確認と最終判断は別。写真だけで確定しない。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF 北面パネル研修資料",
+    "verified_by": null
+  },
+  {
+    "code": "K-006",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [],
+    "question": "北面増設の費用感として資料に示されている目安は？",
+    "choices": [
+      "設置容量によるが、およそ150〜200万円程度",
+      "一律50万円",
+      "一律500万円",
+      "無償"
+    ],
+    "answer_index": 0,
+    "explanation": "あくまで目安。実際は容量と工事条件で変わるので、必ず見積で示す。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF 北面パネル研修資料",
+    "verified_by": null,
+    "needs_owner_check": "北面増設の費用目安（150〜200万円）が現在の実勢と合っているか"
+  },
+  {
+    "code": "K-007",
+    "test_type": "basic100",
+    "category": "E_economics",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "北面増設の投資回収期間として資料に示されている目安は？",
+    "choices": [
+      "8〜10年",
+      "1〜2年",
+      "20年以上",
+      "回収できない"
+    ],
+    "answer_index": 0,
+    "explanation": "前提が変われば変わる数字。断定せず、前提条件を示して伝える。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF 北面パネル研修資料",
+    "verified_by": null,
+    "needs_owner_check": "回収期間の目安（8〜10年）が現在の前提と合っているか"
+  },
+  {
+    "code": "K-008",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「屋根の強度は大丈夫か」と聞かれたときの正しい対応は？",
+    "choices": [
+      "現地調査で構造を確認し、必要に応じて補強工事を提案すると答える",
+      "「大丈夫です」と即答する",
+      "「補強は不要です」と答える",
+      "答えを避ける"
+    ],
+    "answer_index": 0,
+    "explanation": "建築基準に適合した設置を行う。その場で可否を断定しない。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF 北面パネル研修資料",
+    "verified_by": null
+  },
+  {
+    "code": "K-009",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「既存パネルと違うメーカーでも大丈夫か」と聞かれたら？",
+    "choices": [
+      "事前確認が必要。パワコン容量や系統の仕様による制約があると伝える",
+      "「どのメーカーでも問題ない」と答える",
+      "「できない」と断る",
+      "推測で答える"
+    ],
+    "answer_index": 0,
+    "explanation": "互換性は現地調査で確認する。その場で断定するとあとで覆ることになる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF 北面パネル研修資料",
+    "verified_by": null
+  },
+  {
+    "code": "C-101",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [],
+    "question": "特定商取引法が対象としている取引類型に含まれないものは？",
+    "choices": [
+      "店舗での対面販売",
+      "訪問販売",
+      "電話勧誘販売",
+      "訪問購入"
+    ],
+    "answer_index": 0,
+    "explanation": "対象は訪問販売・通信販売・電話勧誘販売・連鎖販売取引・特定継続的役務提供・業務提供誘引販売取引・訪問購入の7類型。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "C-102",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [],
+    "question": "次のうち、特商法上の「訪問販売」にあたらないのはどれか？",
+    "choices": [
+      "お客様が自分で店舗に来て契約した",
+      "自宅を訪問して勧誘した",
+      "喫茶店に呼んで商品を勧めた",
+      "路上で声をかけて営業所へ同行させ勧誘した"
+    ],
+    "answer_index": 0,
+    "explanation": "営業所等以外の場所での勧誘・契約が訪問販売。呼び出しや同行も含まれる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "C-103",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「勧誘に先立って」とは、具体的にいつの時点を指すか？",
+    "choices": [
+      "相手が勧誘を受けるか断るかを決められる、一番初めに接する時点",
+      "契約書を出す直前",
+      "商品説明が終わったあと",
+      "訪問した日の翌日"
+    ],
+    "answer_index": 0,
+    "explanation": "第一声で会社名・勧誘目的・商品の種類を伝える。世間話のあとで名乗るのでは遅い。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "C-104",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "社内資料で示されている、第一声のあとに続ける確認の言い方は？",
+    "choices": [
+      "「このままお話を続けて良いですか」と、勧誘を受ける意思を確認する",
+      "「少しだけいいですか」と押し切る",
+      "確認は不要",
+      "「断らないでください」と伝える"
+    ],
+    "answer_index": 0,
+    "explanation": "勧誘を受ける意思の確認は努力義務。ここを飛ばすと、そのあとの会話全部が危うくなる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "C-105",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「帰ってください」と言葉にせず、態度で示すお客様への対応として正しいのは？",
+    "choices": [
+      "断りの意思と受け止めて引く",
+      "言葉で言われていないので続ける",
+      "確認のため質問を重ねる",
+      "資料を置いて話を続ける"
+    ],
+    "answer_index": 0,
+    "explanation": "社内資料でも「粘り強さよりも、いさぎよさ」と明記されている。引き際の判断を誤ると再勧誘・威迫の問題になる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "C-106",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "クーリングオフされた場合、お客様が商品を使用していたときは？",
+    "choices": [
+      "使用利益を事業者は請求できない",
+      "使用日数分を請求できる",
+      "半額を請求できる",
+      "商品の買取を求められる"
+    ],
+    "answer_index": 0,
+    "explanation": "損害賠償・違約金も請求できず、引き取り費用も事業者の負担。受け取った代金は速やかに全額返還する。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "C-107",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "契約書に「クーリングオフはできない」と特約を書いた場合は？",
+    "choices": [
+      "お客様に不利な特約として無効になる",
+      "書いてあれば有効",
+      "双方が署名すれば有効",
+      "金額によって有効"
+    ],
+    "answer_index": 0,
+    "explanation": "書いても無効。書いたうえで説明すると、妨害として期間が延びる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "C-108",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "社内の違反事例として挙げられている「訪問先のお客様限定の価格」「今日までのキャンペーン」を事実と違って告げる行為は？",
+    "choices": [
+      "不実告知にあたり禁止",
+      "営業手法として許容される",
+      "上司の許可があれば可",
+      "書面に残せば可"
+    ],
+    "answer_index": 0,
+    "explanation": "コンプライアンス研修のスクリプト1そのもの。期間や限定を偽ると不実告知になる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "C-109",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「故障したら無料で新品に交換します」と約束して契約を取る行為は？",
+    "choices": [
+      "事実と異なる誇張で、景品表示法上の問題になる",
+      "安心してもらえるので推奨",
+      "保証書に書けば問題ない",
+      "問題にならない"
+    ],
+    "answer_index": 0,
+    "explanation": "保証の範囲を超えた約束はしない。保証は機器保証・出力保証・工事保証・自然災害補償を分けて説明する。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "C-110",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "商談のお礼に商品券を渡す、契約したら電化製品を贈る、といった行為は？",
+    "choices": [
+      "契約以外の商品券・商品の贈与として禁止",
+      "自腹なら問題ない",
+      "少額なら問題ない",
+      "上司の許可があれば可"
+    ],
+    "answer_index": 0,
+    "explanation": "コンプライアンス研修のスクリプト3。正規のキャンペーン以外の贈与はしない。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "C-111",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "お客様から「銀行の手続きが面倒だから代行してほしい」と現金を預かることは？",
+    "choices": [
+      "お客様都合であっても、直接の現金のやり取りは禁止",
+      "お客様が望むなら可",
+      "領収書を出せば可",
+      "契約金額までなら可"
+    ],
+    "answer_index": 0,
+    "explanation": "コンプライアンス研修のスクリプト4。高齢のお客様の事例として挙げられている。最も重い処分につながる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "C-112",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「自社で買える電化製品を安く提供する」と持ちかけて代金を受け取る行為は？",
+    "choices": [
+      "お客様が不利益となる抱合せ販売として禁止",
+      "喜ばれるので問題ない",
+      "原価で渡せば問題ない",
+      "記録を残せば可"
+    ],
+    "answer_index": 0,
+    "explanation": "コンプライアンス研修のスクリプト5。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "J-001",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "当社のクレーム対応で、何よりも先にすべきことは？",
+    "choices": [
+      "まず入電もしくは訪問して、何があってもお詫びを先にする",
+      "事実関係を全部調べてから連絡する",
+      "上司の指示を待つ",
+      "記録を作ってから動く"
+    ],
+    "answer_index": 0,
+    "explanation": "基本フレームは 敏速行動 → 正確事実 → 伝達 → 説明謝罪 → 再発防止。順番が決まっている。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER 苦情応対マニュアル 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "J-002",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "当社の苦情レベルで、LEVEL.4・LEVEL.5にあたるのは？",
+    "choices": [
+      "勧誘時または成約後に、行政規制違反の可能性がある事案",
+      "お客様からのいやがらせ",
+      "事務方の不備",
+      "クーリングオフの相談"
+    ],
+    "answer_index": 0,
+    "explanation": "L4・L5は役員対応。L1は本人対応、L2・L3は総務対応。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER 苦情応対マニュアル 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "J-003",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "LEVEL.5（成約後に行政規制違反の可能性がある事案）の起因者への対応は？",
+    "choices": [
+      "事情聴取したうえで、即契約解除",
+      "厳重注意のみ",
+      "始末書のみ",
+      "再研修のみ"
+    ],
+    "answer_index": 0,
+    "explanation": "最も重い。L4でも事情聴取・厳重注意・始末書・再研修がすべて行われる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER 苦情応対マニュアル 2024.10",
+    "verified_by": null,
+    "needs_owner_check": "苦情レベルごとの処分（L5＝即契約解除）が現在の運用と合っているか"
+  },
+  {
+    "code": "J-004",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "お客様から直接クレームの連絡を受けた営業担当が、次にすべきことは？",
+    "choices": [
+      "状況を把握し、事実を速やかに苦情受付窓口（総務部）へ報告する",
+      "自分で解決してから報告する",
+      "解決できるまで報告しない",
+      "お客様に上長へ連絡してもらう"
+    ],
+    "answer_index": 0,
+    "explanation": "正確な情報と事実を早期に上司へ伝達する。抱え込むと対応が遅れ、重くなる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER 苦情応対マニュアル 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "J-005",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [],
+    "question": "クレーム対応の最後に行われることは？",
+    "choices": [
+      "取締役会の議題として扱い、再発防止案を提出する",
+      "担当者の反省文で終える",
+      "記録せず終える",
+      "お客様への謝罪で終える"
+    ],
+    "answer_index": 0,
+    "explanation": "個人の問題で終わらせず、会社として再発を止める。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FITFOUNDER 苦情応対マニュアル 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "G-101",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [],
+    "question": "インターフォン越しにお客様が判断材料にできるのは？",
+    "choices": [
+      "上半身と声だけ",
+      "全身",
+      "持ち物すべて",
+      "何も判断されない"
+    ],
+    "answer_index": 0,
+    "explanation": "最初の5秒で印象が決まる。髪型・シャツ・ネクタイ・ジャケット・表情・声で判断される。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF インターフォン研修 2025年2月版",
+    "verified_by": null
+  },
+  {
+    "code": "G-102",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [],
+    "question": "初対面で人が受け取る情報の割合として、社内研修が挙げている法則は？",
+    "choices": [
+      "メラビアンの法則（視覚55%・聴覚38%・言語7%）",
+      "パレートの法則（8対2）",
+      "ザイオンス効果",
+      "返報性の原理"
+    ],
+    "answer_index": 0,
+    "explanation": "矛盾したメッセージを受けたときの受け止め方の話。話す内容より、見た目と声のほうが先に効く。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF インターフォン研修 2025年2月版",
+    "verified_by": null
+  },
+  {
+    "code": "G-103",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [],
+    "question": "訪問時の持ち物について社内研修が勧めている方向は？",
+    "choices": [
+      "ブランドの主張がないシンプルなもので統一する",
+      "ハイブランドで信頼感を出す",
+      "目立つ色で印象づける",
+      "何でもよい"
+    ],
+    "answer_index": 0,
+    "explanation": "ハイブランドは逆効果と明記されている。ベルト・靴・バッグ・名刺入れに統一感をもたせる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF インターフォン研修 2025年2月版",
+    "verified_by": null
+  },
+  {
+    "code": "G-104",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [],
+    "question": "コートを脱ぐタイミングとして正しいのは？",
+    "choices": [
+      "インターフォンを押す前",
+      "屋内に入って対面してから",
+      "短時間なので脱がない",
+      "相手に言われてから"
+    ],
+    "answer_index": 0,
+    "explanation": "細かい所作を見られている。押す前に脱いで畳んで腕にかける。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF インターフォン研修 2025年2月版",
+    "verified_by": null
+  },
+  {
+    "code": "G-105",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [],
+    "question": "拒絶しているお客様に対して、まず取るべき態度は？",
+    "choices": [
+      "否定せずに聞いて、心理的安全を確保する",
+      "その場で反論して誤解を解く",
+      "説得を急ぐ",
+      "質問を重ねて考えを変えさせる"
+    ],
+    "answer_index": 0,
+    "explanation": "肯定・共感・尊重・工夫の4つ。反論や説得を急ぐと拒絶はさらに強まる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF インターフォン研修 2025年2月版",
+    "verified_by": null
+  },
+  {
+    "code": "G-106",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [],
+    "question": "会話を続けるための質問として社内研修が勧めている形は？",
+    "choices": [
+      "「どの部分でそう感じましたか」のように答えを広げられる聞き方",
+      "「はい・いいえ」で終わる聞き方",
+      "「どうしてそう感じました」と理由を詰める聞き方",
+      "質問はしない"
+    ],
+    "answer_index": 0,
+    "explanation": "オープンクエスチョン。相手が答えやすく、話が広がる形にする。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF インターフォン研修 2025年2月版",
+    "verified_by": null
+  },
+  {
+    "code": "G-107",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「太陽光のことならいらない」と言われたあとの正しい線引きは？",
+    "choices": [
+      "契約しない意思表示と受け止めたら、その場で終える",
+      "別の切り口で何度でも切り返す",
+      "日を改めて再訪問する",
+      "上司を連れて戻る"
+    ],
+    "answer_index": 0,
+    "explanation": "切り返しの台本は「まだ断りとまでは言えない場面」のためのもの。断りの意思が出たらそこで終わる。特商法第3条の2。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF インターフォン研修 2025年2月版 / FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "G-108",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「地域で募集できる数に限りがあるので、このタイミングでご判断を」という言い方は？",
+    "choices": [
+      "事実でなければ不実告知にあたるため、使ってはいけない",
+      "契約を促す表現として問題ない",
+      "書面に残せば問題ない",
+      "上司の許可があれば可"
+    ],
+    "answer_index": 0,
+    "explanation": "社内の台本に載っている言い回しだが、実際に募集数の制限が無ければ違反になる。コンプライアンス研修が禁止例として挙げている「限定を偽る」そのもの。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF インターフォン研修 2025年2月版 / FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null,
+    "needs_owner_check": "「地域で募集できる数に限りがある」は事実か。事実でないならインターフォン研修の台本から外す必要がある"
+  },
+  {
+    "code": "G-109",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「家庭用パネルは半永久的なので処分は必要ない」という説明は？",
+    "choices": [
+      "事実と異なるため言ってはいけない。寿命も廃棄の問題も実在する",
+      "安心してもらえるので問題ない",
+      "メーカー保証があるので正しい",
+      "20年以内なら正しい"
+    ],
+    "answer_index": 0,
+    "explanation": "この言い回しも社内の台本に載っているが、不実告知になりうる。処分を聞かれたら、保証年数と実際の扱いを事実として答える。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF インターフォン研修 2025年2月版",
+    "verified_by": null,
+    "needs_owner_check": "「パネルは半永久的で処分不要」という台本は事実に反する。インターフォン研修から外す判断が要る"
+  },
+  {
+    "code": "G-110",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "体調不良を理由に断られたときの正しい対応は？",
+    "choices": [
+      "その場で失礼し、再訪の約束を一方的にしない",
+      "「また後日伺います」と告げて再訪する",
+      "玄関先で短く説明を続ける",
+      "資料を置いて帰る"
+    ],
+    "answer_index": 0,
+    "explanation": "断りの意思が示されている場面で再訪を告げると、再勧誘の問題になりうる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF インターフォン研修 2025年2月版 / FITFOUNDER コンプライアンス研修 2024.10",
+    "verified_by": null
+  },
+  {
+    "code": "G-111",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「工務店に聞いてから決める」と言われたときの正しい対応は？",
+    "choices": [
+      "お客様が相談する権利を尊重し、判断材料を渡して待つ",
+      "その場で判断を迫る",
+      "工務店を通す必要はないと断言する",
+      "工務店の不利を指摘する"
+    ],
+    "answer_index": 0,
+    "explanation": "第三者に相談させない進め方は、困惑させる勧誘と受け取られうる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF インターフォン研修 2025年2月版",
+    "verified_by": null
+  },
+  {
+    "code": "G-112",
+    "test_type": "basic100",
+    "category": "F_compliance",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「旦那がいないから分からない」と言われたときの正しい対応は？",
+    "choices": [
+      "ご在宅のタイミングを伺い、その場では契約を進めない",
+      "奥様だけで契約してもらう",
+      "電話をかけてもらう",
+      "契約書だけ書いてもらう"
+    ],
+    "answer_index": 0,
+    "explanation": "決定権のない方にその場で契約させると、後のトラブルとクーリングオフの原因になる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "FF インターフォン研修 2025年2月版",
+    "verified_by": null
   }
 ]
