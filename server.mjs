@@ -90,6 +90,11 @@ const LINE_SECRET = process.env.LINE_LOGIN_CHANNEL_SECRET || '';
 const LINE_CALLBACK = process.env.LINE_CALLBACK_URL || '';   // 未設定ならリクエストのホストから自動生成
 const OWNER_LINE_ID = process.env.OWNER_LINE_ID || '';       // このLINEユーザーIDは管理者(owner)にする
 const LINE_READY = !!(LINE_ID && LINE_SECRET);
+/* 研修を通していない人にAPIを返さない（既定：有効）。
+   既に現場で働いている人がまだ研修を受けていない段階でこれを入れると、
+   その人たちがアプリを使えなくなる。すぐ外せるように環境変数で切れるようにしておく。
+   TRAINING_GATE_API=off で解除。 */
+const GATE_API = !/^(0|off|false|no)$/i.test(process.env.TRAINING_GATE_API || '');
 
 // Fit Founderポータルからの本人引き継ぎ（?rk=）の共有秘密。ポータル側と同じ値にすること。
 const SSO_SECRET = process.env.RUMINA_SSO_SECRET || '';
@@ -385,15 +390,31 @@ function persistReport(id, result, userName) {
   console.log(`✓ 初期オーナー作成：ユーザー名「${username}」／初期パスワード「${pw}」（本番はOWNER_PASSWORDで指定・変更を）`);
 })();
 
-// デモ/動作確認用アカウント test/test（無ければ作る）。DISABLE_TEST_USER=on で無効化。
+/* デモ/動作確認用アカウント test/test。DISABLE_TEST_USER=on で無効化。
+
+   **role は rep（営業）にする。owner にしてはいけない。**
+   このアプリは実在の営業マン464人の氏名・訪問数・アポ数・成約率・LINE名寄せ・
+   録音の文字起こしを持っている。誰でも当てられる合言葉に管理者権限を付けると、
+   URLを知っている人全員がそれを見られる状態になる。
+   repなら研修の段しか開かないので、見えるのは研修画面だけ＝個人データは出ない。
+   それでも管理画面を見せたい時だけ TEST_USER_ROLE=owner を明示的に立てる。 */
 (function seedTest() {
   if (/^(1|true|yes|on)$/i.test(process.env.DISABLE_TEST_USER || '')) return;
   const db = getDb();
-  if (db.users['test']) return;
+  const role = /^owner$/i.test(process.env.TEST_USER_ROLE || '') ? 'owner' : 'rep';
+  const cur = db.users['test'];
+  if (cur) {
+    // 既に owner で作られている本番がある。権限だけ落とす（作り直さない＝履歴を消さない）。
+    if (cur.role !== role) {
+      cur.role = role; save();
+      console.log(`✓ テストアカウントの権限を ${role} に変更（TEST_USER_ROLE で切替）`);
+    }
+    return;
+  }
   const { salt, hash } = hashPassword('test');
-  db.users['test'] = { username: 'test', name: 'テスト', role: 'owner', repId: null, salt, hash, isModel: false };
+  db.users['test'] = { username: 'test', name: 'テスト', role, repId: null, salt, hash, isModel: false };
   save();
-  console.log('✓ テストアカウント作成：test / test（デモ用・本番運用前に無効化推奨 DISABLE_TEST_USER=on）');
+  console.log(`✓ テストアカウント作成：test / test（役割 ${role}・本番運用前に無効化推奨 DISABLE_TEST_USER=on）`);
 })();
 
 /* 歩行集計が「ファイルはあるが中身が空」なのかを、healthから一目で分かるようにする。
@@ -438,6 +459,25 @@ const server = createServer(async (req, res) => {
 
     // ---------- API ----------
     if (path.startsWith('/api/')) {
+      /* 研修を通していない人に、現場のデータを返さない。
+         画面のナビを閉じるだけでは、APIを直接叩けば同じものが取れてしまう。
+         「合格するまで現場に出さない」を、見た目ではなくデータの側で守る。
+         ここを通ってよいのは、認証まわりと研修そのもの、本人の情報だけ。 */
+      const gateOk = [
+        '/api/health', '/api/login', '/api/logout', '/api/me', '/api/consent',
+        '/api/training/', '/api/line/', '/api/roleplay/', '/api/dispatch/mine', '/api/academy',
+      ];
+      const meGate = GATE_API ? currentUser(req) : null;
+      if (meGate && meGate.role !== 'owner' && !gateOk.some(p2 => path === p2 || path.startsWith(p2))) {
+        let stage = 'start';
+        try { stage = training.stageOf(meGate.username); } catch (e) {}
+        if (stage !== 'field') {
+          return json(res, 403, {
+            error: '研修を通すまでは、この内容は見られません。',
+            stage, gate: 'training',
+          });
+        }
+      }
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
       if (path === '/api/health') return json(res, 200, { ok: true, cyzenUserKeys: globalThis.__cyzenUserKeys || null, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET, trainingQuestions: (() => { try { return training.questionStats().total; } catch (e) { return null; } })(),
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
