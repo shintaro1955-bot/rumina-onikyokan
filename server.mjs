@@ -1408,8 +1408,19 @@ const server = createServer(async (req, res) => {
         const state = randomUUID();
         const cb = lineCallback(req);
         // CSRF：stateを短命Cookieに置き、コールバックで突合
-        res.setHeader('Set-Cookie', `rk_lstate=${state}; HttpOnly; SameSite=Lax; Path=/; Max-Age=600`);
-        const q = new URLSearchParams({ response_type: 'code', client_id: LINE_ID, redirect_uri: cb, state, scope: 'profile openid', bot_prompt: 'aggressive' });
+        const nobot = url.searchParams.get('nobot') === '1';
+        // 「1回だけ外して通す」の1回を覚えておく。LINEはコールバックに独自のクエリを
+        // 付けて返せないので、Cookieで持つ。これが無いとリダイレクトが無限に回る。
+        res.setHeader('Set-Cookie', [
+          `rk_lstate=${state}; HttpOnly; SameSite=Lax; Path=/; Max-Age=600`,
+          `rk_nobot=${nobot ? '1' : ''}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${nobot ? 600 : 0}`,
+        ]);
+        const q = new URLSearchParams({ response_type: 'code', client_id: LINE_ID, redirect_uri: cb, state, scope: 'profile' });
+        // 友だち追加を促す（RUMINA公式アカウントに繋ぐための入口）。
+        // ただし bot_prompt は**LINEログインのチャネルが公式アカウントと連携済みでないと
+        // LINE側がリクエストごと弾く**。連携が外れているとログインが丸ごとできなくなるので、
+        // 弾かれたら1回だけ外して通す（?nobot=1）。
+        if (!nobot) q.set('bot_prompt', 'aggressive');
         res.writeHead(302, { Location: 'https://access.line.me/oauth2/v2.1/authorize?' + q });
         return res.end();
       }
@@ -1418,6 +1429,19 @@ const server = createServer(async (req, res) => {
         const code = url.searchParams.get('code'), state = url.searchParams.get('state');
         const saved = parseCookies(req).rk_lstate;
         res.setHeader('Set-Cookie', 'rk_lstate=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
+        // LINEが断ってきた時は、その理由がここに入る。今まで読まずに捨てていたので、
+        // 「失敗しました」としか出ず原因が分からなかった。
+        const lerr = url.searchParams.get('error');
+        if (lerr) {
+          const desc = url.searchParams.get('error_description') || '';
+          console.error('[line] LINEが拒否:', lerr, desc);
+          // 公式アカウント連携が無いと bot_prompt で弾かれる。1回だけ外して通す。
+          if (parseCookies(req).rk_nobot !== '1' && /bot|prompt|invalid_request/i.test(lerr + ' ' + desc)) {
+            res.writeHead(302, { Location: '/api/line/login?nobot=1' }); return res.end();
+          }
+          if (lerr === 'access_denied') { res.writeHead(302, { Location: '/?lineerror=denied' }); return res.end(); }
+          res.writeHead(302, { Location: '/?lineerror=line&d=' + encodeURIComponent((desc || lerr).slice(0, 160)) }); return res.end();
+        }
         if (!code || !state || !saved || state !== saved) { res.writeHead(302, { Location: '/?lineerror=state' }); return res.end(); }
         try {
           const cb = lineCallback(req);

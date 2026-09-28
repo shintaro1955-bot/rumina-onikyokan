@@ -1963,11 +1963,15 @@ function viewLogin() {
       ${(() => {
         const e = new URLSearchParams(location.search).get('lineerror');
         if (!e) return '';
+        const d = new URLSearchParams(location.search).get('d') || '';
         const why = { state: '時間が経ちすぎたか、別のタブで開き直したためです。もう一度お試しください。',
           token: 'LINEとの通信が通りませんでした。少し置いてからお試しください。',
           profile: 'LINEからお名前を受け取れませんでした。もう一度お試しください。',
+          denied: 'LINEの画面で許可されませんでした。もう一度お試しください。',
+          line: 'LINE側で止められました。',
           auth: 'ログインを完了できませんでした。もう一度お試しください。' }[e] || 'ログインを完了できませんでした。';
-        return `<p class="text-[11px] text-rose-600 text-center mt-1">${why}<br>続けて同じになるときは、この画面をそのまま知らせてください（区分：${e}）。</p>`;
+        const esc2 = t => String(t).replace(/</g, '&lt;');
+        return `<p class="text-[11px] text-rose-600 text-center mt-1">${why}${d ? `<br>LINEからの応答：${esc2(d)}` : ''}<br>続けて同じになるときは、この画面をそのまま知らせてください（区分：${esc2(e)}）。</p>`;
       })()}
     </div></div>`;
 }
