@@ -5266,5 +5266,719 @@
     "difficulty": 2,
     "source_note": "取扱メーカーの選び分け",
     "verified_by": null
+  },
+  {
+    "code": "D2-01",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "DMMの太陽電池モジュールが採用しているセルは？",
+    "choices": [
+      "単結晶N型セル",
+      "多結晶セル",
+      "アモルファス",
+      "P型セルのみ"
+    ],
+    "answer_index": 0,
+    "explanation": "一般的なP型セルより高い電力を取り出せ、わずかな光にも反応するため、天気が悪い日もしっかり発電するとカタログに記載。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-02",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "DMMモジュールの「ハーフカットセル」の効果は？",
+    "choices": [
+      "電力損失と発熱の負担を軽減し、長期間性能を保つ",
+      "発電量が2倍になる",
+      "重量が半分になる",
+      "効果はない"
+    ],
+    "answer_index": 0,
+    "explanation": "セルを半分のサイズにカットすることで、電力損失を低減。高性能を維持するこの技術により30年の長期出力保証を実現している。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-03",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "DMMモジュールの出力保証は？",
+    "choices": [
+      "30年",
+      "10年",
+      "15年",
+      "20年"
+    ],
+    "answer_index": 0,
+    "explanation": "カタログに「出力保証30年」と明記。TUV SUD（ドイツ）の第三者試験認証機関の認証も受けている。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-04",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "DMMの「アンチグレア仕様」とは？",
+    "choices": [
+      "特殊なガラス加工で太陽光の反射を抑え、周囲への影響を軽減した仕様",
+      "色を黒くした仕様",
+      "軽量化した仕様",
+      "防水を強化した仕様"
+    ],
+    "answer_index": 0,
+    "explanation": "ガラス表面に微細な凹凸を形成するAG加工を施している。反射光が近隣に向きやすい設置で効いてくる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-05",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "DMMのアンチグレア仕様の光沢度（太陽光の入射角60度・JIS Z 8741に準ずる）は？",
+    "choices": [
+      "1.2（一般ガラス仕様85.5、瓦12.1、ガルバリウム鋼板13.9より低い）",
+      "85.5",
+      "100",
+      "測定していない"
+    ],
+    "answer_index": 0,
+    "explanation": "**屋根材より低い**という点が言える材料になる。反射を心配されるお客様に、数字で答えられる。",
+    "talk_example": "「瓦やガルバリウムの屋根より、反射は低い数値が出ています」",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-06",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "DMMが狭小屋根向けに用意しているモジュールの形は？",
+    "choices": [
+      "台形・スリム・ハーフなど、複数の形状",
+      "正方形のみ",
+      "長方形のみ",
+      "狭小屋根向けはない"
+    ],
+    "answer_index": 0,
+    "explanation": "長方形に加えハーフや台形も展開。これまで設置が難しかった場所も活用でき、発電量アップが期待できる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-07",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "狭小屋根向けサイズを組み合わせると、従来モジュールと比べて容量はどうなるとカタログは示しているか？",
+    "choices": [
+      "3.75kW（375W×10枚）に対して7.824kW（248W×18枚／120W×28枚）",
+      "変わらない",
+      "半分になる",
+      "記載がない"
+    ],
+    "answer_index": 0,
+    "explanation": "形の合うモジュールを組み合わせることで、同じ屋根でも載る量が増える。屋根が複雑な家ほど効く。",
+    "talk_example": "「屋根の形に合わせて小さいパネルを組み合わせると、載せられる量が増えます」",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-10",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "オプティマイザを入れると何が変わるか？",
+    "choices": [
+      "モジュール一枚ごとに最適化するため、影の影響が回路全体に及びにくくなる",
+      "発電量が2倍になる",
+      "保証年数が延びる",
+      "工事が不要になる"
+    ],
+    "answer_index": 0,
+    "explanation": "オプティマイザが無いと、影を受けた1枚の影響で回路全体の発電量が落ちる。カタログの図では、無い場合は85%/90%/90%/90%、ある場合は85%/100%/100%/100%。",
+    "talk_example": "「影がかかるお宅では、1枚ずつ最適にする機器を入れると回り全体の落ち込みを防げます」",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-11",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "オプティマイザ導入の効果として、カタログが示している20年間の発電量比較は？",
+    "choices": [
+      "影（広範囲）で11.5%UP、影（狭域）で9.0%UP など",
+      "すべて50%UP",
+      "効果は示されていない",
+      "1%未満"
+    ],
+    "answer_index": 0,
+    "explanation": "1年目は影（広範囲）8.5%UP、狭域6.0%UP、出力のバラつきと経年劣化2.5%UP、建物自体の影4.5%UP。**設置条件により異なり、保証値ではない**とカタログに注記がある。数字を言うときはその前提も伝える。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-12",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "オプティマイザの安全面の働きは？",
+    "choices": [
+      "異常発生時に安全電圧へ制御し、火災検知時は過電を遮断してアーク放電による火災を防ぐ",
+      "発電量を上げるだけ",
+      "安全面の働きはない",
+      "雨漏りを防ぐ"
+    ],
+    "answer_index": 0,
+    "explanation": "漏電・感電リスクの最小化にもつながる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-20",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "DMMの架台設置基準として、積雪と風速はどこまで対応するか？",
+    "choices": [
+      "垂直積雪量180cm以上、基準風速 最大46m/sまで設置可能",
+      "積雪50cm・風速20m/s",
+      "規定はない",
+      "積雪は対応不可"
+    ],
+    "answer_index": 0,
+    "explanation": "ただし屋根材・屋根の勾配等の設置環境と設置金具により条件が異なる、とカタログに注記がある。その場で「どんな屋根でも大丈夫」と言わない。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-21",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "多雪地域向けにDMMが用意しているものは？",
+    "choices": [
+      "縦葺屋根用の耐積雪アタッチメント付き掴み金具",
+      "特別な対応はない",
+      "パネルの交換",
+      "架台の撤去"
+    ],
+    "answer_index": 0,
+    "explanation": "耐積雪金具が無いと、太陽電池モジュールの重さに耐えられず破損の原因になりうる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-30",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "DMMのハイブリッド型蓄電システムの蓄電ユニットの容量は？",
+    "choices": [
+      "7.1 / 14.3 / 21.5 kWh",
+      "5 / 10 kWh のみ",
+      "6.5kWhのみ",
+      "30kWh以上"
+    ],
+    "answer_index": 0,
+    "explanation": "型番は 4.95-7N-DM / 4.95-14N-DM / 4.95-21N-DM。ユニットを足して容量を増やせる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-31",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "DMMのハイブリッド型パワーコンディショナの定格出力と最大変換効率は？",
+    "choices": [
+      "定格出力4.95kW・最大変換効率97.1%",
+      "定格3.0kW・効率90%",
+      "定格10kW・効率99%",
+      "記載がない"
+    ],
+    "answer_index": 0,
+    "explanation": "型番は 4.95-LB0-DM。変換効率はカタログに「業界トップクラス」と記載。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-32",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "DMMの蓄電池が採用している電池と、その理由は？",
+    "choices": [
+      "リン酸鉄リチウムイオン電池。安全性が最も高いため",
+      "三元系。容量が大きいため",
+      "コバルト系。安価なため",
+      "ニッケル水素。長寿命のため"
+    ],
+    "answer_index": 0,
+    "explanation": "カタログの安全性の比較では、コバルト系・ニッケル系・マンガン系・三元系・チタン酸系より高い位置にリン酸鉄が置かれている。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-33",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "DMMの蓄電池のサイクル寿命は？",
+    "choices": [
+      "12,000サイクル",
+      "4,000サイクル",
+      "1,000サイクル",
+      "記載がない"
+    ],
+    "answer_index": 0,
+    "explanation": "残量0%から充電し、使い切るまでを1サイクルとカウント。12,000回の充放電に耐える長寿命設計。※試験結果での実測値であり、保証値ではない、と注記がある。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-34",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "DMMの「えらべる容量」と独立制御機能の意味は？",
+    "choices": [
+      "増設しても既存ユニットに影響されず、各ユニットが最大容量まで充電できる",
+      "容量を後から減らせる",
+      "容量は固定される",
+      "意味はない"
+    ],
+    "answer_index": 0,
+    "explanation": "カタログの図では、一般的な蓄電システムは容量が減少したユニットの影響で60%しか使えないのに対し、DMMは100%使えると示されている。後から増やす前提のお客様に効く。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-35",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "DMMの蓄電システムの防塵防水等級と、それが意味することは？",
+    "choices": [
+      "IP66。海に近い重塩害地域にも設置可能",
+      "IP20。屋内専用",
+      "等級は無い",
+      "IP44。軒下のみ"
+    ],
+    "answer_index": 0,
+    "explanation": "壁に沿わせても影響がなく、粉塵の侵入も防ぐ。ただし塩害地域については別途相談が必要、と注記がある。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-36",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "DMMの蓄電ユニットの浸水についてカタログが示しているのは？",
+    "choices": [
+      "40cmの浸水・雪にも耐え、最大72時間稼働",
+      "浸水すると使えない",
+      "10cmまで",
+      "記載がない"
+    ],
+    "answer_index": 0,
+    "explanation": "業界唯一の水没テストを実施した住宅用蓄電池、とカタログにある（自社の記載）。「業界唯一」はカタログの表現として伝え、こちらで断定しない。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-37",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "DMMの蓄電システムの動作可能な温度は？",
+    "choices": [
+      "蓄電システム -20〜+55℃、パワーコンディショナ -25〜+60℃",
+      "0〜40℃",
+      "-5〜+35℃",
+      "記載がない"
+    ],
+    "answer_index": 0,
+    "explanation": "寒冷地や猛暑日でも動作が安定するため、幅広い環境に対応できる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-38",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "DMMの3つの防災機能に含まれないのは？",
+    "choices": [
+      "浸水時に自動で屋根へ移動する",
+      "異常を検知して0.5秒で電源オフ",
+      "酸素を遮断する燃焼防止機能",
+      "消火モジュールによる自動消火"
+    ],
+    "answer_index": 0,
+    "explanation": "1つめはアーク障害回路遮断器（AFCI）を搭載し、AIが世界中のデータから学習して微細な火花も検知する。2つめは蓄電ユニット内の酸素を一気に排出。3つめは消火剤を自動噴射。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-39",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "DMMの「過積載充電機能」でできることは？",
+    "choices": [
+      "パワコンの出力容量を超えてカットされる電力も蓄電池に充電できる",
+      "売電量が増える",
+      "発電量が2倍になる",
+      "機能はない"
+    ],
+    "answer_index": 0,
+    "explanation": "一般的なハイブリッド型では、太陽光パネルを多く載せても出力容量を超えた分はピークカットで捨てられる。パネルを多めに載せる提案がしやすくなる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-40",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "DMMの「自立並列運転機能」の意味は？",
+    "choices": [
+      "停電時に複数のパワコンの出力を合わせて使える",
+      "パワコンが自動で増える",
+      "売電が並列にできる",
+      "機能はない"
+    ],
+    "answer_index": 0,
+    "explanation": "一般的なパワコンは2台設置してもそれぞれ独立して動くため、自立運転時にバックアップできる機器が制限される。停電時でも普段に近い生活を送れる、というのがカタログの説明。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-41",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "DMMのAIモード「EMMA」がするのは？",
+    "choices": [
+      "24時間先までの発電量と消費電力を5分単位で予測し、料金プランに合わせて充放電を最適化",
+      "自動で売電する",
+      "故障を修理する",
+      "機能はない"
+    ],
+    "answer_index": 0,
+    "explanation": "24時間先の平均予測精度は約90%とカタログに記載。電力の無駄をなくし5〜8%のメリット向上、とある。ほかに TOUモード（カスタマイズ）とグリーンモード（余剰電力を蓄電し自家消費）がある。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-42",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "DMMの蓄電ユニットの奥行きは？",
+    "choices": [
+      "約25.5cm（最大約21kWhの大容量で業界最高クラスの薄型）",
+      "約60cm",
+      "約1m",
+      "記載がない"
+    ],
+    "answer_index": 0,
+    "explanation": "パワーコンディショナの奥行は19cm。狭い場所にも設置しやすいという点の裏付けになる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "D2-43",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "DMMの蓄電システムの静音性についてカタログが示しているのは？",
+    "choices": [
+      "各機器29dB以下のファンレス設計",
+      "ファンの音が大きい",
+      "記載がない",
+      "50dB程度"
+    ],
+    "answer_index": 0,
+    "explanation": "深夜の住宅街（約30dB）でも目立たない。寝室のそばへの設置を気にされるお客様に答えられる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "DMM カタログ（251121_2_solarsystem_catalog）",
+    "verified_by": null
+  },
+  {
+    "code": "S2-01",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "シャープの切妻屋根向け高出力シリーズのモジュール型番に含まれるのは？",
+    "choices": [
+      "NU-458PU / NU-305PU / NU-300MU",
+      "CS-390N11 のみ",
+      "DMM54-HL4R-430AG",
+      "型番は公開されていない"
+    ],
+    "answer_index": 0,
+    "explanation": "NU-458PU（大電流モデル・横置き限定）、NU-305PU、NU-300MU（防眩モデル）。それぞれ従来型のNU-440PP / NU-293PP / NU-288KG がある。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "S2-02",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "シャープが「2種類のサイズを組み合わせる」ことで示している効果は？",
+    "choices": [
+      "同じ屋根で搭載容量が約22%アップ（5.49kW→6.71kW）",
+      "発電効率が22%上がる",
+      "価格が22%下がる",
+      "効果は示されていない"
+    ],
+    "answer_index": 0,
+    "explanation": "458W×12台で5.49kWのところ、短辺の短いNU-305PUを4台足すと6.71kW。**もう1段載るかどうか**で容量が変わる。",
+    "talk_example": "「短いパネルを組み合わせると、もう一段載ることがあります。同じ屋根で2割ほど増える例もあります」",
+    "difficulty": 2,
+    "source_note": "SHARP カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "S2-03",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "シャープの「防眩モデル」にあたるのは？",
+    "choices": [
+      "NU-300MU / NU-288KG",
+      "NU-458PU",
+      "すべてのモデル",
+      "防眩モデルはない"
+    ],
+    "answer_index": 0,
+    "explanation": "反射光が問題になりやすい設置で使う。北面や近隣が近い場合の選択肢になる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "S2-04",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "シャープの工法「DC立平工法」の特徴は？",
+    "choices": [
+      "穴あけ不要の施工",
+      "瓦屋根専用",
+      "レール材を多く使う",
+      "陸屋根専用"
+    ],
+    "answer_index": 0,
+    "explanation": "つかみ金具ではぜ部をつかむ。雨漏りを心配されるお客様に「穴を開けない工法もある」と言える。",
+    "talk_example": "「屋根に穴を開けない工法が選べる屋根もあります」",
+    "difficulty": 2,
+    "source_note": "SHARP カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "S2-05",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "シャープの工法「スマートラック工法」の特徴は？",
+    "choices": [
+      "マルチアンカー金具・瓦アンカー金具・パワーベースでさまざまな屋根に対応できる",
+      "穴あけ不要",
+      "レール材が不要",
+      "陸屋根専用"
+    ],
+    "answer_index": 0,
+    "explanation": "汎用性が高い工法。屋根材を選ばずに対応しやすい。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "S2-06",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "シャープの工法「YSZ工法」の特徴は？",
+    "choices": [
+      "レール材を廃止して部品点数を減らす",
+      "穴あけ不要",
+      "瓦屋根専用",
+      "積雪地域専用"
+    ],
+    "answer_index": 0,
+    "explanation": "固定金具と取付金具だけで、横桟・縦桟のレール材が要らない。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "S2-07",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "スマートラック工法の「軒先オフセット0mm対応」で何が変わるか？",
+    "choices": [
+      "軒先いっぱいまで設置でき、搭載容量が上がる",
+      "雨樋が不要になる",
+      "工期が半分になる",
+      "保証が延びる"
+    ],
+    "answer_index": 0,
+    "explanation": "従来は軒先から200mm空ける必要があった。屋根を余さず使える。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "S2-10",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "シャープの蓄電池の運転モード2つは？",
+    "choices": [
+      "クリーンモードと経済性モード",
+      "通常モードと非常モード",
+      "昼モードと夜モード",
+      "モードはない"
+    ],
+    "answer_index": 0,
+    "explanation": "クリーンモードは余剰電力をためて自家消費。経済性モードは売電を優先し、割安な深夜電力を活用する。**お客様の契約プランと考え方で選び分ける**。どちらが得かは一律に決まらない。",
+    "talk_example": "「売電を優先するか、自分で使うのを優先するかで動かし方を変えられます」",
+    "difficulty": 2,
+    "source_note": "SHARP カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "S2-11",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "シャープの蓄電池をクラウドと連携させると何ができるか？",
+    "choices": [
+      "気象情報とAIが学習した生活パターンから余剰電力を予測し、自動で制御する",
+      "遠隔で修理できる",
+      "容量が増える",
+      "何も変わらない"
+    ],
+    "answer_index": 0,
+    "explanation": "HEMSを導入するとクラウドHEMSサービス COCORO ENERGY と連携する。昼間の割高な電気の購入を抑える。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "S2-12",
+    "test_type": "basic100",
+    "category": "D_system",
+    "tags": [],
+    "question": "卒FITを迎えるご家庭向けに、シャープが協業して実施しているサービスは？",
+    "choices": [
+      "丸紅新電力と協業した余剰電力買取サービス",
+      "国の買取延長制度",
+      "無償の設備交換",
+      "サービスはない"
+    ],
+    "answer_index": 0,
+    "explanation": "蓄電池を購入したご家庭向けにはお得な買取プランがある。卒FITの相談で出せる具体的な選択肢になる。",
+    "talk_example": "「買取期間が終わったあとの引き取り先も、ご案内できるものがあります」",
+    "difficulty": 2,
+    "source_note": "SHARP カタログ",
+    "verified_by": null,
+    "needs_owner_check": "丸紅新電力との余剰電力買取サービスが、いま当社から案内できる状態か"
+  },
+  {
+    "code": "S2-13",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "シャープの蓄電システムの構成として正しいのは？",
+    "choices": [
+      "蓄電池連携型パワーコンディショナ＋蓄電池用コンバータ＋蓄電池本体",
+      "パワコン1台のみ",
+      "蓄電池本体のみ",
+      "構成は公開されていない"
+    ],
+    "answer_index": 0,
+    "explanation": "太陽光でつくった電気をパワコンで家庭用に変え、余った分をコンバータ経由で蓄電池本体にためる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "SHARP カタログ",
+    "verified_by": null
   }
 ]
