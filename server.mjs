@@ -917,6 +917,14 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { ok: !out.error, config: weekly.config(), ...out });
       }
 
+      /* まとめて確認済みにする／仮確認を取り消す（owner専用） */
+      if (path === '/api/training/admin/verify-all' && req.method === 'POST') {
+        const meA = currentUser(req); if (!meA || meA.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const b = await readBody(req);
+        if (b.undo) return json(res, 200, training.unverifyProvisional(meA.username));
+        return json(res, 200, training.verifyAll(meA.username, b.verifiedBy, !!b.provisional));
+      }
+
       /* 問題を作る・直す（owner専用）。作った問題も確認が入るまで出題されない。 */
       if (path === '/api/training/admin/question' && req.method === 'POST') {
         const meQ = currentUser(req);

@@ -3061,6 +3061,23 @@ async function loadTrainingQuestions(type) {
     <div class="text-[12px] text-neutral-500 mt-0.5">確認者名を入れるまで出題されません。中身を読んでから有効にしてください。</div>
     <div class="flex gap-2 flex-wrap mt-3">${tabs}</div>
     ${needBox}
+    <div class="mt-3 p-3 rounded-lg border border-emerald-300 bg-emerald-50/60">
+      <div class="text-[12.5px] font-semibold text-emerald-900">まとめて確認済みにする</div>
+      <div class="text-[11.5px] text-emerald-800 mt-0.5">3つのタブを順に押すのと同じです。確認者名は監査ログに残ります。</div>
+      <div class="flex gap-2 items-center flex-wrap mt-2">
+        <input id="vaName" placeholder="確認者名（例：濱西）" class="border border-neutral-200 rounded-lg px-3 py-1.5 text-[12.5px] flex-1 min-w-[160px]">
+        <button onclick="traVerifyAll2(false)" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[12.5px] font-semibold">全部を確認済みにする</button>
+      </div>
+      <div class="text-[11.5px] text-neutral-600 mt-2.5 pt-2.5 border-t border-emerald-200">
+        中身をまだ読んでいないが、とりあえず動かして見たい場合は下を使ってください。<br>
+        確認者名に「（仮確認・中身は未読）」が付いて記録され、あとから1回で取り消せます。
+      </div>
+      <div class="flex gap-2 mt-2 flex-wrap">
+        <button onclick="traVerifyAll2(true)" class="px-3 py-1.5 rounded-lg border border-amber-400 bg-white text-[12.5px] font-semibold text-amber-800">仮確認で開ける</button>
+        <button onclick="traUndoProvisional()" class="px-3 py-1.5 rounded-lg border border-neutral-300 bg-white text-[12.5px] text-neutral-600">仮確認を取り消す</button>
+      </div>
+      <div id="vaMsg" class="text-[12px] mt-2"></div>
+    </div>
     <div class="mt-3">
       <button onclick="traToggleNew()" class="px-3 py-1.5 rounded-lg border border-neutral-300 bg-white text-[12.5px] font-semibold text-neutral-700">問題を作る・直す</button>
       <div id="traNew" style="display:none" class="mt-2 p-3 rounded-lg border border-neutral-200 bg-neutral-50">
@@ -3901,4 +3918,33 @@ async function traAddVideo(code) {
 }
 async function traDelVideo(code, yt) {
   try { await API.delLessonVideo(code, yt); loadLessonVideos(); } catch (e) { alert(e.message); }
+}
+
+/* 全部まとめて確認済みにする。仮確認は記録を分ける。 */
+async function traVerifyAll2(provisional) {
+  const name = (document.getElementById('vaName') || {}).value || '';
+  const msg = document.getElementById('vaMsg');
+  if (!name.trim()) { msg.className = 'text-[12px] mt-2 text-rose-600'; msg.textContent = '確認者名を入れてください。'; return; }
+  if (!provisional && !confirm(`${name} さんの名前で、すべての問題を確認済みにします。\n監査ログに残ります。よろしいですか。`)) return;
+  try {
+    const r = await API.verifyAll(name, provisional);
+    if (!r.ok) { msg.className = 'text-[12px] mt-2 text-rose-600'; msg.textContent = r.why || '失敗しました'; return; }
+    msg.className = 'text-[12px] mt-2 text-emerald-700';
+    msg.textContent = provisional
+      ? `${r.count}問を仮確認で開けました（確認者：${r.verifiedBy}）。中身を読んだら、取り消してから本確認してください。`
+      : `${r.count}問を確認済みにしました。新人が教材と受験を始められます。`;
+    loadTrainingQuestions(window.__traType || 'must30');
+    loadTrainingAdmin();
+  } catch (e) { msg.className = 'text-[12px] mt-2 text-rose-600'; msg.textContent = e.message; }
+}
+async function traUndoProvisional() {
+  const msg = document.getElementById('vaMsg');
+  if (!confirm('仮確認で開けたものを、すべて未確認に戻します。本確認したものには触れません。')) return;
+  try {
+    const r = await API.undoProvisional();
+    msg.className = 'text-[12px] mt-2 text-neutral-700';
+    msg.textContent = `${r.count}問を未確認に戻しました。`;
+    loadTrainingQuestions(window.__traType || 'must30');
+    loadTrainingAdmin();
+  } catch (e) { msg.className = 'text-[12px] mt-2 text-rose-600'; msg.textContent = e.message; }
 }

@@ -192,6 +192,8 @@ window.API = (function () {
   const trainingMyAsks = () => trJson('/api/training/ask');
   const trainingAsksAdmin = () => trJson('/api/training/admin/asks');
   const trainingAnswerAsk = (id, answer) => trPost('/api/training/admin/asks', { id, answer });
+  const verifyAll = (verifiedBy, provisional) => trPost('/api/training/admin/verify-all', { verifiedBy, provisional });
+  const undoProvisional = () => trPost('/api/training/admin/verify-all', { undo: true });
   const saveQuestion = (q) => trPost('/api/training/admin/question', q);
   const fieldCheck = (days) => trJson('/api/training/admin/field-check?days=' + (days || 14));
   const dispatchPlan = () => trJson('/api/dispatch/plan');
@@ -240,7 +242,7 @@ window.API = (function () {
   async function getLineUsers() { const r = await fetch('/api/admin/line-users'); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'LINEユーザー一覧の取得に失敗しました'); return j.users || []; }
   async function linkRep(username, repId) { const r = await fetch('/api/admin/link-rep', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, repId }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '紐付けに失敗しました'); return j; }
 
-  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenTrends, cyzenReminders, cyzenReminderRun, cyzenWalk, cyzenUpload, portalProfile, apoCoachView, dayCoach, recSubmissions, recRemind, recMine, coachDrill, todayGap, getBuildup, teamBench, trainingOverview, trainingStart, trainingGrade, trainingAbort, trainingReview, trainingReviewAnswer, trainingRoster, trainingQuestions, trainingVerify, trainingApprove, trainingSuspend, trainingLawAlert, trainingAudit, trainingStudy, trainingLesson, adminLessons, setLessonVideo, delLessonVideo, trainingAsk, trainingMyAsks, trainingAsksAdmin, trainingAnswerAsk, saveQuestion, fieldCheck, dispatchPlan, dispatchRun, dispatchMine, weeklyMine, weeklyNotify, lineUnlinkedDiag,
+  return { health, upload, analyze, importTranscript, status, report, isReady: () => ready, me, login, logout, issueAccount, myLatest, getModel, registerModel, resetModel, getLog, getLogItem, deleteLogItem, getConsent, postConsent, getConsents, getLineUsers, linkRep, cyzenStatus, cyzenRoster, cyzenCompliance, cyzenTrends, cyzenReminders, cyzenReminderRun, cyzenWalk, cyzenUpload, portalProfile, apoCoachView, dayCoach, recSubmissions, recRemind, recMine, coachDrill, todayGap, getBuildup, teamBench, trainingOverview, trainingStart, trainingGrade, trainingAbort, trainingReview, trainingReviewAnswer, trainingRoster, trainingQuestions, trainingVerify, trainingApprove, trainingSuspend, trainingLawAlert, trainingAudit, trainingStudy, trainingLesson, adminLessons, setLessonVideo, delLessonVideo, trainingAsk, trainingMyAsks, trainingAsksAdmin, trainingAnswerAsk, verifyAll, undoProvisional, saveQuestion, fieldCheck, dispatchPlan, dispatchRun, dispatchMine, weeklyMine, weeklyNotify, lineUnlinkedDiag,
     dashboard, today, integrations, setGoal, getWeights, setWeights, completeDrill, academyProgress, getPosts, addPost, deletePost, react, markRead,
     getComments, addComment, deleteComment, notifications, readNotifs, setNotifSettings, track };
 })();
