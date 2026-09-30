@@ -4822,13 +4822,13 @@
     "tags": [],
     "question": "現行カタログのスマートPVマルチの蓄電容量ラインナップは？",
     "choices": [
-      "6.3 / 6.5 / 9.7 / 12.7 / 13.0 kWh",
+      "6.3 / 6.5 / 9.7 / 13.0 kWh",
       "5 / 10 / 15 kWh のみ",
       "1種類のみ",
       "20kWh以上のみ"
     ],
     "answer_index": 0,
-    "explanation": "家族構成と使用パターンで選ぶ。容量が多いほど良い、という売り方はしない。第1世代（6.5 / 9.8 / 16.4kWh）もあるので、既設宅で容量が合わないときは世代違いを疑う。",
+    "explanation": "家族構成と使用パターンで選ぶ。容量が多いほど良い、という売り方はしない。12.7kWhは廃番（2026年時点）。第1世代（6.5 / 9.8 / 16.4kWh）もあるので、既設宅で容量が合わないときは世代違いか廃番品を疑う。",
     "talk_example": "",
     "difficulty": 2,
     "source_note": "長州産業 Smart PV Multi カタログ",
@@ -4847,7 +4847,7 @@
       "20kWh以上"
     ],
     "answer_index": 0,
-    "explanation": "カタログの目安。400kWh/月以上（3人以上の目安）なら 9.7 / 12.7 / 13.0kWh。エアコンをよく使う家やオール電化は 13.0 / 12.7kWh。",
+    "explanation": "カタログの目安。400kWh/月以上（3人以上の目安）なら 9.7 / 13.0kWh。エアコンをよく使う家やオール電化は 13.0kWh。",
     "talk_example": "「ひと月の使用量を見せていただけますか。そこで容量が決まります」",
     "difficulty": 2,
     "source_note": "長州産業 Smart PV Multi カタログ",
@@ -5005,6 +5005,266 @@
     "talk_example": "",
     "difficulty": 2,
     "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "M-001",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "当社が太陽電池モジュールで扱っているメーカーに含まれないのは？",
+    "choices": [
+      "取扱いは1社のみ",
+      "長州産業",
+      "シャープ",
+      "カナディアンソーラー"
+    ],
+    "answer_index": 0,
+    "explanation": "1社専売ではありません。長州産業・シャープ・カナディアンソーラー・ハンファ・パナソニック・ネクストエナジー・京セラなど複数を扱います。**商社として中立に選べること自体が強み**です。1社しか出せない会社とはそこが違います。",
+    "talk_example": "「特定のメーカーだけを売る立場ではないので、お宅の屋根と使い方で一番合うものをお出しします」",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
+    "verified_by": null,
+    "needs_owner_check": "現在の取扱メーカーの一覧が、この説明と合っているか"
+  },
+  {
+    "code": "M-002",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "当社が蓄電池で扱っているメーカーに含まれないのは？",
+    "choices": [
+      "取扱いは長州産業のみ",
+      "DMM",
+      "ニチコン",
+      "オムロン"
+    ],
+    "answer_index": 0,
+    "explanation": "DMM・ニチコン・オムロン・ダイヤゼブラ・HUAWEI・パナソニック・長州産業など。容量帯や全負荷対応の有無が違うので、お客様の使い方に合わせて選べます。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
+    "verified_by": null,
+    "needs_owner_check": "現在の取扱メーカーの一覧が、この説明と合っているか"
+  },
+  {
+    "code": "M-003",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "複数メーカーを扱えることの、お客様にとっての意味は？",
+    "choices": [
+      "屋根と使い方に合うものを選べる。1社の型に合わせなくてよい",
+      "値引きが大きくなる",
+      "工期が短くなる",
+      "特に意味はない"
+    ],
+    "answer_index": 0,
+    "explanation": "屋根の形・方角・面積・使用量・停電時に何を動かしたいか。条件が違えば最適なメーカーは変わります。",
+    "talk_example": "「1社だけを扱っているわけではないので、お宅に合うものを選べます」",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
+    "verified_by": null
+  },
+  {
+    "code": "M-010",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "蓄電池のメーカーを比べるとき、まず揃えて見るべき項目は？",
+    "choices": [
+      "容量・出力・全負荷か特定負荷か・200V対応・保証年数と条件",
+      "価格だけ",
+      "メーカーの知名度",
+      "本体の色"
+    ],
+    "answer_index": 0,
+    "explanation": "この5つを揃えないと比較になりません。容量だけを並べても、停電時にできることが違います。",
+    "talk_example": "「容量だけでなく、停電時に何が使えるかで選んだほうがいいです」",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
+    "verified_by": null
+  },
+  {
+    "code": "M-011",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "「全負荷対応」とカタログにあれば、停電時にどの家電も使えるか？",
+    "choices": [
+      "使えるとは限らない。出力と200V対応の有無で決まる",
+      "必ず全部使える",
+      "照明だけ使える",
+      "全負荷なら出力は関係ない"
+    ],
+    "answer_index": 0,
+    "explanation": "全負荷は「家全体に電気が届く」という意味であって、「何でも動く」ではありません。200V非対応の機種ではIHやエコキュートは動きません。メーカーが違えばここも違います。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
+    "verified_by": null
+  },
+  {
+    "code": "M-012",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "単機能型とハイブリッド型を選び分ける基準は？",
+    "choices": [
+      "既設パワコンの年数。まだ新しければ単機能、更新時期ならハイブリッド",
+      "価格だけで決める",
+      "常にハイブリッド",
+      "常に単機能"
+    ],
+    "answer_index": 0,
+    "explanation": "既設パワコンを活かせるなら単機能型のほうが無駄がありません。更新時期ならハイブリッドで1台にまとめます。だから増設の相談では、まず既設のメーカーと型番と設置年を確認します。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
+    "verified_by": null
+  },
+  {
+    "code": "M-013",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "メーカーごとの保証を比べるときに注意することは？",
+    "choices": [
+      "年数だけでなく、対象範囲と条件（何%まで下がったら等）を揃えて見る",
+      "年数が長いほうが必ず良い",
+      "保証はどこも同じ",
+      "年数だけ見れば足りる"
+    ],
+    "answer_index": 0,
+    "explanation": "モジュール出力保証・機器保証・施工保証・自然災害補償は別物です。「20年保証」と書いてあっても、有償延長が前提だったり、対象が限られていることがあります。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
+    "verified_by": null
+  },
+  {
+    "code": "M-014",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "塩害地域でメーカーを選ぶときに確認することは？",
+    "choices": [
+      "そのメーカーの塩害・重塩害対応の仕様と、対応する容量・機種があるか",
+      "価格が安いか",
+      "色が選べるか",
+      "確認は不要"
+    ],
+    "answer_index": 0,
+    "explanation": "対応していない機種を入れると保証の対象外になります。海岸からの距離で条件が変わります。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
+    "verified_by": null
+  },
+  {
+    "code": "M-015",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "屋根が狭い家でメーカーを選ぶときに効いてくるのは？",
+    "choices": [
+      "モジュールの変換効率。効率が高いほど同じ面積で多く載る",
+      "本体の色",
+      "メーカーの設立年",
+      "保証年数"
+    ],
+    "answer_index": 0,
+    "explanation": "屋根の形が複雑な家では、小型モジュールを組み合わせられるかどうかも効きます。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
+    "verified_by": null
+  },
+  {
+    "code": "M-020",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "DMMのハイブリッド型蓄電システムの容量ラインナップは？",
+    "choices": [
+      "5.12 / 10.24 / 15.36 kWh と 7.1 / 14.3 / 21.5 kWh",
+      "6.5kWhのみ",
+      "1種類のみ",
+      "30kWh以上のみ"
+    ],
+    "answer_index": 0,
+    "explanation": "DMM.make smart のハイブリッド型。2つのシリーズがあり、ユニットを足して容量を増やす考え方です。**大容量帯が用意されているのが特徴**で、使用量の多い家やオール電化で選択肢になります。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
+    "verified_by": null,
+    "needs_owner_check": "DMMの現行ラインナップと、当社で出せる容量が合っているか"
+  },
+  {
+    "code": "M-021",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "DMMの蓄電池を提案するときに、公開情報だけで断定してはいけないことは？",
+    "choices": [
+      "保証年数や停電時の出力など、公式ページに明記されていない項目",
+      "容量のラインナップ",
+      "製品名",
+      "メーカー名"
+    ],
+    "answer_index": 0,
+    "explanation": "公式サイトに出ていない仕様は、カタログや仕切り表で確認してから伝えます。ネットの記事に書かれている数字をそのままお客様に言わないこと。出典が確かめられません。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
+    "verified_by": null
+  },
+  {
+    "code": "M-030",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "既設の太陽光があるお宅で、増設や蓄電池を提案する前に必ず確認することは？",
+    "choices": [
+      "既設のメーカー・型番・設置年と、パワコンの容量",
+      "お客様の年収",
+      "近所の設置件数",
+      "確認は不要"
+    ],
+    "answer_index": 0,
+    "explanation": "メーカーが違っても接続できることはありますが、パワコンの容量や系統の仕様で制約が出ます。確認前に「増設できます」と言わないこと。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
+    "verified_by": null
+  },
+  {
+    "code": "M-031",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "既設のメーカーが当社の取扱いに無い場合の考え方は？",
+    "choices": [
+      "接続できるかを現地と仕様で確認する。扱いが無いこと自体は断る理由にならない",
+      "その場で断る",
+      "必ず全部交換する",
+      "確認せず接続する"
+    ],
+    "answer_index": 0,
+    "explanation": "増設や蓄電池の後付けでは、他社の既設に当社の機器をつなぐ場面が普通にあります。確認すべきはパワコンの容量、系統の仕様、保証への影響です。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "取扱メーカーの選び分け",
     "verified_by": null
   }
 ]
