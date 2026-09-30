@@ -35,6 +35,7 @@ import * as recmind from './lib/recmind.mjs';
 import { buildup, teamStats } from './lib/buildup.mjs';
 import * as weekly from './lib/weekly.mjs';
 import * as training from './lib/training.mjs';
+import * as lessons from './lib/lessons.mjs';
 import * as dispatch from './lib/dispatch.mjs';
 import * as fieldcheck from './lib/fieldcheck.mjs';
 import * as sendlog from './lib/sendlog.mjs';
@@ -769,6 +770,16 @@ const server = createServer(async (req, res) => {
         if (st > un) return json(res, 403, { error: `STEP${un}を通すと開きます`, unlocked: un });
         return json(res, 200, training.study(st));
       }
+      /* 教材の1章。到達していない段のものは出さない。 */
+      if (path === '/api/training/lesson' && req.method === 'GET') {
+        const meL = currentUser(req); if (!meL) return json(res, 401, { error: 'ログインが必要です' });
+        const l = lessons.one(String(url.searchParams.get('code') || ''));
+        if (!l) return json(res, 404, { error: '教材が見つかりません' });
+        let un = 1; try { un = training.unlockedStep(meL.username); } catch (e) {}
+        if (l.step > un) return json(res, 403, { error: `STEP${un}を通すと開きます` });
+        return json(res, 200, { ok: true, ...l });
+      }
+
       /* 質問を出す／自分の質問を見る */
       if (path === '/api/training/ask' && req.method === 'POST') {
         const meA = currentUser(req); if (!meA) return json(res, 401, { error: 'ログインが必要です' });

@@ -1005,7 +1005,7 @@
     ],
     "answer_index": 0,
     "explanation": "勧誘に先立って事業者の氏名（名称）、契約締結の勧誘をする目的であること、商品等の種類を明らかにする。",
-    "talk_example": "",
+    "talk_example": "「◯◯株式会社の△△です。電気の無料診断のご案内で回っております。このままお話を続けてよろしいですか」",
     "difficulty": 1,
     "source_note": "特定商取引法 第3条",
     "verified_by": null
@@ -1026,7 +1026,7 @@
     ],
     "answer_index": 2,
     "explanation": "契約を締結しない意思を示した者への勧誘継続・再勧誘は禁止。",
-    "talk_example": "",
+    "talk_example": "「承知しました。突然失礼いたしました」——言い足さずに下がる",
     "difficulty": 1,
     "source_note": "特定商取引法 第3条の2",
     "verified_by": null
@@ -1047,7 +1047,7 @@
     ],
     "answer_index": 1,
     "explanation": "訪問販売は法定書面受領日を1日目として8日間。",
-    "talk_example": "",
+    "talk_example": "「この書面を受け取られた日から8日間は、理由なくおやめいただけます」",
     "difficulty": 1,
     "source_note": "特定商取引法 第9条",
     "verified_by": null
@@ -1068,7 +1068,7 @@
     ],
     "answer_index": 2,
     "explanation": "書面のほか電磁的記録による通知も可能。発信した時点で効力が生じる。",
-    "talk_example": "",
+    "talk_example": "「書面でもメールでも結構です。出された時点で成立しますので、控えだけ残しておいてください」",
     "difficulty": 1,
     "source_note": "特定商取引法 第9条",
     "verified_by": null
@@ -1089,7 +1089,7 @@
     ],
     "answer_index": 2,
     "explanation": "期間内であれば工事後でも可能。事業者は損害賠償等を請求できず、お客様は無償での原状回復を求められる。",
-    "talk_example": "",
+    "talk_example": "「工事が終わったあとでも、8日以内でしたら元に戻します。費用はこちらで持ちます」",
     "difficulty": 1,
     "source_note": "特定商取引法 第9条",
     "verified_by": null
@@ -1110,7 +1110,7 @@
     ],
     "answer_index": 1,
     "explanation": "不実告知や威迫による妨害があった場合、改めて書面を受け取ってから8日を経過するまでクーリングオフできる。",
-    "talk_example": "",
+    "talk_example": "「できません、とは申し上げません。期間内であれば必ずお受けします」",
     "difficulty": 1,
     "source_note": "特定商取引法 第9条",
     "verified_by": null
@@ -1131,7 +1131,7 @@
     ],
     "answer_index": 1,
     "explanation": "クーリングオフ事項は赤枠内に赤字で記載する。文字は8ポイント以上。",
-    "talk_example": "",
+    "talk_example": "「この赤い枠の中がクーリングオフの説明です。ここだけは必ずお読みください」",
     "difficulty": 1,
     "source_note": "特定商取引法 第5条・施行規則",
     "verified_by": null
@@ -1173,7 +1173,7 @@
     ],
     "answer_index": 0,
     "explanation": "勧誘目的を隠した訪問は明示義務違反。事実と違う劣化の指摘は不実告知。",
-    "talk_example": "",
+    "talk_example": "「点検だけ、というご案内はしておりません。最初に申し上げたとおり、電気のご提案で伺っています」",
     "difficulty": 1,
     "source_note": "特定商取引法 第3条・第6条",
     "verified_by": null
@@ -1236,7 +1236,7 @@
     ],
     "answer_index": 1,
     "explanation": "退去しないまま契約させると消費者契約法の取消対象。威迫・困惑にもあたりうる。",
-    "talk_example": "",
+    "talk_example": "「承知しました。失礼いたします」——理由を聞き返さず、その場で退く",
     "difficulty": 1,
     "source_note": "消費者契約法 第4条",
     "verified_by": null
@@ -1299,7 +1299,7 @@
     ],
     "answer_index": 1,
     "explanation": "判断力不足に乗じた契約は禁止行為。会社としても最も重いクレーム・処分リスク。",
-    "talk_example": "",
+    "talk_example": "「大事なお話ですので、ご家族がいらっしゃるときに改めてご説明させてください」",
     "difficulty": 1,
     "source_note": "特定商取引法 第7条・施行規則",
     "verified_by": null
@@ -2633,7 +2633,7 @@
     ],
     "answer_index": 0,
     "explanation": "「呼ばれたから対象外」と自己判断しない。要件は法令で細かく定められている。",
-    "talk_example": "",
+    "talk_example": "「お呼びいただいた場合でも、ご説明の内容は変わりません。書面もお渡しします」",
     "difficulty": 1,
     "source_note": "特定商取引法 第26条",
     "verified_by": null
@@ -2675,7 +2675,7 @@
     ],
     "answer_index": 0,
     "explanation": "記載事項は法令で定められている。欠けているとクーリングオフの起算が始まらない。",
-    "talk_example": "",
+    "talk_example": "「この書面に、金額・お支払い方法・時期・解約のことがすべて書いてあります。ご確認ください」",
     "difficulty": 1,
     "source_note": "特定商取引法 第4条・第5条",
     "verified_by": null
@@ -2696,7 +2696,7 @@
     ],
     "answer_index": 0,
     "explanation": "2021年改正で電磁的方法による交付が可能になったが、承諾の取り方まで法令で定められている。",
-    "talk_example": "",
+    "talk_example": "「メールでのお渡しもできますが、事前にご承諾をいただく必要があります。どちらがよろしいですか」",
     "difficulty": 1,
     "source_note": "特定商取引法 第4条第2項・第5条第3項",
     "verified_by": null
@@ -2717,7 +2717,7 @@
     ],
     "answer_index": 0,
     "explanation": "大声を出す、複数人で取り囲む、帰らないなどが該当しうる。",
-    "talk_example": "",
+    "talk_example": "「お急ぎでしたら、今日は置いて帰ります。無理にお引き止めはいたしません」",
     "difficulty": 1,
     "source_note": "特定商取引法 第6条第3項",
     "verified_by": null
@@ -2738,7 +2738,7 @@
     ],
     "answer_index": 0,
     "explanation": "不利益になる事実を黙っておくことも違反。聞かれなくても伝える。",
-    "talk_example": "",
+    "talk_example": "「先に申し上げておきます。ここは不利になり得る点です」——聞かれる前に言う",
     "difficulty": 1,
     "source_note": "特定商取引法 第6条第2項",
     "verified_by": null
@@ -2780,7 +2780,7 @@
     ],
     "answer_index": 0,
     "explanation": "解除に伴う金銭的な請求はできない。引取費用も事業者の負担。",
-    "talk_example": "",
+    "talk_example": "「おやめになる場合、こちらから費用を請求することはありません」",
     "difficulty": 1,
     "source_note": "特定商取引法 第9条第3項・第4項",
     "verified_by": null
@@ -2822,7 +2822,7 @@
     ],
     "answer_index": 0,
     "explanation": "価格や取引条件を著しく有利に見せる表示は有利誤認表示。どちらも措置命令・課徴金の対象。",
-    "talk_example": "",
+    "talk_example": "「実際より良く見せる言い方はしません。数字は前提とあわせてお出しします」",
     "difficulty": 1,
     "source_note": "景品表示法 第5条",
     "verified_by": null
@@ -2864,7 +2864,7 @@
     ],
     "answer_index": 0,
     "explanation": "指示の対象となる行為として定められている。会社として最も重い処分リスク。",
-    "talk_example": "",
+    "talk_example": "「ご不明な点があれば、何度でもご説明します。急いで決める必要はありません」",
     "difficulty": 1,
     "source_note": "特定商取引法 第7条・施行規則",
     "verified_by": null

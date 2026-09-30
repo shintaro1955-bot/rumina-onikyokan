@@ -3601,7 +3601,11 @@ async function trStudy(step) {
       <div><b style="color:var(--text)">目安</b>　読むのに約${d.studyMin}分／受験は約${d.examMin}分</div>
       <div><b style="color:var(--text)">合格</b>　${esc(d.passRule || '')}</div>
     </div>
-    <div class="muted" style="font-size:11.5px;margin-top:8px">全${d.total}項目。ここに出ているものがそのまま出題されます（並びと選択肢は毎回変わります）。</div>
+    ${lessonList(d)}
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:14px;font-weight:700;color:var(--text)">一問一答（全${d.total}項目）</div>
+      <div class="muted" style="font-size:12px;margin-top:2px">ここに出ているものがそのまま出題されます。並びと選択肢は毎回変わります。</div>
+    </div>
     ${groups}
     <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="fo-btn" style="padding:9px 18px;font-size:13.5px" onclick="trStart(${d.step})">読み終わったので受験する</button>
@@ -3664,4 +3668,143 @@ async function loadMyAsks() {
       <div style="font-size:12.5px;color:var(--text);margin-top:2px;white-space:pre-wrap">${esc(r.body)}</div>
       ${r.answer ? `<div style="font-size:12.5px;margin-top:5px;padding-left:10px;border-left:3px solid var(--primary);color:var(--text);white-space:pre-wrap">${esc(r.answer)}</div>` : ''}
     </div>`).join('')}</div>`;
+}
+
+/* ============================================================
+   教材の図
+   文字だけでは入らないものだけを描く。装飾の図は置かない。
+   色はテーマ変数を使う（暗い配色でも読めるように）。
+   ============================================================ */
+const FIGURES = {
+  // 電気代の明細が何でできているか
+  bill: () => `<svg viewBox="0 0 560 230" width="100%" role="img" aria-label="電気代の明細の内訳">
+    <text x="0" y="14" font-size="12" fill="currentColor" opacity=".6">1か月の請求額</text>
+    ${[['基本料金', 0, 90, '#94a3b8', '使わなくてもかかる'],
+       ['電力量料金', 92, 300, '#0f7a45', '使った量に応じる。段階で単価が変わる'],
+       ['燃料費調整額', 394, 80, '#f59e0b', '燃料価格に連動。毎月動く'],
+       ['再エネ賦課金', 476, 84, '#64748b', '使った量に比例']]
+      .map(([n, x, w, c]) => `<rect x="${x}" y="24" width="${w}" height="44" rx="6" fill="${c}" opacity=".85"/>
+        <text x="${+x + +w / 2}" y="52" font-size="11.5" fill="#fff" text-anchor="middle" font-weight="700">${n}</text>`).join('')}
+    <text x="0" y="96" font-size="11.5" fill="currentColor" opacity=".75">太陽光で減るのは</text>
+    <rect x="92" y="104" width="468" height="30" rx="6" fill="none" stroke="#0f7a45" stroke-width="2" stroke-dasharray="5 4"/>
+    <text x="326" y="124" font-size="11.5" fill="currentColor" text-anchor="middle" font-weight="700">この3つ（買う電気が減るぶん）</text>
+    <text x="0" y="124" font-size="11.5" fill="#e11d48" font-weight="700">基本料金は残る</text>
+    <text x="0" y="160" font-size="11.5" fill="currentColor" opacity=".75">関西・中国・四国・沖縄は「基本料金」ではなく「最低料金」という形。明細の見た目が違う。</text>
+    <text x="0" y="182" font-size="11.5" fill="currentColor" opacity=".75">燃料費調整額はマイナス（値引き）になることもある。再エネ賦課金の単価は年度ごとに改定。</text>
+  </svg>`,
+
+  // 三段階料金：使うほど単価が上がる／減るのは上から
+  tiered: () => {
+    // 帯は重ねない。重ねると後から描いた帯が前の帯のラベルを隠す（一度それで消えた）。
+    const bands = [
+      ['第3段階', '300kWh〜',    40, 52, '#0f7a45', '#fff'],
+      ['第2段階', '120〜300kWh', 100, 44, '#4ade80', '#14532d'],
+      ['第1段階', 'およそ〜120kWh', 152, 36, '#bbf7d0', '#14532d'],
+    ];
+    return `<svg viewBox="0 0 560 250" width="100%" role="img" aria-label="三段階料金と、太陽光で減る部分">
+      <text x="0" y="16" font-size="12" fill="currentColor" opacity=".6">1kWhあたりの単価（イメージ）</text>
+      ${bands.map(([n, r, y, h, c, tc]) => `
+        <rect x="120" y="${y}" width="290" height="${h}" rx="5" fill="${c}"/>
+        <text x="112" y="${y + h / 2 + 4}" font-size="12" fill="currentColor" text-anchor="end" font-weight="700">${n}</text>
+        <text x="134" y="${y + h / 2 + 4}" font-size="11" fill="${tc}">${r}</text>`).join('')}
+      <path d="M60 196 L60 40" stroke="currentColor" stroke-width="1.5" opacity=".4" marker-end="url(#ar)"/>
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="currentColor" opacity=".4"/></marker></defs>
+      <text x="50" y="120" font-size="11.5" fill="currentColor" opacity=".6" text-anchor="middle" transform="rotate(-90 50 120)">使うほど高い</text>
+      <path d="M420 40 L434 40 L434 144 L420 144" fill="none" stroke="#e11d48" stroke-width="2"/>
+      <text x="442" y="84" font-size="11.5" fill="#e11d48" font-weight="700">自家消費で</text>
+      <text x="442" y="100" font-size="11.5" fill="#e11d48" font-weight="700">減るのはここから</text>
+      <text x="0" y="220" font-size="11.5" fill="currentColor" opacity=".75">だから、たくさん使っている家ほど削減額が大きくなる。</text>
+      <text x="0" y="238" font-size="11.5" fill="currentColor" opacity=".75">使用量が少ない家では効きにくい。同じ設備でも家によって効き方が違うのはこのため。</text>
+    </svg>`;
+  },
+
+  // 全負荷と特定負荷／容量と出力
+  battery: () => `<svg viewBox="0 0 560 240" width="100%" role="img" aria-label="蓄電池の容量と出力、全負荷と特定負荷">
+    <text x="0" y="14" font-size="12" fill="currentColor" opacity=".6">容量（kWh）と出力（kW）は別のもの</text>
+    <rect x="0" y="26" width="150" height="76" rx="8" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".45"/>
+    <text x="75" y="52" font-size="13" fill="currentColor" text-anchor="middle" font-weight="700">容量 kWh</text>
+    <text x="75" y="72" font-size="11.5" fill="currentColor" text-anchor="middle" opacity=".7">ためられる量</text>
+    <text x="75" y="90" font-size="11" fill="currentColor" text-anchor="middle" opacity=".55">＝どれだけ持つか</text>
+    <rect x="166" y="26" width="150" height="76" rx="8" fill="none" stroke="#0f7a45" stroke-width="2"/>
+    <text x="241" y="52" font-size="13" fill="#0f7a45" text-anchor="middle" font-weight="700">出力 kW</text>
+    <text x="241" y="72" font-size="11.5" fill="currentColor" text-anchor="middle" opacity=".7">同時に使える力</text>
+    <text x="241" y="90" font-size="11" fill="currentColor" text-anchor="middle" opacity=".55">＝何台いっぺんに動くか</text>
+    <text x="332" y="62" font-size="11.5" fill="currentColor" opacity=".75">容量が大きくても出力が小さいと</text>
+    <text x="332" y="80" font-size="11.5" fill="currentColor" opacity=".75">同時に多くは動かない</text>
+    <line x1="0" y1="120" x2="560" y2="120" stroke="currentColor" opacity=".15"/>
+    <text x="0" y="144" font-size="12" fill="currentColor" opacity=".6">停電したとき</text>
+    <rect x="0" y="156" width="270" height="62" rx="8" fill="#0f7a45" opacity=".1"/>
+    <text x="14" y="178" font-size="12.5" fill="#0f7a45" font-weight="700">全負荷型</text>
+    <text x="14" y="197" font-size="11.5" fill="currentColor" opacity=".8">家全体に電気が届く</text>
+    <text x="14" y="212" font-size="11" fill="#e11d48">ただし200V非対応だとIH・エコキュートは動かない</text>
+    <rect x="290" y="156" width="270" height="62" rx="8" fill="currentColor" opacity=".06"/>
+    <text x="304" y="178" font-size="12.5" fill="currentColor" font-weight="700">特定負荷型</text>
+    <text x="304" y="197" font-size="11.5" fill="currentColor" opacity=".8">事前に決めた回路だけ</text>
+    <text x="304" y="212" font-size="11" fill="currentColor" opacity=".6">どの部屋を生かすかを先に決める</text>
+  </svg>`,
+
+  // 屋根の方角と発電量
+  roof: () => `<svg viewBox="0 0 560 210" width="100%" role="img" aria-label="屋根の方角と発電量の目安">
+    <text x="0" y="14" font-size="12" fill="currentColor" opacity=".6">南面を100としたときの目安</text>
+    ${[['南', 100, '#0f7a45'], ['東・西', 85, '#4ade80'], ['北（低反射）', 75, '#f59e0b']]
+      .map(([n, v, c], i) => `<text x="0" y="${52 + i * 46}" font-size="12.5" fill="currentColor" font-weight="700">${n}</text>
+        <rect x="120" y="${36 + i * 46}" width="${+v * 3.6}" height="24" rx="5" fill="${c}"/>
+        <text x="${126 + +v * 3.6}" y="${53 + i * 46}" font-size="12" fill="currentColor" font-weight="700">${v}%</text>`).join('')}
+    <text x="0" y="192" font-size="11.5" fill="currentColor" opacity=".75">「北は発電しない」は誤り。低反射（防眩）モジュールなら南の75%程度。夏は散乱光で北が伸びることもある。</text>
+    <text x="0" y="176" font-size="11.5" fill="currentColor" opacity=".75">角度は30度前後が目安。ただし最後は屋根の勾配・影・現地調査で決まる。</text>
+  </svg>`,
+};
+
+/* 教材の目次（読み物）→ 1章を開く。一問一答はその後ろに置く。 */
+function lessonList(d) {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const ls = d.lessons || [];
+  if (!ls.length) return '';
+  const mins = ls.reduce((n, l) => n + (l.minutes || 0), 0);
+  return `<div style="margin-top:16px">
+    <div style="font-size:14px;font-weight:700;color:var(--text)">読むもの（${ls.length}章・合計 約${mins}分）</div>
+    <div class="muted" style="font-size:12px;margin-top:2px">なぜそうなのか、現場で何と言うのか。ここを読んでから一問一答で確かめてください。</div>
+    ${ls.map((l, i) => `<button onclick="trLesson('${esc(l.code)}')" style="display:block;width:100%;text-align:left;margin-top:8px;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface);cursor:pointer">
+      <div style="display:flex;gap:10px;align-items:baseline">
+        <span class="muted" style="font-size:11.5px;font-weight:700;flex:none">${i + 1}</span>
+        <span style="font-size:14px;font-weight:700;color:var(--text)">${esc(l.title)}</span>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:3px;padding-left:22px;line-height:1.6">${esc(l.aim)}</div>
+      <div class="muted" style="font-size:11px;margin-top:3px;padding-left:22px">約${l.minutes}分 ・ ${l.sections}項目${l.quiz ? ` ・ 関連する問題 ${l.quiz}問` : ''}</div>
+    </button>`).join('')}
+  </div>`;
+}
+
+/* 1章を読む */
+async function trLesson(code) {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  // 本文中の **ここ** を太字にする。エスケープしたあとに変換するのでタグは入らない。
+  const em = t => esc(t).replace(/\*\*([^*]+)\*\*/g, '<b style="color:var(--text)">$1</b>');
+  const wrap = document.getElementById('trWrap'); if (!wrap) return;
+  wrap.innerHTML = `<div class="fo-card muted" style="padding:20px">開いています…</div>`;
+  let d; try { d = await API.trainingLesson(code); } catch (e) { wrap.innerHTML = `<div class="fo-card" style="padding:20px;color:#e11d48">${esc(e.message)}</div>`; return; }
+  const secs = (d.sections || []).map((s, i) => `
+    <div style="margin-top:22px">
+      <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.5">${i + 1}　${esc(s.h)}</div>
+      <div style="font-size:13.5px;line-height:2;color:var(--text);margin-top:7px">${em(s.body)}</div>
+      ${s.figure && FIGURES[s.figure] ? `<div style="margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:12px;color:var(--text);overflow-x:auto">${FIGURES[s.figure]()}</div>` : ''}
+      ${s.talk ? `<div style="margin-top:12px;padding:12px 14px;border-left:3px solid var(--primary);background:var(--primary-soft);border-radius:0 10px 10px 0">
+        <div style="font-size:11px;font-weight:700;color:var(--primary)">言い方</div>
+        <div style="font-size:13.5px;line-height:1.85;color:var(--text);margin-top:3px">${esc(s.talk)}</div></div>` : ''}
+    </div>`).join('');
+  wrap.innerHTML = `<div class="fo-card" style="padding:20px">
+    <button onclick="trStudy(${d.step})" style="padding:6px 13px;font-size:12px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);cursor:pointer">← 教材の目次へ</button>
+    <div style="font-size:20px;font-weight:700;color:var(--text);margin-top:12px;line-height:1.45">${esc(d.title)}</div>
+    <div style="margin-top:8px;padding:11px 13px;border-radius:10px;background:var(--surface-2)">
+      <div style="font-size:11px;font-weight:700;color:var(--muted)">これを読むと</div>
+      <div style="font-size:13px;color:var(--text);margin-top:2px;line-height:1.7">${esc(d.aim)}</div>
+    </div>
+    ${secs}
+    <div class="muted" style="font-size:11px;margin-top:20px;padding-top:12px;border-top:1px solid var(--border)">出典：${esc(d.source || '')}</div>
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="fo-btn" style="padding:9px 18px;font-size:13.5px" onclick="trStudy(${d.step})">目次に戻る</button>
+      <button onclick="trAsk('教材が分からない')" style="padding:9px 18px;font-size:13.5px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);cursor:pointer">ここが分からない</button>
+    </div>
+  </div>`;
+  window.scrollTo(0, 0);
 }
