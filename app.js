@@ -4,12 +4,16 @@
    ============================================================ */
 const R = window.RUMINA, C = window.CHARTS;
 const app = document.getElementById('app');
-let currentView = 'goal';
+// 起動時の画面。'goal' は目標ページを消したときに残った名前で、
+// VIEWS に無いため Today の枠だけ描いて中身が永久に「読み込み中…」になっていた。
+let currentView = 'today';
 
 /* ---------- 共通パーツ ---------- */
-function h1(title) {
-  // 説明サブタイトルは表示しない（アプリ内の説明文は全面的に排除）
-  return `<div class="mb-6"><h1 class="text-xl font-semibold text-neutral-900">${title}</h1></div>`;
+function h1(title, sub = '') {
+  // ページ見出し。上に貼り付いて、境界線で本文と分ける（どの画面にいるかを見失わせない）。
+  // sub は省略可。短い一行だけ。説明を並べる場所ではない。
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  return `<div class="pg-head"><h1>${title}</h1>${sub ? `<div class="pg-sub">${esc(sub)}</div>` : ''}</div>`;
 }
 function card(inner, cls = '') { return `<div class="mx-card ${cls}">${inner}</div>`; }
 
@@ -2246,11 +2250,12 @@ async function boot() {
   applyRole(user);
   if (!user) { currentView = 'login'; render(); return; }
   if (user.role !== 'owner') { const { submission } = await API.myLatest(); window.__mySubmission = submission; }
-  const allowed = ['today', 'field', 'academy', 'league', 'me', 'training', 'trainadmin', 'dispatch', 'home', 'goal', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
+  const allowed = ['today', 'field', 'academy', 'league', 'me', 'training', 'trainadmin', 'dispatch', 'home', 'upload', 'report', 'submit', 'issues', 'reps', 'admin', 'log', 'linkrep', 'cyzen', 'compliance', 'ranking', 'roleplay', 'terakoya', 'apocoach'];
   // 管理者専用の画面。別の人でログインし直した時にそのまま残ると、
   // 中身の出ない空の管理画面に着地してしまう（データはサーバが401で止める）。
   const ownerOnly = ['trainadmin', 'dispatch', 'log', 'linkrep', 'cyzen', 'compliance', 'apocoach', 'admin', 'reps', 'issues'];
-  if (!allowed.includes(currentView) || currentView === 'login') currentView = 'today';   // 既定はToday
+  // 描ける画面かどうかも見る。名前だけ残って VIEWS に無いと、枠だけ出て中身が来ない。
+  if (!allowed.includes(currentView) || currentView === 'login' || !VIEWS[currentView]) currentView = 'today';
   if (user.role !== 'owner' && ownerOnly.includes(currentView)) currentView = 'today';
   // 新人はこのアプリの研修から始める。営業解禁されるまでは研修を最初に出す。
   window.__allowedViews = null; window.__stageInfo = null;
@@ -2979,7 +2984,7 @@ window.trStart = trStart; window.trAnswer = trAnswer; window.trReview = trReview
 
 /* ---------- 研修管理（owner専用） ---------- */
 function viewTrainingAdmin() {
-  return `${h1('研修管理', '誰がどこまで進んでいるか、問題が確認済みかを見る。確認者名を入れるまで問題は出題されない。')}
+  return `${h1('研修管理', '誰がどこまで進んでいるか、どの問題をまだ確認していないかを見る。')}
     <div id="traAsks" class="mb-4"></div>
     <div id="traVideo" class="mb-4"></div>
     <div id="traField" class="mb-4"></div>

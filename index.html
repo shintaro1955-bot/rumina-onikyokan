@@ -11,17 +11,21 @@
 <style>
   /* ===== Rumina Field OS デザイントークン ===== */
   :root{
-    --bg:#F0F2F5; --surface:#FFFFFF; --surface-2:#F8FAFC;
-    --text:#172026; --muted:#667085; --border:#E4E7EC;
+    --bg:#F6F7F8; --surface:#FFFFFF; --surface-2:#F4F5F6;
+    --text:#1D1C1D; --muted:#616061; --border:#E4E6E8;
+    /* サイドバーは本文と別の面にする（Slackのように、道具の側と中身の側を分ける） */
+    --side:#F2F2F3; --side-text:#454345; --side-hover:#E7E7E8;
     --primary:#118A55; --primary-hover:#0C7044; --primary-soft:#E8F7EF;
     --info:#2878D0; --warning:#F59E0B; --danger:#D92D20;
-    --r-card:14px; --r-btn:10px;
-    --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.10);
-    --shadow-hover:0 4px 10px rgba(16,24,40,.10);
+    --r-card:10px; --r-btn:8px;
+    /* 影で浮かせない。面の色と1本の境界線で分ける。 */
+    --shadow:none;
+    --shadow-hover:0 1px 3px rgba(16,24,40,.10);
   }
   :root[data-theme='dark']{
-    --bg:#111714; --surface:#1B231F; --surface-2:#222D27;
-    --text:#F4F7F5; --muted:#A7B0AB; --border:#303B35;
+    --bg:#1A1D21; --surface:#222529; --surface-2:#27292D;
+    --text:#D1D2D3; --muted:#9A9B9E; --border:#35373B;
+    --side:#1A1D21; --side-text:#BCBDBE; --side-hover:#2C2D30;
     --primary:#2AD889; --primary-hover:#4BE6A0; --primary-soft:#153D2A;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 1px 3px rgba(0,0,0,.4);
   }
@@ -43,8 +47,16 @@
   #rpClose{display:none}
   body.rp-focus #rpClose{display:inline-flex;align-items:center;gap:6px}
 
+  /* ページ見出し。上に貼り付いて、境界線1本で本文と分ける。
+     どの画面にいるかが、スクロールしても分かるようにする。 */
+  .pg-head{position:sticky;top:60px;z-index:20;background:var(--bg);
+    padding:14px 0 12px;margin:0 0 16px;border-bottom:1px solid var(--border)}
+  .pg-head h1{font-size:19px;font-weight:700;color:var(--text);letter-spacing:.01em;line-height:1.35;margin:0}
+  .pg-head .pg-sub{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.6}
+  @media(max-width:899px){ .pg-head{top:56px;padding:12px 0 10px;margin-bottom:14px} .pg-head h1{font-size:17.5px} }
+
   /* ===== 汎用カード/ボタン（新ビュー用） ===== */
-  .fo-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--shadow)}
+  .fo-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card)}
   .fo-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
     padding:9px 16px;border-radius:var(--r-btn);font-size:14px;font-weight:600;cursor:pointer;
     background:var(--primary);color:#fff;border:1px solid transparent;transition:background .15s,transform .1s}
@@ -144,24 +156,34 @@
   /* ===== レイアウト（3カラム） ===== */
   #layout{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr) 320px;
     gap:20px;padding:20px 16px;align-items:start}
-  #leftbar{position:sticky;top:80px;align-self:start}
+  /* サイドバーは「道具の面」。本文と別の背景にして、境界線1本で分ける。
+     カードのように浮かせない。 */
+  #leftbar{position:sticky;top:76px;align-self:start;background:var(--side);
+    border:1px solid var(--border);border-radius:var(--r-card);padding:6px !important;
+    max-height:calc(100vh - 92px);overflow:auto}
   #rail{position:sticky;top:80px;align-self:start;display:flex;flex-direction:column;gap:14px}
   #feed{min-width:0;max-width:760px;margin:0 auto;width:100%}
   @media(max-width:1279px){ #layout{grid-template-columns:240px minmax(0,1fr)} #rail{display:none} }
   @media(max-width:899px){ #layout{grid-template-columns:1fr;padding:14px 12px 90px} #leftbar,#topnav .tn-nav,#topnav .tn-search{display:none} }
 
   /* 左サイドナビ */
-  .lb-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 12px;border-radius:10px;
-    font-size:14px;font-weight:600;color:var(--muted);background:transparent;border:0;cursor:pointer;transition:.12s}
-  .lb-item:hover{background:var(--surface-2);color:var(--text)}
-  .lb-item.nav-active{background:var(--primary-soft);color:var(--primary)}
+  /* 行は詰める。項目の数が見渡せるほうが道具として速い。
+     選んでいる行だけを塗りつぶす（Slackと同じ考え方）。 */
+  .lb-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:7px 10px;border-radius:6px;
+    font-size:14px;font-weight:500;color:var(--side-text);background:transparent;border:0;cursor:pointer;
+    transition:background-color .1s ease,color .1s ease;line-height:1.35}
+  .lb-item:hover{background:var(--side-hover);color:var(--text)}
+  .lb-item.nav-active{background:var(--primary);color:#fff;font-weight:600}
+  .lb-item.nav-active svg{opacity:.95}
+  .lb-item svg{opacity:.65}
+  .lb-item:hover svg{opacity:.85}
   /* まだ開いていない画面。隠さずに鍵で見せる＝次に何が待っているかが分かる方が前に進む */
   .lb-item.lb-locked{opacity:.4;cursor:not-allowed}
   .lb-item.lb-locked:hover{background:transparent;color:var(--muted)}
-  .lb-item .lb-lock{margin-left:auto;font-size:10.5px;font-weight:700;letter-spacing:.02em}
+  .lb-item .lb-lock{margin-left:auto;font-size:10px;font-weight:600;letter-spacing:0;white-space:nowrap;opacity:.75}
   .lb-item svg{flex:none}
-  .lb-sec{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;padding:14px 12px 6px}
-  #leftbar .prof{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-top:8px;border-top:1px solid var(--border)}
+  .lb-sec{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;padding:16px 10px 5px}
+  #leftbar .prof{display:flex;align-items:center;gap:10px;padding:10px;margin-top:10px;border-top:1px solid var(--border)}
   #leftbar .prof img{width:38px;height:38px;border-radius:50%;object-fit:cover;object-position:top;border:1px solid var(--border)}
 
   /* モバイル下部ナビ */
