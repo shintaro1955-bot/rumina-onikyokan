@@ -74,7 +74,21 @@
     color:var(--muted);cursor:pointer;border:0;background:transparent}
   .tn-ico:hover{background:var(--surface-2);color:var(--text)}
   .tn-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;object-position:top;border:1px solid var(--border);cursor:pointer}
-  .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--primary)}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex:none}
+  /* 同期バッジの文字が狭い画面で2行に折れて崩れる。折らない。
+     さらに、スマホでは cyzen の同期状況は見る場面がないので文字ごと畳む。 */
+  #syncBadge{white-space:nowrap}
+  /* 研修のSTEP行は「番号｜説明｜ボタン」の横並び。狭い画面だと説明の列が
+     数文字ぶんまで潰れて、文字が縦1列に流れて読めなくなる。折り返して縦に積む。 */
+  @media(max-width:720px){
+    .tr-step{flex-wrap:wrap;align-items:flex-start}
+    .tr-step-body{flex:1 1 0%!important;min-width:0}      /* 番号とは横並びのまま */
+    .tr-step-act{width:100%;margin-top:10px;padding-left:38px}
+    .tr-step-act>div{justify-content:flex-start}
+    .tr-why{max-width:none!important;text-align:left!important}
+    .tr-step-act:has(>.muted){display:none}               /* まだ開かない段の「—」は出さない */
+  }
+  @media(max-width:899px){ #syncTxt{display:none} #syncBadge{width:38px;padding:0} }
   .sync-dot.warn{background:var(--warning)}.sync-dot.err{background:var(--danger)}
 
   /* ===== レイアウト（3カラム） ===== */

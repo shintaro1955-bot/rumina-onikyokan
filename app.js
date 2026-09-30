@@ -2170,7 +2170,7 @@ function opensAt(view) {
    「確認済みの問題が足りません」だけだと、自分の落ち度に見えて問い合わせもできない。 */
 function blockedNote(n, g, av, d) {
   const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
-  const wrap = (main, sub, btn) => `<div style="flex:none;max-width:280px;text-align:right">
+  const wrap = (main, sub, btn) => `<div class="tr-why" style="max-width:280px;text-align:right">
     <div style="font-size:12px;color:#b45309;font-weight:700">${main}</div>
     ${sub ? `<div class="muted" style="font-size:11px;margin-top:2px">${sub}</div>` : ''}
     ${btn || ''}</div>`;
@@ -2778,10 +2778,10 @@ async function loadTraining() {
     const done = n < d.unlocked && !oralPending, now = n === d.unlocked;
     const av = (d.availability || []).find(a => a && a.step === n);
     const col = done ? 'var(--primary)' : now ? 'var(--text)' : 'var(--muted)';
-    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border)">
-      <span style="width:26px;height:26px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;
+    return `<div class="tr-step" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border)">
+      <span class="tr-step-no" style="width:26px;height:26px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;
         background:${done ? 'var(--primary)' : 'var(--surface-2)'};color:${done ? '#fff' : 'var(--muted)'}">${done ? '✓' : n}</span>
-      <div style="flex:1;min-width:0">
+      <div class="tr-step-body" style="flex:1;min-width:0">
         <div style="font-size:13.5px;font-weight:700;color:${col}">STEP${n}　${esc(b.title)}</div>
         <div class="muted" style="font-size:11.5px">${b.best != null ? `ベスト ${b.best}/${b.total}　` : ''}受験 ${b.attempts}回</div>
         ${(now || done) ? `<div style="margin-top:6px;font-size:11.5px;line-height:1.75;color:var(--muted)">
@@ -2793,13 +2793,15 @@ async function loadTraining() {
           ${M.note ? `<div style="color:#b45309">${esc(M.note)}</div>` : ''}
         </div>` : ''}
       </div>
-      ${done ? '<span class="muted" style="font-size:11px;flex:none">合格</span>'
-        : n === 4 ? `<span class="muted" style="font-size:11px;flex:none">${oralPending ? '面談で判断' : now ? '準備中' : '—'}</span>`
-        : now && g.ok ? `<div style="display:flex;gap:8px;flex:none">
-            <button onclick="trStudy(${n})" style="padding:7px 14px;font-size:12.5px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-weight:600;cursor:pointer">教材を読む</button>
-            <button class="fo-btn" style="padding:7px 14px;font-size:12.5px" onclick="trStart(${n})">${b.attempts ? 'もう一度受ける' : '受験する'}</button></div>`
+      <div class="tr-step-act" style="flex:none">
+      ${done ? '<span class="muted" style="font-size:11px">合格</span>'
+        : n === 4 ? `<span class="muted" style="font-size:11px">${oralPending ? '面談で判断' : now ? '準備中' : '—'}</span>`
+        : now && g.ok ? `<div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="trStudy(${n})" style="padding:9px 16px;font-size:13px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-weight:600;cursor:pointer">教材を読む</button>
+            <button class="fo-btn" style="padding:9px 16px;font-size:13px" onclick="trStart(${n})">${b.attempts ? 'もう一度受ける' : '受験する'}</button></div>`
         : now ? blockedNote(n, g, av, d)
-        : '<span class="muted" style="font-size:11px;flex:none">—</span>'}
+        : '<span class="muted" style="font-size:11px">—</span>'}
+      </div>
     </div>`;
   }).join('');
 
