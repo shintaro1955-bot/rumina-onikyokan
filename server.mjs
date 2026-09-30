@@ -377,6 +377,8 @@ function persistReport(id, result, userName) {
   // 何も変わらなかった時も件数は出す。出ないと「投入されたのか」を外から確かめられない。
   try { const r = training.seedQuestions(); console.log(`✓ 研修の問題：合計${r.total}問（新規${r.seeded}／更新${r.updated}）`); }
   catch (e) { console.error('研修seed失敗:', e.message); }
+  try { const v = lessons.seedVideos(); if (v.added) console.log(`✓ 教材に動画を${v.added}本投入（公式チャンネルのみ）`); }
+  catch (e) { console.error('研修seed失敗:', e.message); }
 })();
 
 // 起動時：ownerが居なければ管理者アカウントを1つseed（＝モデル営業マン。既定は owner）

@@ -4546,5 +4546,465 @@
     "difficulty": 2,
     "source_note": "電気料金の構成（明細の読み方）",
     "verified_by": null
+  },
+  {
+    "code": "N-001",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "長州産業が太陽光に取り組んできた年数として、カタログに書かれているのは？",
+    "choices": [
+      "45年以上",
+      "10年",
+      "100年以上",
+      "記載がない"
+    ],
+    "answer_index": 0,
+    "explanation": "カタログに「性能と品質にこだわり続けて45年」とある。国内メーカーとしての年数を聞かれたときに答えられるようにしておく。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-002",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "長州産業の太陽電池モジュールの生産について正しいのは？",
+    "choices": [
+      "国内の自社工場で生産している",
+      "海外の委託工場で生産している",
+      "生産はしていない",
+      "公表されていない"
+    ],
+    "answer_index": 0,
+    "explanation": "本社工場は山口県山陽小野田市。カタログでも Made in Japan を前面に出している。国産であることを気にされるお客様に事実として答えられる。",
+    "talk_example": "「国内の自社工場でつくっているメーカーです」",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-003",
+    "test_type": "basic100",
+    "category": "G_history",
+    "tags": [],
+    "question": "長州産業のモジュールが採用された産業用の実績としてカタログに挙がっているのは？",
+    "choices": [
+      "中国電力が初めて建設したメガソーラー",
+      "国会議事堂",
+      "東京スカイツリー",
+      "記載はない"
+    ],
+    "answer_index": 0,
+    "explanation": "産業用でも実績があることの裏付けとして載っている。住宅のお客様にも「電力会社にも採用されている」と事実で言える。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-010",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "長州産業のモジュール出力保証の年数は？",
+    "choices": [
+      "30年",
+      "10年",
+      "15年",
+      "20年"
+    ],
+    "answer_index": 0,
+    "explanation": "JIS C 61215-2 の測定方法で測り、公称最大出力に対する保証値を下回った場合が対象。年数だけでなく「何%まで下がったら保証か」が定められている点まで説明できるようにする。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-011",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "長州産業の保証の組み合わせとして正しいのは？",
+    "choices": [
+      "モジュール出力30年・構成機器15年・施工（雨漏り含む）10年",
+      "すべて10年",
+      "すべて30年",
+      "モジュールのみ保証あり"
+    ],
+    "answer_index": 0,
+    "explanation": "3つを混ぜて説明しない。お客様が一番気にされるのは雨漏りで、これは施工保証10年の側。",
+    "talk_example": "「パネルの出力が30年、パワコンなど機器が15年、工事と雨漏りが10年です」",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-012",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "カタログにある「モジュール出力30年保証に加え施工保証を標準で備えるのは長州産業だけ」という記載の扱いは？",
+    "choices": [
+      "自社調べ・時点つきの記載なので、断定せず「カタログにそう書かれている」と伝える",
+      "そのまま「業界唯一です」と言ってよい",
+      "言ってはいけない",
+      "他社を名指しで比較してよい"
+    ],
+    "answer_index": 0,
+    "explanation": "カタログには時点と自社調べの注記がある。注記を落として断定すると、事実と異なれば不実告知・優良誤認になりうる。",
+    "talk_example": "「メーカーのカタログには、標準で備えるのは長州産業だけ、と書かれています」",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-020",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "長州産業が自社で行う高温高湿試験の時間は？",
+    "choices": [
+      "4,000時間（標準規格の4倍）",
+      "1,000時間（標準規格どおり）",
+      "100時間",
+      "実施していない"
+    ],
+    "answer_index": 0,
+    "explanation": "標準規格は1,000時間。温度85度・湿度85%の環境に入れる試験。品質の裏付けとして具体的な数字で言える。",
+    "talk_example": "「標準の4倍の時間、高温多湿にさらす試験をしています」",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-021",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "長州産業の温度サイクル試験の回数は？",
+    "choices": [
+      "600サイクル（標準規格の3倍）",
+      "200サイクル（標準規格どおり）",
+      "50サイクル",
+      "実施していない"
+    ],
+    "answer_index": 0,
+    "explanation": "マイナス40度から85度までの温度変化を与える試験。標準規格は200サイクル。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-022",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "長州産業の耐荷重試験の条件は？",
+    "choices": [
+      "設計荷重の1.5倍",
+      "設計荷重と同じ",
+      "設計荷重の半分",
+      "規定なし"
+    ],
+    "answer_index": 0,
+    "explanation": "モジュールの上に錘を載せて検証する。積雪や風の話につながる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-030",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "台風について、長州産業のカタログが示している試験条件は？",
+    "choices": [
+      "取付架台を含め瞬間最大風速63m/sで問題ないことを確認",
+      "風速20m/sまで",
+      "試験はしていない",
+      "風速100m/sまで"
+    ],
+    "answer_index": 0,
+    "explanation": "モジュール単体の耐風圧試験も行っている。「台風は大丈夫か」と聞かれたときに、数字で答えられる。",
+    "talk_example": "「架台を含めて、瞬間最大風速63メートルまで試験で確認されています」",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-031",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "雹（ひょう）に対する試験として、カタログに書かれているのは？",
+    "choices": [
+      "JISより厳しい条件の鋼球（227g・直径38mm）を落とす試験",
+      "試験はしていない",
+      "氷を落とす試験のみ",
+      "規格どおりの試験"
+    ],
+    "answer_index": 0,
+    "explanation": "ガラスの破損やフレームの変形が無いことを確認している。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-032",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "5kW程度のシステムで、屋根にかかる重さの目安は？",
+    "choices": [
+      "1平方メートルあたり約13.8kg（積雪7〜8cm相当）",
+      "1平方メートルあたり約100kg",
+      "1平方メートルあたり約1kg",
+      "公表されていない"
+    ],
+    "answer_index": 0,
+    "explanation": "太陽熱温水器が1平方メートルあたり70〜80kgだったことと比べると軽い。「家に負担がかからないか」への答え方。",
+    "talk_example": "「1平米あたり14キロほどです。雪が7〜8センチ積もったのと同じくらいです」",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-033",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "海の近くへの設置について、カタログが示しているのは？",
+    "choices": [
+      "フィルムでセルを保護し、フレームと架台に特殊な表面処理をしている",
+      "海の近くには設置できない",
+      "特別な対応はない",
+      "保証が一切つかない"
+    ],
+    "answer_index": 0,
+    "explanation": "直接海水がかかる場所は除く。重塩害地域向けには、対応する蓄電池ユニットのラインナップがある。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-040",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "長州産業の蓄電システム「スマートPVマルチ」が採用している電池は？",
+    "choices": [
+      "リン酸鉄リチウム",
+      "鉛蓄電池",
+      "ニッケル水素",
+      "ナトリウムイオン"
+    ],
+    "answer_index": 0,
+    "explanation": "熱安定性・安全性に優れるとカタログに記載。長期にわたって安心して使える点の裏付けになる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-041",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "現行カタログのスマートPVマルチの蓄電容量ラインナップは？",
+    "choices": [
+      "6.3 / 6.5 / 9.7 / 12.7 / 13.0 kWh",
+      "5 / 10 / 15 kWh のみ",
+      "1種類のみ",
+      "20kWh以上のみ"
+    ],
+    "answer_index": 0,
+    "explanation": "家族構成と使用パターンで選ぶ。容量が多いほど良い、という売り方はしない。第1世代（6.5 / 9.8 / 16.4kWh）もあるので、既設宅で容量が合わないときは世代違いを疑う。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-042",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "月の電力使用量が300kWh以下（2人暮らしの目安）の家に勧める容量は？",
+    "choices": [
+      "6.3kWh または 6.5kWh",
+      "13.0kWh 一択",
+      "容量は関係ない",
+      "20kWh以上"
+    ],
+    "answer_index": 0,
+    "explanation": "カタログの目安。400kWh/月以上（3人以上の目安）なら 9.7 / 12.7 / 13.0kWh。エアコンをよく使う家やオール電化は 13.0 / 12.7kWh。",
+    "talk_example": "「ひと月の使用量を見せていただけますか。そこで容量が決まります」",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-043",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "全負荷対応型ハイブリッド蓄電システムの、自立運転時の最大出力は？",
+    "choices": [
+      "4.0kVA",
+      "1.0kVA",
+      "10kVA",
+      "公表されていない"
+    ],
+    "answer_index": 0,
+    "explanation": "100V家電に加えて200V家電も使用可能。停電時にIHやエアコンが使えるかの根拠になる数字。",
+    "talk_example": "「停電時は4.0kVAまで。200Vの機器も使えます」",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-044",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "重塩害地域に対応している蓄電容量は？",
+    "choices": [
+      "6.5 / 9.7 / 13.0 kWh",
+      "すべての容量",
+      "対応はない",
+      "6.3kWhのみ"
+    ],
+    "answer_index": 0,
+    "explanation": "海岸からの距離で設置条件が変わる。重塩害地域では、対応するユニットを選ぶ必要がある。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-045",
+    "test_type": "basic100",
+    "category": "B_battery",
+    "tags": [],
+    "question": "スマートPVマルチの「グリーンモード」でできることは？",
+    "choices": [
+      "蓄電残量100%まで夜間充電できる",
+      "売電を最大化する",
+      "充電しない",
+      "太陽光なしでも発電する"
+    ],
+    "answer_index": 0,
+    "explanation": "昼の発電量が少ない家や、曇りや雨が続いて余剰電力での充電が見込めない場合に、夜間の電力を最大限活用する。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-050",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [
+      "safety_law"
+    ],
+    "question": "モジュールの合計出力に対して、実際の発電能力はどのくらいになるか？",
+    "choices": [
+      "おおむね70〜80%程度",
+      "100%そのまま",
+      "30%程度",
+      "120%になる"
+    ],
+    "answer_index": 0,
+    "explanation": "モジュール出力の補正、パワコンの変換効率、経路や回路の補正が重なるため。カタログにも「太陽電池容量の70〜80%程度」と明記されている。",
+    "talk_example": "「カタログの合計出力そのままは出ません。7〜8割とお考えください」",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-051",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "発電能力の計算に掛け合わせる要素として、カタログが挙げているのは？",
+    "choices": [
+      "モジュール出力の補正・パワコンの変換効率・経路の補正・回路の補正",
+      "モジュールの枚数だけ",
+      "屋根の面積だけ",
+      "計算方法は公表されていない"
+    ],
+    "answer_index": 0,
+    "explanation": "例：5.85kWのシステムで 92.6% × 95% × 95% × 97% を掛けて約4.74kW。試算の前提を説明できるようにしておく。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-052",
+    "test_type": "basic100",
+    "category": "A_basic",
+    "tags": [],
+    "question": "長州産業のモジュールで、変換効率が最も高いラインナップは？",
+    "choices": [
+      "Nシリーズの大型モジュール（変換効率 約22%）",
+      "低反射タイプ（約17%）",
+      "すべて同じ効率",
+      "公表されていない"
+    ],
+    "answer_index": 0,
+    "explanation": "同じ屋根面積でも、効率が高いほど載せられる量が増える。屋根が狭い家ほど効いてくる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-053",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "長州産業の「SPBlack 低反射タイプ」が向いている場面は？",
+    "choices": [
+      "反射光が近隣に向きやすい設置（北面など）や、見た目を重視する場合",
+      "とにかく発電量を最大化したい場合",
+      "産業用の大規模設置",
+      "積雪地域のみ"
+    ],
+    "answer_index": 0,
+    "explanation": "低反射（防眩）は近隣対策の根拠になる。ただし変換効率は標準タイプより低いので、発電量とのバランスで選ぶ。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
+  },
+  {
+    "code": "N-054",
+    "test_type": "basic100",
+    "category": "C_equipment",
+    "tags": [],
+    "question": "カタログにある「PIDリスクがあるモジュールでも接続可能」の意味は？",
+    "choices": [
+      "他社を含む既設モジュールに、PIDが発生しにくい制御で接続できる",
+      "PIDが絶対に起きない",
+      "PIDのあるモジュールは交換が必要",
+      "PIDとは無関係"
+    ],
+    "answer_index": 0,
+    "explanation": "PIDはモジュールに高電圧の負荷がかかり出力が低下する現象。増設や入れ替えの相談で効いてくる。",
+    "talk_example": "",
+    "difficulty": 2,
+    "source_note": "長州産業 Smart PV Multi カタログ",
+    "verified_by": null
   }
 ]
