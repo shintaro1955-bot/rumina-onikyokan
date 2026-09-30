@@ -1769,6 +1769,11 @@ function render() {
   app.innerHTML = (VIEWS[currentView] || viewToday)();
   const active = NAV_ALIAS[currentView] || currentView;
   document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('nav-active', el.dataset.nav === active));
+  // 中身が入れ替わったことを一度だけ動きで返す。
+  // クラスを付け直さないと2回目以降アニメーションが走らないので、reflowを挟む。
+  app.classList.remove('view-in');
+  void app.offsetWidth;
+  app.classList.add('view-in');
 }
 
 /* ---------- アップロード挙動 ---------- */
@@ -2095,7 +2100,7 @@ function stageBox(d) {
     const done = i < at, now = i === at;
     const open = s2.views === null ? '現場の画面がすべて' : (s2.views || []).map(v => NAMES[v] || v).join('・');
     return `<div style="display:flex;gap:10px;align-items:flex-start;padding:7px 0">
-      <span style="width:18px;height:18px;border-radius:50%;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;
+      <span class="${now ? 'fo-now' : ''}" style="width:18px;height:18px;border-radius:50%;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;
         background:${done || now ? 'var(--primary)' : 'var(--surface-2)'};color:${done || now ? '#fff' : 'var(--muted)'}">${done ? '✓' : i + 1}</span>
       <div style="min-width:0">
         <div style="font-size:12.5px;font-weight:${now ? '700' : '600'};color:${now ? 'var(--text)' : 'var(--muted)'}">${esc(s2.label || k)}${now ? '　← いまここ' : ''}</div>
@@ -2747,7 +2752,7 @@ const TR_STATUS = {
   cleared:     { label: '営業解禁',     cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   suspended:   { label: '停止中',       cls: 'bg-rose-50 text-rose-600 border-rose-200' },
 };
-let TR = { exam: null, idx: 0, answers: [], timer: null, left: 0 };
+let TR = { exam: null, idx: 0, answers: [], timer: null, left: 0, locked: false };
 
 function viewTraining() {
   return `${h1('研修（営業解禁ゲート）', '合格するまで現場には出さない。ここを通ってから玄関に立つ。')}
@@ -2836,7 +2841,7 @@ async function loadTraining() {
       ${todoBox(d)}
       <div id="trMyAsks"></div>
       ${stageBox(d)}
-      <div style="margin-top:14px">${steps}</div>
+      <div class="fo-stagger" style="margin-top:14px">${steps}</div>
       ${d.reviewLeft ? `<div style="margin-top:14px;padding:12px;border:1px solid #f59e0b;border-radius:12px;background:rgba(245,158,11,.06)">
         <div style="font-size:12.5px;font-weight:700;color:#b45309">復習キュー ${d.reviewLeft}問</div>
         <div class="muted" style="font-size:12px;margin-top:2px">2回連続で正解すると卒業します。全部卒業するまでSTEP2は受け直せません。</div>
@@ -2866,11 +2871,11 @@ function trRenderQ() {
       <div class="muted" style="font-size:12px;font-weight:700">${TR.idx + 1} / ${TR.exam.total}</div>
       <div id="trTimer" style="font-size:13px;font-weight:700;color:var(--text)">60秒</div>
     </div>
-    <div style="height:5px;border-radius:3px;background:var(--surface-2);margin-top:8px;overflow:hidden">
-      <div style="height:100%;background:var(--primary);width:${Math.round(TR.idx / TR.exam.total * 100)}%"></div></div>
+    <div class="fo-bar" style="height:5px;border-radius:3px;background:var(--surface-2);margin-top:8px;overflow:hidden">
+      <i style="background:var(--primary);width:${Math.round(TR.idx / TR.exam.total * 100)}%"></i></div>
     <div style="font-size:16px;font-weight:600;color:var(--text);margin-top:16px;line-height:1.6">${esc(q.question)}</div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
-      ${q.choices.map((ch, i) => `<button onclick="trAnswer(${i})" style="text-align:left;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;line-height:1.5">${esc(ch)}</button>`).join('')}
+    <div class="fo-stagger" style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+      ${q.choices.map((ch, i) => `<button class="q-choice" onclick="trAnswer(${i})" style="text-align:left;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;line-height:1.5">${esc(ch)}</button>`).join('')}
     </div>
     <div class="muted" style="font-size:11px;margin-top:12px">時間切れは不正解になります。途中で閉じると1回ぶんとして記録されます。</div>
   </div>`;
@@ -2884,11 +2889,21 @@ function trRenderQ() {
 }
 
 function trAnswer(i) {
-  if (!TR.exam) return;
+  if (!TR.exam || TR.locked) return;
   if (TR.timer) clearInterval(TR.timer);
   const q = TR.exam.questions[TR.idx];
   TR.answers.push({ questionId: q.id, choiceText: i >= 0 ? q.choices[i] : '', ms: Date.now() - (TR.qStart || Date.now()) });
   TR.idx++;
+  // 押したことだけを返して次へ。**正誤はここでは出さない**（最後にまとめて見せる）。
+  // 押した直後に連打で次の問題まで送ってしまわないよう、その間は入力を止める。
+  const btn = document.querySelectorAll('.q-choice')[i];
+  const wait = (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) ? 0 : 220;
+  if (btn && wait) {
+    TR.locked = true;
+    btn.classList.add('picked');
+    setTimeout(() => { TR.locked = false; trRenderQ(); }, wait);
+    return;
+  }
   trRenderQ();
 }
 
@@ -2902,13 +2917,18 @@ async function trFinish() {
   const miss = (r.detail || []).filter(d => !d.correct);
   const cats = Object.entries(r.byCategory || {}).map(([k, v]) => `<span class="muted" style="font-size:11.5px">${esc(k)} ${v.rate}%</span>`).join(' ・ ');
   if (wrap) wrap.innerHTML = `<div class="fo-card" style="padding:20px">
-    <div style="padding:14px 16px;border-radius:14px;border:1px solid ${r.passed ? 'var(--primary)' : '#e11d48'};background:${r.passed ? 'rgba(22,199,132,.06)' : 'rgba(225,29,72,.05)'}">
-      <div style="font-size:22px;font-weight:700;color:${r.passed ? 'var(--primary)' : '#e11d48'}">${r.passed ? '合格' : '不合格'}</div>
-      <div style="font-size:14px;color:var(--text);margin-top:4px">${r.score} / ${r.total}（${r.rate}%）</div>
+    <div class="fo-result${r.passed ? '' : ' fail'}" style="padding:14px 16px;border-radius:14px;border:1px solid ${r.passed ? 'var(--primary)' : '#e11d48'};background:${r.passed ? 'rgba(22,199,132,.06)' : 'rgba(225,29,72,.05)'}">
+      <div style="display:flex;align-items:center;gap:10px">
+        ${r.passed ? `<svg class="fo-check" width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="11" stroke="var(--primary)" stroke-width="1.6" opacity=".35"/>
+          <path d="M7 12.4l3.4 3.4L17 9.2" stroke="var(--primary)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>` : ''}
+        <div style="font-size:22px;font-weight:700;color:${r.passed ? 'var(--primary)' : '#e11d48'}">${r.passed ? '合格' : '不合格'}</div>
+      </div>
+      <div style="font-size:14px;color:var(--text);margin-top:4px"><span id="trScore" class="num">0</span> / ${r.total}（${r.rate}%）</div>
       ${r.safetyMiss ? `<div style="font-size:12.5px;color:#e11d48;margin-top:4px">安全・法令の問題を${r.safetyMiss}問間違えています。ここは1問も落とせません。</div>` : ''}
     </div>
     ${cats ? `<div style="margin-top:12px">${cats}</div>` : ''}
-    ${miss.length ? `<div style="margin-top:16px"><div style="font-size:12.5px;font-weight:700;color:var(--text)">間違えた問題（${miss.length}問）</div>
+    ${miss.length ? `<div class="fo-stagger" style="margin-top:16px"><div style="font-size:12.5px;font-weight:700;color:var(--text)">間違えた問題（${miss.length}問）</div>
       ${miss.map(m => `<div style="margin-top:10px;padding:11px 13px;border-left:3px solid #e11d48;background:var(--surface-2);border-radius:0 10px 10px 0">
         <div class="muted" style="font-size:11px">${esc(m.code)}</div>
         <div style="font-size:12.5px;color:var(--text);margin-top:2px">あなたの答え：${esc(m.chosen || '（無回答）')}</div>
@@ -2919,6 +2939,7 @@ async function trFinish() {
     ${r.reviewLeft ? `<div class="muted" style="font-size:12px;margin-top:14px">間違えた問題は復習キューに入りました（${r.reviewLeft}問）。</div>` : ''}
     <div style="margin-top:16px"><button class="fo-btn" onclick="nav('training')">研修トップへ</button></div>
   </div>`;
+  countUp(document.getElementById('trScore'), r.score);
   TR = { exam: null, idx: 0, answers: [], timer: null, left: 0 };
 }
 
@@ -3821,7 +3842,7 @@ function lessonList(d) {
   const ls = d.lessons || [];
   if (!ls.length) return '';
   const mins = ls.reduce((n, l) => n + (l.minutes || 0), 0);
-  return `<div style="margin-top:16px">
+  return `<div class="fo-stagger" style="margin-top:16px">
     <div style="font-size:14px;font-weight:700;color:var(--text)">読むもの（${ls.length}章・合計 約${mins}分）</div>
     <div class="muted" style="font-size:12px;margin-top:2px">なぜそうなのか、現場で何と言うのか。ここを読んでから一問一答で確かめてください。</div>
     ${ls.map((l, i) => `<button onclick="trLesson('${esc(l.code)}')" style="display:block;width:100%;text-align:left;margin-top:8px;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface);cursor:pointer">
@@ -3947,4 +3968,20 @@ async function traUndoProvisional() {
     loadTrainingQuestions(window.__traType || 'must30');
     loadTrainingAdmin();
   } catch (e) { msg.className = 'text-[12px] mt-2 text-rose-600'; msg.textContent = e.message; }
+}
+
+/* 数字を0から数え上げる。結果を目で追えるようにするためだけの演出。
+   動きを嫌う設定なら、即座に確定値を入れる。 */
+function countUp(el, to, ms = 650) {
+  if (!el) return;
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || !to) { el.textContent = String(to); return; }
+  const t0 = performance.now();
+  const step = (now) => {
+    const p = Math.min(1, (now - t0) / ms);
+    const e = 1 - Math.pow(1 - p, 3);              // 終わりに向けてゆっくり止まる
+    el.textContent = String(Math.round(to * e));
+    if (p < 1) requestAnimationFrame(step); else el.textContent = String(to);
+  };
+  requestAnimationFrame(step);
 }

@@ -77,6 +77,56 @@
   .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex:none}
   /* 同期バッジの文字が狭い画面で2行に折れて崩れる。折らない。
      さらに、スマホでは cyzen の同期状況は見る場面がないので文字ごと畳む。 */
+  /* ============ 画面の動き ============
+     装飾ではなく「いま何が起きたか」を伝えるためだけに動かす。
+     ・画面が変わった／カードが並んだ／押した／正解だった／合格した
+     動きを嫌う人・酔う人がいるので prefers-reduced-motion は必ず尊重する。 */
+  @keyframes foRise { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+  @keyframes foFade { from{opacity:0} to{opacity:1} }
+  @keyframes foPop  { 0%{transform:scale(.96);opacity:0} 60%{transform:scale(1.02)} 100%{transform:scale(1);opacity:1} }
+  /* 選んだことだけを返す。**緑にしない**——正解したように見えて、間違いを覚えてしまう。 */
+  @keyframes foPicked { 0%{background:var(--surface)} 30%{background:var(--surface-2)} 100%{background:var(--surface)} }
+  @keyframes foShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
+  @keyframes foDraw { to{stroke-dashoffset:0} }
+  @keyframes foBar  { from{width:0} }
+
+  /* 画面を切り替えたとき。中身が入れ替わったことが分かる程度に。 */
+  #app.view-in > *{ animation: foRise .26s cubic-bezier(.2,.7,.3,1) both }
+  /* 並んだものは少しずつ遅らせる。全部が同時に出ると何が増えたか分からない。 */
+  .fo-stagger > *{ animation: foRise .3s cubic-bezier(.2,.7,.3,1) both }
+  .fo-stagger > *:nth-child(1){animation-delay:.02s} .fo-stagger > *:nth-child(2){animation-delay:.06s}
+  .fo-stagger > *:nth-child(3){animation-delay:.10s} .fo-stagger > *:nth-child(4){animation-delay:.14s}
+  .fo-stagger > *:nth-child(5){animation-delay:.18s} .fo-stagger > *:nth-child(6){animation-delay:.22s}
+  .fo-stagger > *:nth-child(n+7){animation-delay:.26s}
+
+  /* 押した手ごたえ。触れた瞬間に返す。 */
+  button:not(:disabled), .lb-item, .tn-pill{ transition: transform .08s ease, background-color .15s ease, box-shadow .15s ease }
+  button:not(:disabled):active, .lb-item:active{ transform: scale(.975) }
+  .fo-btn{ transition: transform .08s ease, filter .15s ease }
+  .fo-btn:hover{ filter: brightness(1.06) }
+
+  /* 出題：選んだ瞬間に、選んだことだけ返す（正誤は最後まで出さない） */
+  .q-choice{ transition: background-color .12s ease, border-color .12s ease, transform .08s ease }
+  .q-choice.picked{ animation: foPicked .42s ease both; border-color: var(--muted) !important; border-width:2px !important }
+
+  /* 結果 */
+  .fo-result{ animation: foPop .38s cubic-bezier(.2,.8,.3,1) both }
+  .fo-result.fail{ animation: foPop .3s ease both, foShake .42s .26s ease both }
+  .fo-check path{ stroke-dasharray: 48; stroke-dashoffset: 48; animation: foDraw .5s .18s cubic-bezier(.4,0,.2,1) forwards }
+  .fo-bar > i{ display:block; height:100%; border-radius:inherit; animation: foBar .7s .1s cubic-bezier(.2,.8,.3,1) both }
+
+  /* 段が進んだとき、いまの段だけ一度だけ光らせる */
+  @keyframes foGlow { 0%{box-shadow:0 0 0 0 rgba(15,122,69,.45)} 100%{box-shadow:0 0 0 12px rgba(15,122,69,0)} }
+  .fo-now{ animation: foGlow 1.1s ease-out 2 }
+
+  @media (prefers-reduced-motion: reduce){
+    #app.view-in > *, .fo-stagger > *, .fo-result, .fo-result.fail, .fo-check path, .fo-bar > i, .fo-now, .q-choice.picked{
+      animation: none !important
+    }
+    button:not(:disabled):active, .lb-item:active{ transform:none }
+    *{ scroll-behavior: auto !important }
+  }
+
   #syncBadge{white-space:nowrap}
   /* 研修のSTEP行は「番号｜説明｜ボタン」の横並び。狭い画面だと説明の列が
      数文字ぶんまで潰れて、文字が縦1列に流れて読めなくなる。折り返して縦に積む。 */
