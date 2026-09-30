@@ -1757,7 +1757,7 @@ function nav(v) {
   if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
   if (v === 'me') loadMePerf();
   if (v === 'training') loadTraining();
-  if (v === 'trainadmin') { loadAsks(); loadFieldCheck(); loadTrainingAdmin(); }
+  if (v === 'trainadmin') { loadAsks(); loadLessonVideos(); loadFieldCheck(); loadTrainingAdmin(); }
   if (v === 'dispatch') loadDispatch();
   if (v === 'academy') loadAcademy();
   if (v === 'terakoya') loadTerakoya();
@@ -2960,6 +2960,7 @@ window.trStart = trStart; window.trAnswer = trAnswer; window.trReview = trReview
 function viewTrainingAdmin() {
   return `${h1('研修管理', '誰がどこまで進んでいるか、問題が確認済みかを見る。確認者名を入れるまで問題は出題されない。')}
     <div id="traAsks" class="mb-4"></div>
+    <div id="traVideo" class="mb-4"></div>
     <div id="traField" class="mb-4"></div>
     <div id="traRoster" class="mb-4"></div>
     <div id="traQ" class="mb-4"></div>
@@ -3718,6 +3719,48 @@ const FIGURES = {
     </svg>`;
   },
 
+
+  // 買う電気の推移（自社の開示資料。出典は資源エネルギー庁）
+  kaiden: () => {
+    const d = [[2010,21.39],[2012,23.44],[2014,27.49],[2016,24.31],[2018,27.73],[2020,25.82],[2022,34.00],[2024,32.80]];
+    const max = 36, x0 = 56, y0 = 178, w = 470, h = 140;
+    const px = (i) => x0 + i * (w / (d.length - 1));
+    const py = (v) => y0 - (v / max) * h;
+    return `<svg viewBox="0 0 560 230" width="100%" role="img" aria-label="家庭用の電気料金平均単価の推移">
+      <text x="0" y="14" font-size="12" fill="currentColor" opacity=".6">家庭用の電気料金 平均単価（円/kWh）</text>
+      ${[10, 20, 30].map(v => `<line x1="${x0}" y1="${py(v)}" x2="${x0 + w}" y2="${py(v)}" stroke="currentColor" opacity=".12"/>
+        <text x="${x0 - 8}" y="${py(v) + 4}" font-size="10.5" fill="currentColor" opacity=".55" text-anchor="end">${v}</text>`).join('')}
+      <polyline points="${d.map((p, i) => `${px(i)},${py(p[1])}`).join(' ')}" fill="none" stroke="#e11d48" stroke-width="2.5"/>
+      ${d.map((p, i) => `<circle cx="${px(i)}" cy="${py(p[1])}" r="3.5" fill="#e11d48"/>
+        <text x="${px(i)}" y="${y0 + 16}" font-size="10" fill="currentColor" opacity=".6" text-anchor="middle">${p[0]}</text>`).join('')}
+      <text x="${px(0)}" y="${py(d[0][1]) - 10}" font-size="11" fill="#e11d48" font-weight="700" text-anchor="middle">21.39</text>
+      <text x="${px(6)}" y="${py(34.0) - 10}" font-size="11" fill="#e11d48" font-weight="700" text-anchor="middle">34.00</text>
+      <text x="${px(7)}" y="${py(32.8) - 10}" font-size="11" fill="#e11d48" font-weight="700" text-anchor="middle">32.80</text>
+      <text x="0" y="216" font-size="11" fill="currentColor" opacity=".7">出典：経済産業省資源エネルギー庁（自社開示資料より）。再エネ賦課金は含まれていません。</text>
+    </svg>`;
+  },
+
+  // 売る電気の推移（住宅用・10kW未満）
+  fit: () => {
+    const d = [[2009,48],[2012,42],[2014,37],[2016,31],[2018,26],[2020,21],[2022,17],[2024,16]];
+    const max = 52, x0 = 56, y0 = 178, w = 470, h = 140;
+    const px = (i) => x0 + i * (w / (d.length - 1));
+    const py = (v) => y0 - (v / max) * h;
+    return `<svg viewBox="0 0 560 234" width="100%" role="img" aria-label="住宅用太陽光の買取単価の推移">
+      <text x="0" y="14" font-size="12" fill="currentColor" opacity=".6">住宅用（10kW未満）の買取単価（円/kWh）</text>
+      ${[10, 20, 30, 40].map(v => `<line x1="${x0}" y1="${py(v)}" x2="${x0 + w}" y2="${py(v)}" stroke="currentColor" opacity=".12"/>
+        <text x="${x0 - 8}" y="${py(v) + 4}" font-size="10.5" fill="currentColor" opacity=".55" text-anchor="end">${v}</text>`).join('')}
+      <polyline points="${d.map((p, i) => `${px(i)},${py(p[1])}`).join(' ')}" fill="none" stroke="#0f7a45" stroke-width="2.5"/>
+      ${d.map((p, i) => `<circle cx="${px(i)}" cy="${py(p[1])}" r="3.5" fill="#0f7a45"/>
+        <text x="${px(i)}" y="${y0 + 16}" font-size="10" fill="currentColor" opacity=".6" text-anchor="middle">${p[0]}</text>`).join('')}
+      <text x="${px(0)}" y="${py(48) - 10}" font-size="11" fill="#0f7a45" font-weight="700" text-anchor="middle">48</text>
+      <text x="${px(1)}" y="${py(42) - 10}" font-size="11" fill="#0f7a45" font-weight="700" text-anchor="middle">42</text>
+      <text x="${px(7)}" y="${py(16) - 10}" font-size="11" fill="#0f7a45" font-weight="700" text-anchor="middle">16</text>
+      <text x="0" y="206" font-size="11" fill="#b45309" font-weight="700">およそ3分の1。ただし設備の価格も同じだけ下がっています。</text>
+      <text x="0" y="224" font-size="11" fill="currentColor" opacity=".7">年度ごとに改定されます。当年度の確定値は必ず公表資料で確認してください。</text>
+    </svg>`;
+  },
+
   // 全負荷と特定負荷／容量と出力
   battery: () => `<svg viewBox="0 0 560 240" width="100%" role="img" aria-label="蓄電池の容量と出力、全負荷と特定負荷">
     <text x="0" y="14" font-size="12" fill="currentColor" opacity=".6">容量（kWh）と出力（kW）は別のもの</text>
@@ -3770,7 +3813,7 @@ function lessonList(d) {
         <span style="font-size:14px;font-weight:700;color:var(--text)">${esc(l.title)}</span>
       </div>
       <div class="muted" style="font-size:12px;margin-top:3px;padding-left:22px;line-height:1.6">${esc(l.aim)}</div>
-      <div class="muted" style="font-size:11px;margin-top:3px;padding-left:22px">約${l.minutes}分 ・ ${l.sections}項目${l.quiz ? ` ・ 関連する問題 ${l.quiz}問` : ''}</div>
+      <div class="muted" style="font-size:11px;margin-top:3px;padding-left:22px">約${l.minutes}分 ・ ${l.sections}項目${l.quiz ? ` ・ 関連する問題 ${l.quiz}問` : ''}${l.videos ? ` ・ <span style="color:var(--primary);font-weight:700">動画${l.videos}本</span>` : ''}</div>
     </button>`).join('')}
   </div>`;
 }
@@ -3799,6 +3842,16 @@ async function trLesson(code) {
       <div style="font-size:11px;font-weight:700;color:var(--muted)">これを読むと</div>
       <div style="font-size:13px;color:var(--text);margin-top:2px;line-height:1.7">${esc(d.aim)}</div>
     </div>
+    ${(d.videos || []).length ? `<div style="margin-top:22px">
+      <div style="font-size:15px;font-weight:700;color:var(--text)">動画で見る</div>
+      ${(d.videos || []).map(v => `<div style="margin-top:10px">
+        ${v.title ? `<div style="font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px">${esc(v.title)}</div>` : ''}
+        <div style="position:relative;padding-top:56.25%;border-radius:12px;overflow:hidden;background:#000">
+          <iframe src="https://www.youtube-nocookie.com/embed/${esc(v.yt)}?rel=0" title="${esc(v.title || '解説動画')}"
+            style="position:absolute;inset:0;width:100%;height:100%;border:0" allowfullscreen
+            allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture"></iframe>
+        </div></div>`).join('')}
+    </div>` : ''}
     ${secs}
     <div class="muted" style="font-size:11px;margin-top:20px;padding-top:12px;border-top:1px solid var(--border)">出典：${esc(d.source || '')}</div>
     <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
@@ -3807,4 +3860,45 @@ async function trLesson(code) {
     </div>
   </div>`;
   window.scrollTo(0, 0);
+}
+
+/* 章に動画を貼る（owner）。どれを貼るかは会社が決めること。こちらでは選ばない。 */
+async function loadLessonVideos() {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const box = document.getElementById('traVideo'); if (!box) return;
+  let d; try { d = await API.adminLessons(); } catch (e) { box.innerHTML = ''; return; }
+  const rows = d.rows || [];
+  const STEPN = { 1: 'STEP1 玄関先の線', 2: 'STEP2 商材の知識', 3: 'STEP3 法令' };
+  const byStep = {};
+  for (const r of rows) (byStep[r.step] ||= []).push(r);
+  box.innerHTML = card(`<div class="p-4">
+    <div class="font-semibold text-neutral-800">教材に動画を貼る</div>
+    <div class="text-[12px] text-neutral-500 mt-0.5">YouTubeのURLを入れると、その章の先頭に埋め込まれます。どの動画を使うかは会社の判断です。社外の動画を貼るときは内容を確認してから貼ってください。</div>
+    ${Object.entries(byStep).map(([st, ls]) => `
+      <div class="mt-3">
+        <div class="text-[12px] font-bold text-emerald-700">${STEPN[st] || 'STEP' + st}</div>
+        ${ls.map(l => `<div class="border-t border-neutral-200 py-2.5">
+          <div class="text-[13px] text-neutral-800 font-semibold">${esc(l.title)}</div>
+          ${(l.videos || []).map(v => `<div class="flex items-center gap-2 mt-1.5">
+            <span class="text-[11px] font-mono text-neutral-500">${esc(v.yt)}</span>
+            <span class="text-[12px] text-neutral-700 truncate">${esc(v.title || '')}</span>
+            <button onclick="traDelVideo('${esc(l.code)}','${esc(v.yt)}')" class="ml-auto text-[11px] text-rose-600 underline">外す</button>
+          </div>`).join('')}
+          <div class="flex gap-2 mt-2 flex-wrap">
+            <input id="vu_${esc(l.code)}" placeholder="YouTubeのURL" class="border border-neutral-200 rounded-lg px-3 py-1.5 text-[12px] flex-1 min-w-[180px]">
+            <input id="vt_${esc(l.code)}" placeholder="見出し（任意）" class="border border-neutral-200 rounded-lg px-3 py-1.5 text-[12px] w-40">
+            <button onclick="traAddVideo('${esc(l.code)}')" class="px-3 py-1.5 rounded-lg border border-neutral-300 bg-white text-[12px] font-semibold text-neutral-700">貼る</button>
+          </div>
+        </div>`).join('')}
+      </div>`).join('')}
+  </div>`);
+}
+async function traAddVideo(code) {
+  const u = (document.getElementById('vu_' + code) || {}).value || '';
+  const t = (document.getElementById('vt_' + code) || {}).value || '';
+  try { const r = await API.setLessonVideo(code, u, t); if (!r.ok) { alert(r.why || '貼れませんでした'); return; } loadLessonVideos(); }
+  catch (e) { alert(e.message); }
+}
+async function traDelVideo(code, yt) {
+  try { await API.delLessonVideo(code, yt); loadLessonVideos(); } catch (e) { alert(e.message); }
 }

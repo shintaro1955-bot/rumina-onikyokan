@@ -780,6 +780,24 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { ok: true, ...l });
       }
 
+      /* 章に動画を貼る・外す（owner専用）。どれを貼るかは会社が決めること。 */
+      if (path === '/api/training/admin/lesson-video' && req.method === 'POST') {
+        const meV = currentUser(req); if (!meV || meV.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const b = await readBody(req);
+        const out = b.remove ? lessons.removeVideo(String(b.code || ''), String(b.yt || ''))
+          : lessons.setVideo(String(b.code || ''), String(b.url || ''), b.title);
+        if (out.ok) training.audit(meV.username, null, b.remove ? 'lesson_video_remove' : 'lesson_video_add', { code: b.code });
+        return json(res, 200, out);
+      }
+      /* 章の一覧（owner・動画を貼る画面用） */
+      if (path === '/api/training/admin/lessons' && req.method === 'GET') {
+        const meV = currentUser(req); if (!meV || meV.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const rows = [1, 2, 3].flatMap(st => lessons.forStep(st).map(l => ({
+          code: l.code, step: st, title: l.title, videos: lessons.videosOf(l.code),
+        })));
+        return json(res, 200, { ok: true, rows });
+      }
+
       /* 質問を出す／自分の質問を見る */
       if (path === '/api/training/ask' && req.method === 'POST') {
         const meA = currentUser(req); if (!meA) return json(res, 401, { error: 'ログインが必要です' });
