@@ -3889,11 +3889,21 @@ async function trLesson(code) {
       <div style="font-size:15px;font-weight:700;color:var(--text)">動画で見る</div>
       ${(d.videos || []).map(v => `<div style="margin-top:10px">
         ${v.title ? `<div style="font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px">${esc(v.title)}</div>` : ''}
-        <div style="position:relative;padding-top:56.25%;border-radius:12px;overflow:hidden;background:#000">
+        ${v.noEmbed
+          /* 発信元が埋め込みを許可していない動画。そのままiframeに入れると黒画面になるので、開くリンクにする。 */
+          ? `<a href="https://www.youtube.com/watch?v=${esc(v.yt)}" target="_blank" rel="noopener noreferrer"
+               style="display:flex;align-items:center;gap:10px;padding:13px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2);text-decoration:none">
+               <span style="flex:0 0 34px;height:34px;border-radius:8px;background:#FF0000;display:flex;align-items:center;justify-content:center">
+                 <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></span>
+               <span style="flex:1;min-width:0">
+                 <span style="display:block;font-size:12.5px;font-weight:700;color:var(--text)">YouTubeで見る</span>
+                 <span style="display:block;font-size:11px;color:var(--muted);margin-top:1px">この動画は発信元の設定で、アプリの中では再生できません</span>
+               </span></a>`
+          : `<div style="position:relative;padding-top:56.25%;border-radius:12px;overflow:hidden;background:#000">
           <iframe src="https://www.youtube-nocookie.com/embed/${esc(v.yt)}?rel=0" title="${esc(v.title || '解説動画')}"
             style="position:absolute;inset:0;width:100%;height:100%;border:0" allowfullscreen
             allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture"></iframe>
-        </div></div>`).join('')}
+        </div>`}</div>`).join('')}
     </div>` : ''}
     ${secs}
     <div class="muted" style="font-size:11px;margin-top:20px;padding-top:12px;border-top:1px solid var(--border)">出典：${esc(d.source || '')}</div>

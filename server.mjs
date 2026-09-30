@@ -786,8 +786,14 @@ const server = createServer(async (req, res) => {
       if (path === '/api/training/admin/lesson-video' && req.method === 'POST') {
         const meV = currentUser(req); if (!meV || meV.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
         const b = await readBody(req);
-        const out = b.remove ? lessons.removeVideo(String(b.code || ''), String(b.yt || ''))
-          : lessons.setVideo(String(b.code || ''), String(b.url || ''), b.title);
+        let out;
+        if (b.remove) out = lessons.removeVideo(String(b.code || ''), String(b.yt || ''));
+        else {
+          // 埋め込み禁止の動画があるので、貼る前に調べる。禁止ならリンク扱いで持つ。
+          const id = lessons.videoId(String(b.url || ''));
+          const emb = id ? await lessons.checkEmbeddable(id) : { embeddable: true };
+          out = lessons.setVideo(String(b.code || ''), String(b.url || ''), b.title, { noEmbed: !emb.embeddable });
+        }
         if (out.ok) training.audit(meV.username, null, b.remove ? 'lesson_video_remove' : 'lesson_video_add', { code: b.code });
         return json(res, 200, out);
       }
