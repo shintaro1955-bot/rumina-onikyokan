@@ -375,7 +375,7 @@ function persistReport(id, result, userName) {
 // 研修の問題バンクを投入（既にある問題は触らない。全問 verifiedBy 未設定＝出題されない）
 (function seedTraining() {
   // 何も変わらなかった時も件数は出す。出ないと「投入されたのか」を外から確かめられない。
-  try { const r = training.seedQuestions(); console.log(`✓ 研修の問題：合計${r.total}問（新規${r.seeded}／更新${r.updated}）`); }
+  try { const r = training.seedQuestions(); console.log(`✓ 研修の問題：合計${r.total}問（新規${r.seeded}／更新${r.updated}／開放${r.opened || 0}）`); }
   catch (e) { console.error('研修seed失敗:', e.message); }
   try { const v = lessons.seedVideos(); if (v.added) console.log(`✓ 教材に動画を${v.added}本投入（公式チャンネルのみ）`); }
   catch (e) { console.error('研修seed失敗:', e.message); }

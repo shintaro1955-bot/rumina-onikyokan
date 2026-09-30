@@ -2122,8 +2122,8 @@ function todoBox(d) {
   const b = (d.best || {})[n] || {};
   let head, body, btns;
   if (av && !av.ok) {
-    head = '教材の準備が終わるのを待っています';
-    body = `管理者が中身を確認しています（${av.have}/${av.need}問）。準備ができたら、ここから始められます。`;
+    head = 'この段の問題がまだ足りません';
+    body = `${av.have}/${av.need}問しかありません。用意ができたら、ここから始められます。`;
     btns = `<button class="fo-btn" style="padding:9px 18px;font-size:13.5px" onclick="trAsk('教材が開かない')">問い合わせる</button>`;
   } else if (g.reviewLeft) {
     head = `今日やること：復習キューを片づける（残り${g.reviewLeft}問）`;
@@ -2176,7 +2176,7 @@ function blockedNote(n, g, av, d) {
     ${btn || ''}</div>`;
   // 管理者の準備待ち：本人は何もできない。問い合わせ先を出す。
   if (av && !av.ok) {
-    return wrap('教材を準備中です', `管理者が中身を確認しています（${av.have}/${av.need}問）。準備ができると受けられます。`,
+    return wrap('この段の問題がまだ足りません', `${av.have}/${av.need}問。用意ができると受けられます。`,
       `<button onclick="trAsk('教材が開かない')" style="margin-top:6px;padding:5px 11px;font-size:11.5px;border:1px solid #f59e0b;border-radius:9px;background:#fff;color:#b45309;font-weight:600;cursor:pointer">問い合わせる</button>`);
   }
   // 本人の段階
@@ -3035,7 +3035,7 @@ async function loadTrainingQuestions(type) {
   const items = (q.items || []).map(x => `<div class="border-t border-neutral-200 px-3 py-2.5">
     <div class="flex items-start gap-2 flex-wrap">
       <span class="text-[10.5px] text-neutral-400 font-mono">${esc(x.code)}</span>
-      ${x.isActive ? '<span class="text-[10.5px] text-emerald-600 font-semibold">確認済み</span>' : '<span class="text-[10.5px] text-amber-700 font-semibold">確認待ち</span>'}
+      ${x.isActive ? '<span class="text-[10.5px] text-emerald-600 font-semibold">確認済み</span>' : '<span class="text-[10.5px] text-amber-700 font-semibold">未確認</span>'}
       ${(x.tags || []).includes('safety_law') ? '<span class="text-[10.5px] text-rose-600 font-semibold">安全・法令</span>' : ''}
       ${x.needsOwnerCheck ? '<span class="text-[10.5px] text-orange-700 font-semibold">社内の運用の確認が要る</span>' : ''}
       ${x.verifiedBy ? `<span class="text-[10.5px] text-neutral-400">確認者 ${esc(x.verifiedBy)}</span>` : ''}
@@ -3058,18 +3058,18 @@ async function loadTrainingQuestions(type) {
 
   box.innerHTML = card(`<div class="p-4">
     <div class="font-semibold text-neutral-800">問題バンク</div>
-    <div class="text-[12px] text-neutral-500 mt-0.5">確認者名を入れるまで出題されません。中身を読んでから有効にしてください。</div>
+    <div class="text-[12px] text-neutral-500 mt-0.5">問題は最初から出題されます。ここは<b>誰が中身を見たかの記録</b>です。読んだら確認者名を残してください。抜けが追えます。</div>
     <div class="flex gap-2 flex-wrap mt-3">${tabs}</div>
     ${needBox}
     <div class="mt-3 p-3 rounded-lg border border-emerald-300 bg-emerald-50/60">
-      <div class="text-[12.5px] font-semibold text-emerald-900">まとめて確認済みにする</div>
-      <div class="text-[11.5px] text-emerald-800 mt-0.5">3つのタブを順に押すのと同じです。確認者名は監査ログに残ります。</div>
+      <div class="text-[12.5px] font-semibold text-emerald-900">読んだ記録を残す</div>
+      <div class="text-[11.5px] text-emerald-800 mt-0.5">出題はすでに開いています。ここは中身を読んだ記録で、監査ログに残ります。</div>
       <div class="flex gap-2 items-center flex-wrap mt-2">
         <input id="vaName" placeholder="確認者名（例：濱西）" class="border border-neutral-200 rounded-lg px-3 py-1.5 text-[12.5px] flex-1 min-w-[160px]">
         <button onclick="traVerifyAll2(false)" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[12.5px] font-semibold">全部を確認済みにする</button>
       </div>
       <div class="text-[11.5px] text-neutral-600 mt-2.5 pt-2.5 border-t border-emerald-200">
-        中身をまだ読んでいないが、とりあえず動かして見たい場合は下を使ってください。<br>
+        まだ読んでいないが記録だけ先に置きたい場合は下を使ってください。<br>
         確認者名に「（仮確認・中身は未読）」が付いて記録され、あとから1回で取り消せます。
       </div>
       <div class="flex gap-2 mt-2 flex-wrap">
@@ -3587,8 +3587,8 @@ async function trStudy(step) {
   let d; try { d = await API.trainingStudy(step); } catch (e) { wrap.innerHTML = `<div class="fo-card" style="padding:20px;color:#e11d48">${esc(e.message)}</div>`; return; }
   if (!d.ready) {
     wrap.innerHTML = `<div class="fo-card" style="padding:20px">
-      <div style="font-weight:700;color:#b45309">教材を準備中です</div>
-      <div style="font-size:13px;margin-top:6px;line-height:1.8">管理者が中身を確認しています（${d.have}/${d.need}問）。確認が済むと、ここで読めるようになります。<br>急ぎの場合は問い合わせてください。</div>
+      <div style="font-weight:700;color:#b45309">この段の教材はまだありません</div>
+      <div style="font-size:13px;margin-top:6px;line-height:1.8">この段に使える問題が ${d.have}/${d.need}問 しかありません。<br>用意ができると、ここで読めるようになります。</div>
       <div style="margin-top:12px;display:flex;gap:8px">
         <button class="fo-btn" style="padding:8px 16px;font-size:13px" onclick="trAsk('教材が開かない')">問い合わせる</button>
         <button onclick="loadTraining()" style="padding:8px 16px;font-size:13px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);cursor:pointer">研修トップへ</button>
@@ -3932,7 +3932,7 @@ async function traVerifyAll2(provisional) {
     msg.className = 'text-[12px] mt-2 text-emerald-700';
     msg.textContent = provisional
       ? `${r.count}問を仮確認で開けました（確認者：${r.verifiedBy}）。中身を読んだら、取り消してから本確認してください。`
-      : `${r.count}問を確認済みにしました。新人が教材と受験を始められます。`;
+      : `${r.count}問を確認済みとして記録しました。`;
     loadTrainingQuestions(window.__traType || 'must30');
     loadTrainingAdmin();
   } catch (e) { msg.className = 'text-[12px] mt-2 text-rose-600'; msg.textContent = e.message; }
