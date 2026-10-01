@@ -164,6 +164,8 @@ function lineCallback(req) {
   const host = req.headers['x-forwarded-host'] || req.headers.host;
   return `${proto}://${host}/api/line/callback`;
 }
+// 取引終了の会社の人か（判定の正本は lib/exclude.mjs・lib/cyzen.mjs）。配信・連携の宛先から外すのに使う。
+const isGoneUser = (u) => !!u && cyzen.isExcludedPerson({ code: u.repId, name: u.name, corp: u.corp });
 // repId または氏名から該当ユーザー(rep)を探す。サーバー間の自動取り込みで本人のマイページに紐付けるため。
 function findRepUser(repId, name) {
   const users = getDb().users || {};
@@ -1434,7 +1436,7 @@ const server = createServer(async (req, res) => {
         const b = await readBody(req);
         if (!b.title && !b.body) return json(res, 400, { error: '内容が必要です' });
         const post = fieldos.addPost({ ...b, author: me.name, authorUser: me.username });
-        if (post.important) fieldos.pushNotifAll(Object.keys(getDb().users), { type: 'post', title: '重要連絡', body: post.title || '本部からの連絡', link: 'today' }, me.username);
+        if (post.important) fieldos.pushNotifAll(Object.keys(getDb().users).filter(k => !isGoneUser(getDb().users[k])), { type: 'post', title: '重要連絡', body: post.title || '本部からの連絡', link: 'today' }, me.username);
         return json(res, 200, { post });
       }
       // コメント
@@ -1657,7 +1659,7 @@ const server = createServer(async (req, res) => {
         if (!COACH_WEBHOOK_SECRET || secret !== COACH_WEBHOOK_SECRET) return json(res, 401, { error: 'Unauthorized' });
         const db = getDb();
         const map = Object.values(db.users)
-          .filter(u => u.repId && u.lineId)
+          .filter(u => u.repId && u.lineId && !isGoneUser(u))   // 取引終了の会社の人はCoachの送信先に渡さない
           .map(u => ({ repId: u.repId, name: u.name, lineId: u.lineId }));
         return json(res, 200, { map });
       }
@@ -1744,6 +1746,7 @@ const server = createServer(async (req, res) => {
         // lineId(鬼教官に直接ログイン済み) → repId → name(ポータルのLINEログインで本人選択済みの氏名／botが橋渡し)の順で照合
         const user = Object.values(db.users).find(u => (lineId && u.lineId === lineId) || (repId && u.repId === repId) || (name && u.name === name));
         if (!user) return json(res, 404, { found: false, error: 'このLINE/営業コード/氏名に紐づくユーザーが未登録です' });
+        if (isGoneUser(user)) return json(res, 404, { found: false, excluded: true, error: '取引終了の会社のため対象外です' });
         return json(res, 200, coachContext(user, db.submissions[user.username] || null));
       }
 
@@ -1753,6 +1756,7 @@ const server = createServer(async (req, res) => {
         if (!BOT_API_SECRET || (url.searchParams.get('secret') || '') !== BOT_API_SECRET) return json(res, 401, { error: 'Unauthorized' });
         const name = (url.searchParams.get('name') || '').trim();
         if (!name) return json(res, 400, { error: 'name が必要です' });
+        if (cyzen.isExcludedPerson({ name })) return json(res, 200, { found: false, excluded: true });   // 取引終了の会社の人には送らない
         const norm = s => String(s || '').replace(/\s+/g, '').normalize('NFKC');
         const db = getDb();
         const user = Object.values(db.users).find(u => u.lineId && norm(u.name) === norm(name));

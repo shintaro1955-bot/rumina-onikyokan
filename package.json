@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "dev": "node server.mjs"
+    "dev": "node server.mjs",
+    "test": "node tests/cyzen-window.test.mjs && node tests/exclude-companies.test.mjs"
   },
   "engines": {
     "node": ">=20"
