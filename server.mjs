@@ -36,6 +36,7 @@ import { buildup, teamStats } from './lib/buildup.mjs';
 import * as weekly from './lib/weekly.mjs';
 import * as training from './lib/training.mjs';
 import * as lessons from './lib/lessons.mjs';
+import * as oral from './lib/oral.mjs';
 import * as dispatch from './lib/dispatch.mjs';
 import * as fieldcheck from './lib/fieldcheck.mjs';
 import * as sendlog from './lib/sendlog.mjs';
@@ -381,6 +382,9 @@ function persistReport(id, result, userName) {
   catch (e) { console.error('研修seed失敗:', e.message); }
   try { const v = lessons.seedVideos(); if (v.added) console.log(`✓ 教材に動画を${v.added}本投入（公式チャンネルのみ）`); }
   catch (e) { console.error('研修seed失敗:', e.message); }
+  // 口頭試問の採点が本当につながるかを1回だけ確かめる（モデル名の間違いをここで出す）
+  oral.selfTest().then(r => console.log(r.ok ? `✓ 口頭試問の採点につながりました（${r.model}）` : `⚠ 口頭試問の採点が使えません：${r.why}`))
+    .catch(e => console.warn('[oral] 自己確認で例外:', e.message));
 })();
 
 // 起動時：ownerが居なければ管理者アカウントを1つseed（＝モデル営業マン。既定は owner）
