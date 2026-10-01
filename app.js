@@ -2134,6 +2134,12 @@ function todoBox(d) {
     head = 'この段の問題がまだ足りません';
     body = `${av.have}/${av.need}問しかありません。用意ができたら、ここから始められます。`;
     btns = `<button class="fo-btn" style="padding:9px 18px;font-size:13.5px" onclick="trAsk('教材が開かない')">問い合わせる</button>`;
+  } else if (n === 4) {
+    // 口頭試問は教材が無い。STEP1〜3の教材を読み直して臨む。
+    head = b.attempts ? '今日やること：STEP4 に合格する' : '今日やること：STEP4 口頭試問を受ける';
+    body = `${esc(M.passRule || '')}　選択肢はありません。お客様が目の前にいるつもりで、声に出して答えます。`;
+    btns = `<button class="fo-btn" style="padding:9px 18px;font-size:13.5px" onclick="oralStart()">${b.attempts ? 'もう一度受ける' : '口頭試問を受ける'}</button>
+            <button onclick="trStudy(3)" style="padding:9px 18px;font-size:13.5px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);cursor:pointer">教材を読み返す</button>`;
   } else if (g.reviewLeft) {
     head = `今日やること：復習キューを片づける（残り${g.reviewLeft}問）`;
     body = '2回連続で正解すると卒業します。全部終わるまでSTEP2は受け直せません。';
@@ -2805,7 +2811,10 @@ async function loadTraining() {
       </div>
       <div class="tr-step-act" style="flex:none">
       ${done ? '<span class="muted" style="font-size:11px">合格</span>'
-        : n === 4 ? `<span class="muted" style="font-size:11px">${oralPending ? '面談で判断' : now ? '準備中' : '—'}</span>`
+        : n === 4 ? (oralPending ? '<span class="muted" style="font-size:11px">面談で判断</span>'
+            : now && g.ok ? `<button class="fo-btn" style="padding:9px 16px;font-size:13px" onclick="oralStart()">${b.attempts ? 'もう一度受ける' : '口頭試問を受ける'}</button>`
+            : now ? blockedNote(n, g, av, d)
+            : '<span class="muted" style="font-size:11px">—</span>')
         : now && g.ok ? `<div style="display:flex;gap:8px;flex-wrap:wrap">
             <button onclick="trStudy(${n})" style="padding:9px 16px;font-size:13px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-weight:600;cursor:pointer">教材を読む</button>
             <button class="fo-btn" style="padding:9px 16px;font-size:13px" onclick="trStart(${n})">${b.attempts ? 'もう一度受ける' : '受験する'}</button></div>`
@@ -2980,6 +2989,191 @@ async function trReviewAnswer(qid, choiceText) {
   </div>`;
 }
 window.trStart = trStart; window.trAnswer = trAnswer; window.trReview = trReview; window.trReviewAnswer = trReviewAnswer;
+
+/* ---------- STEP4：口頭試問 ----------
+   選択肢を出さない。場面を読んで、実際に言う言葉で答える。
+   話すのが本番なので録音を既定にし、マイクが使えない端末のために打ち込みも残す。 */
+const OR = { exam: null, idx: 0, answers: [], rec: null, chunks: [], stream: null, busy: false, t0: 0, timer: null };
+
+function orEsc(t) { return String(t == null ? '' : t).replace(/</g, '&lt;'); }
+
+async function oralStart() {
+  const wrap = document.getElementById('trWrap'); if (!wrap) return;
+  wrap.innerHTML = `<div class="fo-card muted" style="padding:20px">用意しています…</div>`;
+  let r; try { r = await API.oralStart(); } catch (e) { wrap.innerHTML = `<div class="fo-card" style="padding:20px;color:#e11d48">${orEsc(e.message)}</div>`; return; }
+  if (!r.ok) { wrap.innerHTML = `<div class="fo-card" style="padding:20px">${orEsc(r.why || '始められません')}
+    <div style="margin-top:12px"><button class="fo-btn ghost" onclick="nav('training')">研修トップへ</button></div></div>`; return; }
+  OR.exam = r; OR.idx = 0; OR.answers = []; OR.busy = false;
+  orRender();
+}
+
+function orRender() {
+  const wrap = document.getElementById('trWrap'); if (!wrap || !OR.exam) return;
+  const q = OR.exam.questions[OR.idx];
+  const cur = OR.answers[OR.idx] || { answer: '', via: 'text' };
+  const n = String(cur.answer || '').replace(/\s/g, '').length;
+  wrap.innerHTML = `
+    <div class="fo-card" style="padding:20px">
+      <div class="muted" style="font-size:12px;font-weight:700">${OR.idx + 1} / ${OR.exam.total}　${orEsc(q.phaseLabel)}</div>
+      <div class="muted" style="font-size:11px;margin-top:2px">${orEsc(q.law)}</div>
+      <div class="fo-bar" style="height:5px;border-radius:3px;background:var(--surface-2);margin-top:8px;overflow:hidden">
+        <i style="background:var(--primary);width:${Math.round(OR.idx / OR.exam.total * 100)}%"></i></div>
+
+      <div style="margin-top:16px;padding:14px 15px;border-radius:12px;background:var(--surface-2);font-size:14px;line-height:1.8;color:var(--text)">${orEsc(q.scene)}</div>
+      <div style="margin-top:12px;font-size:15.5px;font-weight:700;line-height:1.7;color:var(--text)">${orEsc(q.ask)}</div>
+
+      <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
+        <button id="orMic" onclick="orMic()" style="flex:none;width:62px;height:62px;border-radius:50%;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;
+          background:${OR.rec ? '#e11d48' : 'var(--primary)'};box-shadow:0 2px 10px rgba(0,0,0,.14)" title="押して話す">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff">${OR.rec
+            ? '<rect x="6" y="6" width="12" height="12" rx="2"/>'
+            : '<path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3z"/><path d="M18 11a6 6 0 0 1-12 0H4a8 8 0 0 0 7 7.9V22h2v-3.1A8 8 0 0 0 20 11h-2z"/>'}</svg>
+        </button>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13.5px;font-weight:700;color:var(--text)">${OR.rec ? '録音中… 話し終えたら押して止めます' : OR.busy ? '聞き取っています…' : '押して話す'}</div>
+          <div class="muted" style="font-size:11.5px;margin-top:2px">${OR.rec ? `<span id="orTime">00:00</span>` : 'お客様が目の前にいるつもりで、声に出してください'}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <div class="muted" style="font-size:11.5px;margin-bottom:5px">答え（話した内容がここに入ります。直しても構いません）</div>
+        <textarea id="orText" oninput="orInput(this.value)" rows="4" placeholder="マイクが使えないときは、ここに打ち込んでも答えられます"
+          style="width:100%;padding:12px 13px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-size:14px;line-height:1.8;font-family:inherit;resize:vertical">${orEsc(cur.answer)}</textarea>
+        <div class="muted" style="font-size:11px;margin-top:4px">${n}文字${n < q.minChars ? `（あと${q.minChars - n}文字くらいは必要です）` : ''}</div>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+        ${OR.idx > 0 ? `<button onclick="orPrev()" style="padding:10px 18px;font-size:13.5px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);cursor:pointer">前へ</button>` : ''}
+        <button class="fo-btn" onclick="orNext()" ${n < q.minChars ? 'disabled style="opacity:.45;padding:10px 20px;font-size:13.5px"' : 'style="padding:10px 20px;font-size:13.5px"'}>
+          ${OR.idx + 1 >= OR.exam.total ? '採点する' : '次へ'}</button>
+      </div>
+    </div>`;
+}
+
+function orInput(v) {
+  OR.answers[OR.idx] = { code: OR.exam.questions[OR.idx].code, answer: v, via: (OR.answers[OR.idx] || {}).via || 'text' };
+  const q = OR.exam.questions[OR.idx];
+  const n = String(v || '').replace(/\s/g, '').length;
+  // 文字数の表示とボタンの出し入れだけを更新する（毎回描き直すと入力中にカーソルが飛ぶ）
+  const w = document.getElementById('trWrap'); if (!w) return;
+  const cnt = w.querySelector('#orText') && w.querySelector('#orText').nextElementSibling;
+  if (cnt) cnt.textContent = `${n}文字${n < q.minChars ? `（あと${q.minChars - n}文字くらいは必要です）` : ''}`;
+  const btn = [...w.querySelectorAll('button')].find(b => /次へ|採点する/.test(b.textContent));
+  if (btn) { btn.disabled = n < q.minChars; btn.style.opacity = n < q.minChars ? '.45' : '1'; }
+}
+
+function orPrev() { if (OR.idx > 0) { OR.idx--; orRender(); } }
+
+async function orNext() {
+  const q = OR.exam.questions[OR.idx];
+  const cur = OR.answers[OR.idx] || { answer: '' };
+  if (String(cur.answer || '').replace(/\s/g, '').length < q.minChars) return;
+  if (OR.idx + 1 < OR.exam.total) { OR.idx++; orRender(); return; }
+  await orGrade();
+}
+
+/* ---- 押して話す ---- */
+async function orMic() {
+  if (OR.busy) return;
+  if (OR.rec) { try { OR.rec.stop(); } catch (e) {} return; }
+  if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)) {
+    alert('この端末では録音が使えません。下の欄に打ち込んで答えてください。'); return;
+  }
+  try { OR.stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { alert('マイクの使用が許可されませんでした。下の欄に打ち込んで答えてください。'); return; }
+  const cands = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+  const mime = cands.find(m => window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || '';
+  OR.chunks = [];
+  try { OR.rec = new MediaRecorder(OR.stream, mime ? { mimeType: mime } : undefined); }
+  catch (e) { OR.rec = new MediaRecorder(OR.stream); }
+  OR.rec.ondataavailable = e => { if (e.data && e.data.size) OR.chunks.push(e.data); };
+  OR.rec.onstop = async () => {
+    const type = (OR.rec && OR.rec.mimeType) || mime || 'audio/webm';
+    if (OR.stream) { OR.stream.getTracks().forEach(t => t.stop()); OR.stream = null; }
+    if (OR.timer) { clearInterval(OR.timer); OR.timer = null; }
+    OR.rec = null; OR.busy = true; orRender();
+    try {
+      const blob = new Blob(OR.chunks, { type });
+      const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(blob); });
+      const ext = type.includes('mp4') ? 'mp4' : type.includes('ogg') ? 'ogg' : 'webm';
+      const res = await fetch('/api/roleplay/stt', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ audio: b64, ext }) });
+      const j = await res.json();
+      const text = ((j && j.ok && j.text) || '').trim();
+      if (text) {
+        const prev = (OR.answers[OR.idx] || {}).answer || '';
+        OR.answers[OR.idx] = { code: OR.exam.questions[OR.idx].code, answer: (prev ? prev + ' ' : '') + text, via: 'voice' };
+      }
+      OR.busy = false; orRender();
+      if (!text) alert('うまく聞き取れませんでした。もう一度話すか、打ち込んでください。');
+    } catch (e) { OR.busy = false; orRender(); alert('聞き取りに失敗しました。打ち込みで答えてください。'); }
+  };
+  OR.rec.start(); OR.t0 = performance.now(); orRender();
+  OR.timer = setInterval(() => {
+    const sec = Math.floor((performance.now() - OR.t0) / 1000);
+    const t = document.getElementById('orTime');
+    if (t) t.textContent = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+  }, 250);
+}
+
+/* ---- 採点結果 ---- */
+async function orGrade() {
+  const wrap = document.getElementById('trWrap'); if (!wrap) return;
+  wrap.innerHTML = `<div class="fo-card muted" style="padding:20px">採点しています… 少し時間がかかります</div>`;
+  let r; try { r = await API.oralGrade(OR.exam.attemptId, OR.answers); }
+  catch (e) { wrap.innerHTML = `<div class="fo-card" style="padding:20px;color:#e11d48">${orEsc(e.message)}</div>`; return; }
+
+  if (!r.ok) { wrap.innerHTML = `<div class="fo-card" style="padding:20px">${orEsc(r.why || '採点できませんでした')}
+    <div style="margin-top:12px"><button class="fo-btn ghost" onclick="nav('training')">研修トップへ</button></div></div>`; return; }
+
+  if (!r.graded) {
+    // 機械の都合で落とさない。本人に理由をそのまま出す。
+    wrap.innerHTML = `<div class="fo-card" style="padding:20px">
+      <div style="font-size:16px;font-weight:700;color:var(--text)">採点できませんでした</div>
+      <div style="font-size:13.5px;line-height:1.8;color:var(--muted);margin-top:8px">${orEsc(r.why)}</div>
+      <div class="muted" style="font-size:12px;margin-top:10px">この受験は回数に数えません。もう一度受けられます。</div>
+      <div style="margin-top:14px;display:flex;gap:8px"><button class="fo-btn" onclick="oralStart()">もう一度受ける</button>
+        <button class="fo-btn ghost" onclick="nav('training')">研修トップへ</button></div></div>`;
+    return;
+  }
+
+  const items = (r.items || []).map(i => {
+    const bad = i.risks.filter(x => x.level === 'high');
+    const mid = i.risks.filter(x => x.level === 'mid');
+    const col = i.score === 2 ? 'var(--primary)' : i.score === 1 ? '#b45309' : '#e11d48';
+    return `<div style="padding:15px 0;border-top:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+        <div style="font-size:13.5px;font-weight:700;color:var(--text)">${orEsc(i.phaseLabel)}</div>
+        <div style="font-size:13px;font-weight:700;color:${col}">${i.score} / 2</div>
+      </div>
+      <div class="muted" style="font-size:11.5px;margin-top:3px">${orEsc(i.scene)}</div>
+      <div style="margin-top:8px;padding:11px 13px;border-radius:10px;background:var(--surface-2);font-size:13px;line-height:1.8;color:var(--text)">${orEsc(i.answer) || '（無言）'}</div>
+      ${bad.length ? `<div style="margin-top:8px;padding:11px 13px;border-radius:10px;border:1px solid #fecdd3;background:#fff1f2">
+        <div style="font-size:12.5px;font-weight:700;color:#be123c">言ってはいけない言い回しが出ています</div>
+        ${bad.map(x => `<div style="font-size:12.5px;line-height:1.75;color:#9f1239;margin-top:4px">${orEsc(x.label)}　<span style="opacity:.8">${orEsc(x.law || '')}</span></div>`).join('')}</div>` : ''}
+      ${mid.length ? `<div class="muted" style="font-size:11.5px;margin-top:6px">言い換えたほうがよい表現：${mid.map(x => orEsc(x.label)).join('・')}</div>` : ''}
+      ${i.tooShort ? `<div style="font-size:12.5px;color:#b45309;margin-top:6px">答えが短すぎます。言ったことになりません。</div>` : ''}
+      ${i.missing && i.missing.length ? `<div style="font-size:12.5px;color:var(--text);margin-top:6px"><b>言えていないこと</b>　${i.missing.map(orEsc).join('／')}</div>` : ''}
+      ${i.comment ? `<div class="muted" style="font-size:12.5px;line-height:1.8;margin-top:5px">${orEsc(i.comment)}</div>` : ''}
+      ${i.score < 2 && i.modelAnswer ? `<details style="margin-top:8px"><summary style="font-size:12.5px;color:var(--primary);cursor:pointer;font-weight:600">言い方の例を見る</summary>
+        <div style="font-size:13px;line-height:1.85;color:var(--text);margin-top:6px;padding:11px 13px;border-radius:10px;background:var(--surface-2)">${orEsc(i.modelAnswer)}</div></details>` : ''}
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML = `<div class="fo-card" style="padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="font-size:19px;font-weight:700;color:${r.passed ? 'var(--primary)' : '#e11d48'}">${r.passed ? '合格' : '不合格'}</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text)">${r.total} / ${r.max}　<span class="muted" style="font-size:12px;font-weight:400">合格は${r.pass}点以上</span></div>
+    </div>
+    ${r.why ? `<div style="font-size:13.5px;line-height:1.8;color:var(--text);margin-top:8px">${orEsc(r.why)}</div>` : ''}
+    ${r.passed ? `<div style="font-size:13px;line-height:1.8;color:var(--muted);margin-top:8px">STEP1〜4をすべて通りました。承認されると現場に出られます。</div>`
+      : `<div class="muted" style="font-size:12.5px;margin-top:8px">再受験は24時間あけてからです。下の内容を読み直してから受けてください。</div>`}
+    <div style="margin-top:14px">${items}</div>
+    <div style="margin-top:16px;display:flex;gap:8px"><button class="fo-btn ghost" onclick="nav('training')">研修トップへ</button></div>
+  </div>`;
+}
+
+window.oralStart = oralStart; window.orMic = orMic; window.orNext = orNext; window.orPrev = orPrev; window.orInput = orInput;
+
 
 
 /* ---------- 研修管理（owner専用） ---------- */

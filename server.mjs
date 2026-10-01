@@ -487,7 +487,7 @@ const server = createServer(async (req, res) => {
         }
       }
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, cyzenUserKeys: globalThis.__cyzenUserKeys || null, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET, trainingQuestions: (() => { try { return training.questionStats().total; } catch (e) { return null; } })(),
+      if (path === '/api/health') return json(res, 200, { ok: true, cyzenUserKeys: globalThis.__cyzenUserKeys || null, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET, trainingQuestions: (() => { try { return training.questionStats().total; } catch (e) { return null; } })(), oral: (() => { try { return training.oralStatus(); } catch (e) { return null; } })(),
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
@@ -839,6 +839,18 @@ const server = createServer(async (req, res) => {
         const b = await readJson(req) || {};
         return json(res, 200, training.grade(meT.username, String(b.attemptId || ''), Array.isArray(b.answers) ? b.answers : []));
       }
+      /* STEP4：口頭試問を始める。選択肢は返らない（場面と問いだけ）。 */
+      if (path === '/api/training/oral/start' && req.method === 'POST') {
+        const meO = currentUser(req); if (!meO) return json(res, 401, { error: 'ログインが必要です' });
+        return json(res, 200, training.startOral(meO.username));
+      }
+      /* STEP4：口頭試問の採点。辞書（決定論）＋AI。採点できなければ落とさず面談へ回す。 */
+      if (path === '/api/training/oral/grade' && req.method === 'POST') {
+        const meO = currentUser(req); if (!meO) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readJson(req) || {};
+        return json(res, 200, await training.gradeOral(meO.username, String(b.attemptId || ''), Array.isArray(b.answers) ? b.answers : []));
+      }
+
       /* 中断（タブを閉じた等）。回数にカウントする。 */
       if (path === '/api/training/abort' && req.method === 'POST') {
         const meT = currentUser(req); if (!meT) return json(res, 401, { error: 'ログインが必要です' });
