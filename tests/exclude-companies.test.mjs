@@ -1,4 +1,4 @@
-// 取引終了の会社（既定：アフターホーム／KARMA）の人が、名簿・ランキング・
+// 取引終了の会社（既定：アフターホーム／KARMA／G.WORTH）の人が、名簿・ランキング・
 // アポコーチ・研修・寺子屋・LINE宛先・歩行集計のどこにも出てこないことを確かめる。
 // 同梱スナップショットを読む（アフターホームは5名）。作業用の保存先は一時フォルダにする。
 import { mkdtempSync, writeFileSync } from 'node:fs';
@@ -18,9 +18,9 @@ const check = (l, c, x) => { ok = ok && c; console.log((c ? 'PASS' : 'FAIL') + '
 const ex = await import('../lib/exclude.mjs');
 
 /* ---- 1) 会社名の突き合わせ（表記ゆれ） ---- */
-for (const v of ['アフターホーム株式会社', 'ｱﾌﾀｰﾎｰﾑ', 'アポインター/パートナー/アフターホーム株式会社', '合同会社KARMA'])
+for (const v of ['アフターホーム株式会社', 'ｱﾌﾀｰﾎｰﾑ', 'アポインター/パートナー/アフターホーム株式会社', '合同会社KARMA', 'Ｇ．ＷＯＲＴＨ株式会社', 'g worth'])
   check(`除外になる：${v}`, ex.isExcludedCompany(v));
-for (const v of ['G.WORTH株式会社', 'HY株式会社', '株式会社Fit Founder', '株式会社テクノホーム', '', null])
+for (const v of ['HY株式会社', '株式会社Fit Founder', '株式会社テクノホーム', '', null])
   check(`除外にならない：${v}`, !ex.isExcludedCompany(v));
 
 /* ---- 2) 環境変数 EXCLUDE_COMPANIES での上書き ---- */
@@ -33,7 +33,7 @@ check('G.WORTH も足せる（表記ゆれも吸収）', ex.isExcludedCompany('�
 process.env.EXCLUDE_COMPANIES = '';
 check('空文字なら誰も外さない', ex.excludedCompanies().length === 0);
 delete process.env.EXCLUDE_COMPANIES;
-check('未設定なら既定の2社', ex.excludedCompanies().join() === ex.EXCLUDE_DEFAULT.join());
+check('未設定なら既定の3社', ex.excludedCompanies().join() === ex.EXCLUDE_DEFAULT.join());
 
 /* ---- 3) cyzen の名簿・日次から外れている ---- */
 const cyzen = await import('../lib/cyzen.mjs');
