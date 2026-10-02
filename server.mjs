@@ -48,6 +48,7 @@ import { buildApoMessages } from './lib/coachapo.mjs';
 import * as terakoya from './lib/terakoya.mjs';
 import { DATA_DIR as DATA_DIR_PATH } from './lib/store.mjs';
 import * as walkIngest from './lib/walk-ingest.mjs';
+import * as store from './lib/store.mjs';
 
 /* 文字起こしエンジン：DEEPGRAM_API_KEY があれば話者分離つきのDeepgramを既定に。
    TRANSCRIBE_PROVIDER=whisper|deepgram で明示指定もできる。 */
@@ -382,6 +383,18 @@ function persistReport(id, result, userName) {
   catch (e) { console.error('研修seed失敗:', e.message); }
   try { const v = lessons.seedVideos(); if (v.added) console.log(`✓ 教材に動画を${v.added}本投入（公式チャンネルのみ）`); }
   catch (e) { console.error('研修seed失敗:', e.message); }
+  // 社内の運用に依る記載18問は、2026-10-02 オーナー指示で現状のまま了承。一度だけ反映する。
+  try {
+    const db = store.getDb();
+    db.training ||= {};
+    if (!db.training.ownerAcceptedAt) {
+      const r = training.acceptOwnerChecks('system', 'オーナー', '2026-10-02 指示：現状の記載のままで了承');
+      db.training.ownerAcceptedAt = new Date().toISOString();
+      store.save();
+      console.log(`✓ 社内の運用に依る記載 ${r.count}問を「現状のまま了承」に（確認事項は履歴に残す）`);
+    }
+  } catch (e) { console.error('了承の反映に失敗:', e.message); }
+
   // 口頭試問の採点が本当につながるかを1回だけ確かめる（モデル名の間違いをここで出す）
   oral.selfTest().then(r => console.log(r.ok ? `✓ 口頭試問の採点につながりました（${r.model}）` : `⚠ 口頭試問の採点が使えません：${r.why}`))
     .catch(e => console.warn('[oral] 自己確認で例外:', e.message));
@@ -843,6 +856,18 @@ const server = createServer(async (req, res) => {
         const b = await readJson(req) || {};
         return json(res, 200, training.grade(meT.username, String(b.attemptId || ''), Array.isArray(b.answers) ? b.answers : []));
       }
+      /* 社内の運用に依る記載を「現状のまま了承」にする（owner専用・あとから増えたとき用） */
+      if (path === '/api/training/admin/accept-checks' && req.method === 'POST') {
+        const meA = currentUser(req); if (!meA || meA.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const b = await readJson(req) || {};
+        return json(res, 200, training.acceptOwnerChecks(meA.username, String(b.by || meA.name || 'オーナー'), String(b.note || '')));
+      }
+      /* 了承した記載の一覧（owner専用） */
+      if (path === '/api/training/admin/accepted' && req.method === 'GET') {
+        const meA = currentUser(req); if (!meA || meA.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        return json(res, 200, { items: training.ownerAcceptedList() });
+      }
+
       /* STEP4：口頭試問を始める。選択肢は返らない（場面と問いだけ）。 */
       if (path === '/api/training/oral/start' && req.method === 'POST') {
         const meO = currentUser(req); if (!meO) return json(res, 401, { error: 'ログインが必要です' });

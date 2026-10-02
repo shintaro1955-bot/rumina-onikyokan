@@ -3258,6 +3258,7 @@ async function loadTrainingQuestions(type) {
       ${x.isActive ? '<span class="text-[10.5px] text-emerald-600 font-semibold">確認済み</span>' : '<span class="text-[10.5px] text-amber-700 font-semibold">未確認</span>'}
       ${(x.tags || []).includes('safety_law') ? '<span class="text-[10.5px] text-rose-600 font-semibold">安全・法令</span>' : ''}
       ${x.needsOwnerCheck ? '<span class="text-[10.5px] text-orange-700 font-semibold">社内の運用の確認が要る</span>' : ''}
+      ${x.ownerAccepted ? '<span class="text-[10.5px] text-neutral-500 font-semibold">現状のまま了承</span>' : ''}
       ${x.verifiedBy ? `<span class="text-[10.5px] text-neutral-400">確認者 ${esc(x.verifiedBy)}</span>` : ''}
     </div>
     <div class="text-[13px] text-neutral-800 mt-1">${esc(x.question)}</div>
@@ -3265,6 +3266,7 @@ async function loadTrainingQuestions(type) {
     <div class="text-[12px] text-neutral-500 mt-0.5">${esc(x.explanation)}</div>
     ${x.sourceNote ? `<div class="text-[11px] text-neutral-400 mt-0.5">根拠：${esc(x.sourceNote)}</div>` : ''}
     ${x.needsOwnerCheck ? `<div class="text-[11.5px] text-orange-800 mt-1.5 px-2 py-1.5 rounded bg-orange-50 border border-orange-200">確認してください：${esc(x.needsOwnerCheck)}</div>` : ''}
+    ${x.ownerAccepted ? `<div class="text-[11.5px] text-neutral-600 mt-1.5 px-2 py-1.5 rounded bg-neutral-50 border border-neutral-200">現状の記載のまま了承（${esc((x.ownerAccepted.at || '').slice(0, 10))}）　もとの確認事項：${esc(x.ownerAccepted.was)}</div>` : ''}
   </div>`).join('');
 
   // 社内の運用に依るものは、法令や製品知識と違って外から確かめようがない。
