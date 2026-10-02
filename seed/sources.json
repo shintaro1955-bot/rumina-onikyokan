@@ -1,0 +1,146 @@
+[
+  {
+    "id": "ff-compliance",
+    "name": "FITFOUNDER コンプライアンス研修",
+    "kind": "社内資料",
+    "updated": "2024-10",
+    "updatedNote": "資料名に 2024.10 と記載",
+    "where": "07_研修_教育/FITFOUNDERコンプライアンス研修.pptx",
+    "note": ""
+  },
+  {
+    "id": "ff-interphone",
+    "name": "FF インターフォン研修",
+    "kind": "社内資料",
+    "updated": "2025-02",
+    "updatedNote": "資料名に 2025年2月版 と記載",
+    "where": "07_研修_教育/FF_インターフォン研修_2025年2月版.pptx",
+    "note": "台本の一部に、同じ社内のコンプライアンス研修が禁止例として挙げている言い回しが残っている（2026-10-02時点で未修正）。この資料の台本をそのまま根拠にしない。"
+  },
+  {
+    "id": "ff-kujo",
+    "name": "FITFOUNDER 苦情応対マニュアル",
+    "kind": "社内資料",
+    "updated": "2024-10",
+    "updatedNote": "資料名に 2024.10 と記載",
+    "where": "07_研修_教育/",
+    "note": ""
+  },
+  {
+    "id": "ff-hokumen",
+    "name": "FF 北面パネル研修資料",
+    "kind": "社内資料",
+    "updated": null,
+    "updatedNote": "資料に更新日の記載なし",
+    "where": "07_研修_教育/",
+    "note": ""
+  },
+  {
+    "id": "ff-sangyo",
+    "name": "自社 産業用提案書",
+    "kind": "社内資料",
+    "updated": null,
+    "updatedNote": "資料に更新日の記載なし",
+    "where": "08_営業_提案/",
+    "note": "経年劣化 約0.4%/年 の前提はここから。"
+  },
+  {
+    "id": "ff-mitsumori",
+    "name": "自社 見積・単価表の考え方",
+    "kind": "社内整理",
+    "updated": null,
+    "updatedNote": "更新日の記載なし",
+    "where": "—",
+    "note": "kWあたり単価で管理するという考え方のみ。仕切り表の数値は社外秘で、教材には入れていない。"
+  },
+  {
+    "id": "denki-ryokin",
+    "name": "電気料金の構成（明細の読み方）",
+    "kind": "社内整理",
+    "updated": null,
+    "updatedNote": "更新日の記載なし",
+    "where": "—",
+    "note": "当年度の単価そのものは持たない（毎年変わるため）。"
+  },
+  {
+    "id": "cat-choshu",
+    "name": "長州産業 Smart PV Multi カタログ",
+    "kind": "メーカー資料",
+    "updated": null,
+    "updatedNote": "カタログ記号 SB103 2604M（更新日としての記載ではない）",
+    "where": "~/Downloads/長州産業（カタログ）.pdf",
+    "note": "「業界唯一」類は自社調べ・時点つきの注記がある。注記ごと伝える。"
+  },
+  {
+    "id": "cat-sharp",
+    "name": "SHARP 太陽光発電システム カタログ",
+    "kind": "メーカー資料",
+    "updated": null,
+    "updatedNote": "カタログに更新日の記載なし",
+    "where": "~/Downloads/SHARP(カタログ).pdf",
+    "note": ""
+  },
+  {
+    "id": "cat-dmm",
+    "name": "DMM 太陽光発電システム カタログ",
+    "kind": "メーカー資料",
+    "updated": "2025-11-21",
+    "updatedNote": "ファイル名 251121_2_solarsystem_catalog から",
+    "where": "~/Downloads/DMM（カタログ）.pdf",
+    "note": ""
+  },
+  {
+    "id": "cic-site",
+    "name": "長州産業 公式サイト（蓄電システム）",
+    "kind": "メーカー公式サイト",
+    "updated": "2026-09-30",
+    "updatedNote": "参照した日",
+    "where": "cic-solar.jp/products/power-storage-system/",
+    "note": "蓄電容量のラインナップは改定される。案件で使う前に見直すこと。"
+  },
+  {
+    "id": "dmm-site",
+    "name": "DMM.make smart 公式サイト",
+    "kind": "メーカー公式サイト",
+    "updated": "2026-09-30",
+    "updatedNote": "参照した日",
+    "where": "energy.dmm.com/",
+    "note": ""
+  },
+  {
+    "id": "law-tokushoho",
+    "name": "特定商取引に関する法律（条文）",
+    "kind": "法令",
+    "updated": null,
+    "updatedNote": "改正があれば変わる。条文を直接確認すること",
+    "where": "e-Gov 法令検索",
+    "note": ""
+  },
+  {
+    "id": "law-shohisha",
+    "name": "消費者契約法（条文）",
+    "kind": "法令",
+    "updated": null,
+    "updatedNote": "改正があれば変わる",
+    "where": "e-Gov 法令検索",
+    "note": ""
+  },
+  {
+    "id": "law-keihyo",
+    "name": "不当景品類及び不当表示防止法（景品表示法）",
+    "kind": "法令",
+    "updated": null,
+    "updatedNote": "改正があれば変わる",
+    "where": "e-Gov 法令検索",
+    "note": ""
+  },
+  {
+    "id": "meti-fit",
+    "name": "資源エネルギー庁 FIT／FIP・買取価格の公表資料",
+    "kind": "公的資料",
+    "updated": null,
+    "updatedNote": "買取単価は年度ごとに改定。当年度の数値は必ず公表値を確認",
+    "where": "enecho.meti.go.jp",
+    "note": "教材には当年度の単価そのものを入れていない（翌年に嘘になるため）。"
+  }
+]

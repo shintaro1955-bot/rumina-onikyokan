@@ -647,16 +647,58 @@ L('L3-04', 3, 4, '起きてしまったときの動き方',
   ['J-001', 'J-002', 'J-003', 'J-004', 'J-005', 'F-009', 'F-010']),
 ];
 
+/* ---- 章 → 参照資料／学習分野 ----
+   AI先生が「何を根拠にしたか」を資料名と更新日で出すために要る（台帳は seed/sources.json）。
+   学習分野(topic)は、あとで「誤答の分野に応じた復習」「商材の説明練習」へ広げるための軸。
+   章の本文のそばに書くと探しにくいので、ここで一覧にして当てる。 */
+const REFS = {
+  'L1-01': ['ff-compliance', 'law-tokushoho'],
+  'L1-02': ['ff-compliance', 'ff-interphone', 'law-tokushoho'],
+  'L1-03': ['ff-compliance', 'law-tokushoho'],
+  'L1-04': ['ff-compliance', 'law-tokushoho'],
+  'L2-01': ['denki-ryokin'],
+  'L2-02': ['cat-sharp', 'ff-hokumen'],
+  'L2-03': ['cat-choshu', 'cat-sharp', 'cat-dmm'],
+  'L2-04': ['meti-fit', 'law-tokushoho'],
+  'L2-05': ['ff-sangyo', 'cat-choshu'],
+  'L2-06': ['ff-mitsumori', 'law-keihyo', 'law-tokushoho'],
+  'L2-07': ['meti-fit', 'denki-ryokin'],
+  'L2-08': ['ff-sangyo', 'cat-sharp'],
+  'L2-09': ['ff-mitsumori', 'meti-fit'],
+  'L2-10': ['cat-sharp', 'cat-choshu', 'cat-dmm'],
+  'L2-11': ['cat-choshu', 'cic-site'],
+  'L2-12': ['cat-choshu', 'cat-sharp', 'cat-dmm'],
+  'L2-13': ['cat-dmm', 'dmm-site'],
+  'L2-14': ['cat-sharp'],
+  'L3-01': ['law-tokushoho', 'ff-compliance'],
+  'L3-02': ['law-tokushoho', 'ff-compliance'],
+  'L3-03': ['law-tokushoho', 'law-shohisha', 'law-keihyo'],
+  'L3-04': ['ff-kujo', 'law-tokushoho'],
+};
+const TOPIC = {
+  'L1-01': 'genkan', 'L1-02': 'genkan', 'L1-03': 'houki', 'L1-04': 'houki',
+  'L2-01': 'denki', 'L2-02': 'solar', 'L2-03': 'battery', 'L2-04': 'seido',
+  'L2-05': 'koji', 'L2-06': 'shisan', 'L2-07': 'seido', 'L2-08': 'solar',
+  'L2-09': 'shisan', 'L2-10': 'battery', 'L2-11': 'maker', 'L2-12': 'maker',
+  'L2-13': 'maker', 'L2-14': 'maker',
+  'L3-01': 'houki', 'L3-02': 'houki', 'L3-03': 'houki', 'L3-04': 'houki',
+};
+for (const l of lessons) { l.sourceRefs = REFS[l.code] || []; l.topic = TOPIC[l.code] || null; }
+
 const out = new URL('./lessons.json', import.meta.url);
 // 書く前に検算：同じcodeが無いか、本文が空でないか、quizの参照先が実在するか
 const seen = new Set(); const bad = [];
 const qs = JSON.parse(readFileSync(new URL('./training-seed.json', import.meta.url), 'utf8'));
 const codes = new Set(qs.map(q => q.code));
+const srcIds = new Set(JSON.parse(readFileSync(new URL('./sources.json', import.meta.url), 'utf8')).map(x => x.id));
 for (const l of lessons) {
   if (seen.has(l.code)) bad.push([l.code, 'コード重複']); seen.add(l.code);
   if (!l.sections.length) bad.push([l.code, '本文なし']);
   for (const s of l.sections) if (!s.body || s.body.length < 40) bad.push([l.code, `節が薄い: ${s.h}`]);
   for (const q of l.quiz) if (!codes.has(q)) bad.push([l.code, `存在しない問題: ${q}`]);
+  if (!l.sourceRefs.length) bad.push([l.code, '参照資料がひもづいていない']);
+  if (!l.topic) bad.push([l.code, '学習分野がひもづいていない']);
+  for (const r of l.sourceRefs) if (!srcIds.has(r)) bad.push([l.code, `台帳に無い資料: ${r}`]);
 }
 if (bad.length) { console.error('不備:', bad); process.exit(1); }
 

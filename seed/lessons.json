@@ -29,7 +29,12 @@
       "LAW-001",
       "C-103",
       "C-104"
-    ]
+    ],
+    "sourceRefs": [
+      "ff-compliance",
+      "law-tokushoho"
+    ],
+    "topic": "genkan"
   },
   {
     "code": "L1-02",
@@ -65,7 +70,13 @@
       "LAW-012",
       "C-105",
       "G-107"
-    ]
+    ],
+    "sourceRefs": [
+      "ff-compliance",
+      "ff-interphone",
+      "law-tokushoho"
+    ],
+    "topic": "genkan"
   },
   {
     "code": "L1-03",
@@ -104,7 +115,12 @@
       "LAW-007",
       "C-106",
       "C-107"
-    ]
+    ],
+    "sourceRefs": [
+      "ff-compliance",
+      "law-tokushoho"
+    ],
+    "topic": "houki"
   },
   {
     "code": "L1-04",
@@ -143,7 +159,12 @@
       "C-110",
       "C-111",
       "C-112"
-    ]
+    ],
+    "sourceRefs": [
+      "ff-compliance",
+      "law-tokushoho"
+    ],
+    "topic": "houki"
   },
   {
     "code": "L2-01",
@@ -188,7 +209,11 @@
       "P-010",
       "P-013",
       "P-017"
-    ]
+    ],
+    "sourceRefs": [
+      "denki-ryokin"
+    ],
+    "topic": "denki"
   },
   {
     "code": "L2-02",
@@ -234,7 +259,12 @@
       "K-001",
       "K-002",
       "K-003"
-    ]
+    ],
+    "sourceRefs": [
+      "cat-sharp",
+      "ff-hokumen"
+    ],
+    "topic": "solar"
   },
   {
     "code": "L2-03",
@@ -279,7 +309,13 @@
       "B-011",
       "B-012",
       "B-015"
-    ]
+    ],
+    "sourceRefs": [
+      "cat-choshu",
+      "cat-sharp",
+      "cat-dmm"
+    ],
+    "topic": "battery"
   },
   {
     "code": "L2-04",
@@ -325,7 +361,12 @@
       "G-003",
       "G-005",
       "G-014"
-    ]
+    ],
+    "sourceRefs": [
+      "meti-fit",
+      "law-tokushoho"
+    ],
+    "topic": "seido"
   },
   {
     "code": "L2-05",
@@ -368,7 +409,12 @@
       "K-004",
       "K-005",
       "K-008"
-    ]
+    ],
+    "sourceRefs": [
+      "ff-sangyo",
+      "cat-choshu"
+    ],
+    "topic": "koji"
   },
   {
     "code": "L2-06",
@@ -413,7 +459,13 @@
       "P-015",
       "P-016",
       "P-018"
-    ]
+    ],
+    "sourceRefs": [
+      "ff-mitsumori",
+      "law-keihyo",
+      "law-tokushoho"
+    ],
+    "topic": "shisan"
   },
   {
     "code": "L2-07",
@@ -456,7 +508,12 @@
       "D-010",
       "E-001",
       "P-004"
-    ]
+    ],
+    "sourceRefs": [
+      "meti-fit",
+      "denki-ryokin"
+    ],
+    "topic": "seido"
   },
   {
     "code": "L2-08",
@@ -498,7 +555,12 @@
       "A-020",
       "K-001",
       "K-002"
-    ]
+    ],
+    "sourceRefs": [
+      "ff-sangyo",
+      "cat-sharp"
+    ],
+    "topic": "solar"
   },
   {
     "code": "L2-09",
@@ -533,7 +595,12 @@
       "E-010",
       "K-006",
       "F-008"
-    ]
+    ],
+    "sourceRefs": [
+      "ff-mitsumori",
+      "meti-fit"
+    ],
+    "topic": "shisan"
   },
   {
     "code": "L2-10",
@@ -584,7 +651,13 @@
       "S-004",
       "S-005",
       "S-007"
-    ]
+    ],
+    "sourceRefs": [
+      "cat-sharp",
+      "cat-choshu",
+      "cat-dmm"
+    ],
+    "topic": "battery"
   },
   {
     "code": "L2-11",
@@ -649,7 +722,12 @@
       "N-043",
       "N-050",
       "N-051"
-    ]
+    ],
+    "sourceRefs": [
+      "cat-choshu",
+      "cic-site"
+    ],
+    "topic": "maker"
   },
   {
     "code": "L2-12",
@@ -705,7 +783,13 @@
       "M-021",
       "M-030",
       "M-031"
-    ]
+    ],
+    "sourceRefs": [
+      "cat-choshu",
+      "cat-sharp",
+      "cat-dmm"
+    ],
+    "topic": "maker"
   },
   {
     "code": "L2-13",
@@ -780,7 +864,12 @@
       "D2-40",
       "D2-41",
       "D2-43"
-    ]
+    ],
+    "sourceRefs": [
+      "cat-dmm",
+      "dmm-site"
+    ],
+    "topic": "maker"
   },
   {
     "code": "L2-14",
@@ -832,7 +921,11 @@
       "S2-12",
       "S-001",
       "S-004"
-    ]
+    ],
+    "sourceRefs": [
+      "cat-sharp"
+    ],
+    "topic": "maker"
   },
   {
     "code": "L3-01",
@@ -867,7 +960,12 @@
       "LAW-030",
       "C-101",
       "C-102"
-    ]
+    ],
+    "sourceRefs": [
+      "law-tokushoho",
+      "ff-compliance"
+    ],
+    "topic": "houki"
   },
   {
     "code": "L3-02",
@@ -906,7 +1004,12 @@
       "LAW-029",
       "MUST-011",
       "C-103"
-    ]
+    ],
+    "sourceRefs": [
+      "law-tokushoho",
+      "ff-compliance"
+    ],
+    "topic": "houki"
   },
   {
     "code": "L3-03",
@@ -948,7 +1051,13 @@
       "LAW-026",
       "LAW-027",
       "LAW-028"
-    ]
+    ],
+    "sourceRefs": [
+      "law-tokushoho",
+      "law-shohisha",
+      "law-keihyo"
+    ],
+    "topic": "houki"
   },
   {
     "code": "L3-04",
@@ -984,6 +1093,11 @@
       "J-005",
       "F-009",
       "F-010"
-    ]
+    ],
+    "sourceRefs": [
+      "ff-kujo",
+      "law-tokushoho"
+    ],
+    "topic": "houki"
   }
 ]

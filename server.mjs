@@ -37,6 +37,7 @@ import * as weekly from './lib/weekly.mjs';
 import * as training from './lib/training.mjs';
 import * as lessons from './lib/lessons.mjs';
 import * as oral from './lib/oral.mjs';
+import * as sensei from './lib/sensei.mjs';
 import * as dispatch from './lib/dispatch.mjs';
 import * as fieldcheck from './lib/fieldcheck.mjs';
 import * as sendlog from './lib/sendlog.mjs';
@@ -395,6 +396,10 @@ function persistReport(id, result, userName) {
     }
   } catch (e) { console.error('了承の反映に失敗:', e.message); }
 
+  // AI先生がつながるかも1回だけ確かめる（未設定のときは画面に「設定が必要」と出す）
+  sensei.selfTest().then(r => console.log(r.ok ? `✓ AI先生につながりました（${r.model}）` : `⚠ AI先生が使えません：${r.why}`))
+    .catch(e => console.warn('[sensei] 自己確認で例外:', e.message));
+
   // 口頭試問の採点が本当につながるかを1回だけ確かめる（モデル名の間違いをここで出す）
   oral.selfTest().then(r => console.log(r.ok ? `✓ 口頭試問の採点につながりました（${r.model}）` : `⚠ 口頭試問の採点が使えません：${r.why}`))
     .catch(e => console.warn('[oral] 自己確認で例外:', e.message));
@@ -504,7 +509,7 @@ const server = createServer(async (req, res) => {
         }
       }
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, cyzenUserKeys: globalThis.__cyzenUserKeys || null, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET, trainingQuestions: (() => { try { return training.questionStats().total; } catch (e) { return null; } })(), oral: (() => { try { return training.oralStatus(); } catch (e) { return null; } })(),
+      if (path === '/api/health') return json(res, 200, { ok: true, cyzenUserKeys: globalThis.__cyzenUserKeys || null, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET, trainingQuestions: (() => { try { return training.questionStats().total; } catch (e) { return null; } })(), oral: (() => { try { return training.oralStatus(); } catch (e) { return null; } })(), sensei: (() => { try { return { ready: sensei.ready(), grader: sensei.selfTestResult(), sources: sensei.sourceList().length, ...sensei.stats() }; } catch (e) { return null; } })(),
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
@@ -798,7 +803,8 @@ const server = createServer(async (req, res) => {
         if (!l) return json(res, 404, { error: '教材が見つかりません' });
         let un = 1; try { un = training.unlockedStep(meL.username); } catch (e) {}
         if (l.step > un) return json(res, 403, { error: `STEP${un}を通すと開きます` });
-        return json(res, 200, { ok: true, ...l });
+        // 参照資料は台帳から解決して返す（名前と更新日を画面に出すため）
+        return json(res, 200, { ok: true, ...l, sources: sensei.sourcesOf(l.code) });
       }
 
       /* 章に動画を貼る・外す（owner専用）。どれを貼るかは会社が決めること。 */
@@ -866,6 +872,57 @@ const server = createServer(async (req, res) => {
       if (path === '/api/training/admin/accepted' && req.method === 'GET') {
         const meA = currentUser(req); if (!meA || meA.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
         return json(res, 200, { items: training.ownerAcceptedList() });
+      }
+
+      /* 章の確認問題（練習）。本試験の合否にも営業解禁にも効かない。 */
+      if (path === '/api/training/lesson/quiz' && req.method === 'GET') {
+        const meQ = currentUser(req); if (!meQ) return json(res, 401, { error: 'ログインが必要です' });
+        return json(res, 200, training.lessonQuiz(meQ.username, String(url.searchParams.get('code') || '')));
+      }
+      if (path === '/api/training/lesson/quiz' && req.method === 'POST') {
+        const meQ = currentUser(req); if (!meQ) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readJson(req) || {};
+        return json(res, 200, training.gradeLessonQuiz(meQ.username, String(b.code || ''), Array.isArray(b.answers) ? b.answers : []));
+      }
+      /* 章を読み終えた印 */
+      if (path === '/api/training/lesson/read' && req.method === 'POST') {
+        const meQ = currentUser(req); if (!meQ) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readJson(req) || {};
+        return json(res, 200, training.markRead(meQ.username, String(b.code || '')));
+      }
+
+      /* AI先生。鍵はサーバーに置いたまま（画面には出さない）。
+         失敗しても 200 で返す。教材の閲覧と確認問題を止めないため。 */
+      if (path === '/api/training/sensei' && req.method === 'POST') {
+        const meS = currentUser(req); if (!meS) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readJson(req) || {};
+        // 到達していない段の章は使わせない（教材の閲覧と同じ線）
+        const l = lessons.one(String(b.code || ''));
+        if (!l) return json(res, 404, { error: '教材が見つかりません' });
+        let un = 1; try { un = training.unlockedStep(meS.username); } catch (e) {}
+        if (meS.role !== 'owner' && l.step > un) return json(res, 403, { error: 'この段の教材はまだ開いていません' });
+        try {
+          return json(res, 200, await sensei.run({ user: meS.username, code: String(b.code || ''), mode: String(b.mode || ''), question: String(b.question || '') }));
+        } catch (e) {
+          console.warn('[sensei]', e.message);
+          return json(res, 200, { ok: false, why: 'AIにつながりませんでした。教材と確認問題はそのまま使えます。' });
+        }
+      }
+      /* AI先生の誤り報告。受け取るだけで返さない作りにしない（管理画面に出る）。 */
+      if (path === '/api/training/sensei/report' && req.method === 'POST') {
+        const meS = currentUser(req); if (!meS) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readJson(req) || {};
+        return json(res, 200, sensei.report(meS.username, String(b.id || ''), String(b.why || '')));
+      }
+      /* 誤り報告の一覧・既読（owner専用） */
+      if (path === '/api/training/sensei/reports' && req.method === 'GET') {
+        const meS = currentUser(req); if (!meS || meS.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        return json(res, 200, { items: sensei.reports(false) });
+      }
+      if (path === '/api/training/sensei/resolve' && req.method === 'POST') {
+        const meS = currentUser(req); if (!meS || meS.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const b = await readJson(req) || {};
+        return json(res, 200, sensei.resolveReport(String(b.at || '')));
       }
 
       /* STEP4：口頭試問を始める。選択肢は返らない（場面と問いだけ）。 */
