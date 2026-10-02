@@ -3914,6 +3914,137 @@ async function loadMyAsks() {
    色はテーマ変数を使う（暗い配色でも読めるように）。
    ============================================================ */
 const FIGURES = {
+  // 玄関先の最初の10秒。名乗りの3点はどこまでが義務で、どこからが努力義務か
+  opening: () => {
+    const row = (y, n, t, law, must) => `
+      <rect x="0" y="${y}" width="22" height="22" rx="4" fill="${must ? '#0f7a45' : '#94a3b8'}"/>
+      <text x="11" y="${y + 16}" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">${n}</text>
+      <text x="32" y="${y + 11}" font-size="13" fill="currentColor" font-weight="700">${t}</text>
+      <text x="32" y="${y + 27}" font-size="11" fill="currentColor" opacity=".65">${law}</text>`;
+    return `<svg viewBox="0 0 560 250" width="100%" role="img" aria-label="玄関先で最初に言う3つと、意思の確認">
+      <text x="0" y="13" font-size="12" fill="currentColor" opacity=".6">勧誘を始める前に言う（世間話のあとでは遅い）</text>
+      ${row(26, '1', '会社の名前', '特定商取引法 第3条　義務', true)}
+      ${row(72, '2', '勧誘が目的であること', '特定商取引法 第3条　義務', true)}
+      ${row(118, '3', '何の商品か（商品の種類）', '特定商取引法 第3条　義務', true)}
+      ${row(164, '＋', '「このままお話を続けてよろしいですか」', '特定商取引法 第3条の2　努力義務', false)}
+      <line x1="0" y1="200" x2="560" y2="200" stroke="currentColor" opacity=".15"/>
+      <text x="0" y="220" font-size="11.5" fill="#e11d48" font-weight="700">ここを外すと、点検商法と同じ枠で見られる。</text>
+      <text x="0" y="238" font-size="11.5" fill="currentColor" opacity=".75">会社が行政処分を受ける入口は、ほぼこの名乗りのところ。</text>
+    </svg>`;
+  },
+
+  // 現地を見るまで確定しないもの。見る順ではなく「外すと何に響くか」で並べる
+  genchi: () => {
+    const items = [
+      ['屋根材', 'スレート・瓦・金属・陸屋根', '工法と防水処理が変わる', '#0f7a45'],
+      ['雨漏りのリスク', '穴を開ける工法か', '工事保証の範囲を説明する', '#e11d48'],
+      ['地域の条件', '塩害・積雪', '外れると保証の対象外', '#f59e0b'],
+      ['分電盤', '主幹容量と空き回路', '交換なら費用と工期に響く', '#0369a1'],
+      ['パワコンの置き場所', '動作音', '先に合意しておく', '#64748b'],
+    ];
+    return `<svg viewBox="0 0 560 250" width="100%" role="img" aria-label="現地調査で確定するまで決められないこと">
+      <text x="0" y="13" font-size="12" fill="currentColor" opacity=".6">この5つが決まるまで、工期も金額も確定しない</text>
+      ${items.map(([t, d, e, c], i) => {
+        const y = 26 + i * 40;
+        return `<rect x="0" y="${y}" width="4" height="30" rx="2" fill="${c}"/>
+          <text x="14" y="${y + 13}" font-size="12.5" fill="currentColor" font-weight="700">${t}</text>
+          <text x="14" y="${y + 28}" font-size="11" fill="currentColor" opacity=".6">${d}</text>
+          <text x="250" y="${y + 20}" font-size="11.5" fill="${c}">${e}</text>`;
+      }).join('')}
+      <line x1="0" y1="232" x2="560" y2="232" stroke="currentColor" opacity=".15"/>
+      <text x="0" y="248" font-size="11.5" fill="#e11d48" font-weight="700">電気工事は電気工事士だけ。営業は分電盤を開けない。配線に触れない。</text>
+    </svg>`;
+  },
+
+  // 試算は前提で決まる。同じ設備でも入れる数字で答えが変わる
+  shisan: () => `<svg viewBox="0 0 560 240" width="100%" role="img" aria-label="試算の前提と、入れ忘れやすい費用">
+    <text x="0" y="13" font-size="12" fill="currentColor" opacity=".6">同じ設備でも、ここが変われば答えが変わる</text>
+    ${[['そのお宅の使用量', 'できれば1年ぶん', 0],
+       ['そのお宅の単価', '明細の実際の単価', 150],
+       ['自家消費率', '昼に在宅か', 300]]
+      .map(([t, d, x]) => `
+        <rect x="${x}" y="24" width="138" height="48" rx="8" fill="#0f7a45" opacity=".1" stroke="#0f7a45"/>
+        <text x="${+x + 69}" y="44" font-size="12" fill="currentColor" text-anchor="middle" font-weight="700">${t}</text>
+        <text x="${+x + 69}" y="61" font-size="10.5" fill="currentColor" text-anchor="middle" opacity=".7">${d}</text>`).join('')}
+    <path d="M465 48 L495 48" stroke="#0f7a45" stroke-width="2"/>
+    <path d="M490 43 L497 48 L490 53 Z" fill="#0f7a45"/>
+    <text x="528" y="44" font-size="12.5" fill="currentColor" text-anchor="middle" font-weight="700">試算</text>
+    <text x="528" y="61" font-size="10.5" fill="currentColor" text-anchor="middle" opacity=".7">保証ではない</text>
+    <text x="0" y="104" font-size="12" fill="#e11d48" font-weight="700">入れ忘れると「話が違う」と言われる費用</text>
+    ${[['パワコンの交換', 0], ['定期点検', 150], ['分電盤の交換・屋根補修', 300]]
+      .map(([t, x]) => `<rect x="${x}" y="114" width="${t.length > 10 ? 210 : 138}" height="32" rx="8" fill="#fff1f2" stroke="#fecdd3"/>
+        <text x="${+x + (t.length > 10 ? 105 : 69)}" y="134" font-size="11.5" fill="#9f1239" text-anchor="middle" font-weight="700">${t}</text>`).join('')}
+    <line x1="0" y1="166" x2="560" y2="166" stroke="currentColor" opacity=".15"/>
+    <text x="0" y="186" font-size="11.5" fill="currentColor" opacity=".75">言ってはいけない：「必ず◯年で元が取れます」「電気代が必ずゼロになります」</text>
+    <text x="0" y="206" font-size="11.5" fill="currentColor" opacity=".75">「実質0円」は条件が要る。ローンなら支払総額・金利・期間まで伝える。</text>
+    <text x="0" y="230" font-size="11.5" fill="currentColor" opacity=".75">月々の額だけを示すのは不十分（景品表示法・特商法）。</text>
+  </svg>`,
+
+  // 発電量の見積り。出発点から、何で増減するか
+  hatsuden: () => `<svg viewBox="0 0 560 250" width="100%" role="img" aria-label="発電量の見積りかた">
+    <text x="0" y="13" font-size="12" fill="currentColor" opacity=".6">出発点</text>
+    <rect x="0" y="22" width="250" height="44" rx="8" fill="#0f7a45"/>
+    <text x="125" y="40" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">1kWあたり 年 1,000〜1,200kWh</text>
+    <text x="125" y="57" font-size="11" fill="#fff" text-anchor="middle" opacity=".85">5kWなら 年 5,000〜6,000kWh</text>
+    <text x="272" y="50" font-size="16" fill="currentColor" opacity=".5">→</text>
+    <text x="296" y="38" font-size="11.5" fill="currentColor" opacity=".75">ここから方角・角度・影・地域で</text>
+    <text x="296" y="56" font-size="11.5" fill="currentColor" opacity=".75">増減させる。確定は屋根を見てから。</text>
+    <text x="0" y="96" font-size="12" fill="#e11d48" font-weight="700">減る方向に効くもの（カタログの数字より小さくなる）</text>
+    ${[['影', 'パネルは直列。1枚の一部でも、まとまり全体が落ちる', 106],
+       ['温度', '真夏はモジュールが熱くなって効率が落ちる', 134],
+       ['経年劣化', '年およそ0.4%。20年で1割弱', 162],
+       ['変換・配線ロス、汚れ', '試算の数値がこれを見込んでいるか確かめる', 190]]
+      .map(([t, d, y]) => `
+        <rect x="0" y="${y}" width="4" height="20" rx="2" fill="#e11d48"/>
+        <text x="14" y="${+y + 15}" font-size="12" fill="currentColor" font-weight="700">${t}</text>
+        <text x="150" y="${+y + 15}" font-size="11.5" fill="currentColor" opacity=".75">${d}</text>`).join('')}
+    <line x1="0" y1="222" x2="560" y2="222" stroke="currentColor" opacity=".15"/>
+    <text x="0" y="242" font-size="11.5" fill="currentColor" opacity=".75">一番伸びるのは春から初夏。真夏ではない。月別を見せると驚かれる。</text>
+  </svg>`,
+
+  // kW単価。総額だけ見ると逆転する
+  kwtanka: () => {
+    const card = (x, label, total, kw, unit, cheap) => `
+      <rect x="${x}" y="24" width="250" height="110" rx="10" fill="${cheap ? '#f0fdf4' : 'var(--surface-2)'}" stroke="${cheap ? '#0f7a45' : 'var(--border)'}"/>
+      <text x="${x + 16}" y="46" font-size="12" fill="currentColor" opacity=".6">${label}</text>
+      <text x="${x + 16}" y="72" font-size="19" fill="currentColor" font-weight="700">${total}</text>
+      <text x="${x + 16}" y="92" font-size="12" fill="currentColor" opacity=".7">${kw}</text>
+      <line x1="${x + 16}" y1="102" x2="${x + 234}" y2="102" stroke="currentColor" opacity=".15"/>
+      <text x="${x + 16}" y="124" font-size="15" fill="${cheap ? '#0f7a45' : '#e11d48'}" font-weight="700">${unit}</text>`;
+    return `<svg viewBox="0 0 560 250" width="100%" role="img" aria-label="総額ではなくkW単価で比べる">
+      <text x="0" y="13" font-size="12" fill="currentColor" opacity=".6">同じ150万円でも、載る量が違えば単価は違う</text>
+      ${card(0, 'A社', '150万円', '5kW', '30万円 / kW', false)}
+      ${card(290, 'B社', '150万円', '6kW', '25万円 / kW', true)}
+      <line x1="0" y1="156" x2="560" y2="156" stroke="currentColor" opacity=".15"/>
+      <text x="0" y="178" font-size="12" fill="#e11d48" font-weight="700">同じkW単価でも、含まれているものが違えば比べられない</text>
+      ${['足場', '屋根の補修', '分電盤の交換', '申請費用', '保証の年数と範囲']
+        .map((t, i) => `<rect x="${i * 112}" y="188" width="104" height="28" rx="6" fill="#fff1f2" stroke="#fecdd3"/>
+          <text x="${i * 112 + 52}" y="206" font-size="10.5" fill="#9f1239" text-anchor="middle" font-weight="700">${t}</text>`).join('')}
+      <text x="0" y="238" font-size="11.5" fill="currentColor" opacity=".75">他社の見積は否定しない。「この項目が含まれていないようです」と事実で言う。</text>
+    </svg>`;
+  },
+
+  // 契約のあとに効く期限。どれも起点が違う
+  kigen: () => {
+    const bar = (y, label, from, len, color, note) => `
+      <text x="0" y="${y + 13}" font-size="12" fill="currentColor" font-weight="700">${label}</text>
+      <rect x="170" y="${y}" width="${len}" height="20" rx="4" fill="${color}" opacity=".85"/>
+      <text x="${175}" y="${y + 14}" font-size="10.5" fill="#fff" font-weight="700">${from}</text>
+      <text x="${180 + len}" y="${y + 14}" font-size="11" fill="currentColor" opacity=".7">${note}</text>`;
+    return `<svg viewBox="0 0 560 252" width="100%" role="img" aria-label="契約のあとに効いてくる期限">
+      <text x="0" y="13" font-size="12" fill="currentColor" opacity=".6">起点がそれぞれ違う。日数だけ覚えても間違える</text>
+      ${bar(26, 'クーリングオフ', '8日', 48, '#0f7a45', '契約書面を受け取った日から')}
+      ${bar(60, '過量販売の解除', '1年', 110, '#0369a1', '契約から')}
+      ${bar(94, '取消権', '1年', 110, '#f59e0b', '誤認に気づいた時から')}
+      ${bar(128, '取消権（上限）', '5年', 230, '#f59e0b', '契約を結んだ時から')}
+      <line x1="0" y1="164" x2="560" y2="164" stroke="currentColor" opacity=".15"/>
+      <text x="0" y="184" font-size="11.5" fill="#e11d48" font-weight="700">書面の記載事項が欠けていると、クーリングオフの期間がそもそも始まらない。</text>
+      <text x="0" y="202" font-size="11.5" fill="currentColor" opacity=".75">中途解約で会社が請求できる額には法律で上限がある。</text>
+      <text x="0" y="220" font-size="11.5" fill="currentColor" opacity=".75">契約書に高額な違約金を書いても、上限を超える部分は無効。</text>
+      <text x="0" y="238" font-size="11.5" fill="currentColor" opacity=".75">電子メール等での交付もできるが、定められた方法で承諾を得る必要がある。</text>
+    </svg>`;
+  },
+
   // 電気代の明細が何でできているか
   bill: () => `<svg viewBox="0 0 560 230" width="100%" role="img" aria-label="電気代の明細の内訳">
     <text x="0" y="14" font-size="12" fill="currentColor" opacity=".6">1か月の請求額</text>
