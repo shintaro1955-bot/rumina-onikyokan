@@ -1761,7 +1761,7 @@ function nav(v) {
   if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
   if (v === 'me') loadMePerf();
   if (v === 'training') loadTraining();
-  if (v === 'trainadmin') { loadAsks(); loadLessonVideos(); loadFieldCheck(); loadTrainingAdmin(); }
+  if (v === 'trainadmin') { loadAsks(); loadSenseiReports(); loadLessonVideos(); loadFieldCheck(); loadTrainingAdmin(); }
   if (v === 'dispatch') loadDispatch();
   if (v === 'academy') loadAcademy();
   if (v === 'terakoya') loadTerakoya();
@@ -3202,6 +3202,7 @@ window.oralStart = oralStart; window.orMic = orMic; window.orNext = orNext; wind
 function viewTrainingAdmin() {
   return `${h1('研修管理', '誰がどこまで進んでいるか、どの問題をまだ確認していないかを見る。')}
     <div id="traAsks" class="mb-4"></div>
+    <div id="traSensei" class="mb-4"></div>
     <div id="traVideo" class="mb-4"></div>
     <div id="traField" class="mb-4"></div>
     <div id="traRoster" class="mb-4"></div>
@@ -3915,6 +3916,79 @@ async function traAnswerAsk(id) {
   if (a == null || !a.trim()) return;
   try { await API.trainingAnswerAsk(id, a); loadAsks(); } catch (e) { alert(e.message); }
 }
+
+/* AI先生の誤り報告（owner）。
+   報告を受け取るだけで返さない作りにしない。何が違うと言われたのかと、
+   そのときAIが実際に何と答えたのかを並べて見せる。
+   直すのは**教材か資料**であって、AIではない。そこに辿り着けるよう章と入口も出す。 */
+const SENSEI_MODE_LABEL = { explain: 'やさしく説明', talk: 'お客様への伝え方', check: '理解をチェック', ask: '自由に質問' };
+
+async function loadSenseiReports() {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const box = document.getElementById('traSensei'); if (!box) return;
+  let d; try { d = await API.senseiReports(); } catch (e) { box.innerHTML = ''; return; }
+  const rows = d.items || [];
+  const open = rows.filter(r => !r.done);
+  if (!rows.length) {
+    box.innerHTML = card(`<div class="p-4">
+      <div class="font-semibold text-neutral-800">AI先生への「内容が違う」報告</div>
+      <div class="text-[12px] text-neutral-500 mt-0.5">まだ報告はありません。教材画面のAI先生の回答の下にある「内容が違うと思う」から届きます。</div>
+    </div>`);
+    return;
+  }
+  box.innerHTML = card(`<div class="p-4">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div>
+        <div class="font-semibold text-neutral-800">AI先生への「内容が違う」報告${open.length ? `　<span class="text-rose-600">未対応 ${open.length}件</span>` : ''}</div>
+        <div class="text-[12px] text-neutral-500 mt-0.5">直すのはAIではなく<b>教材か資料</b>です。章と入口を見て、本文・問題・資料の更新日のどれが原因かを見てください。</div>
+      </div>
+      <button onclick="loadSenseiReports()" class="px-3 py-1.5 rounded-lg border border-neutral-300 text-neutral-700 text-[12.5px]">読み直す</button>
+    </div>
+    <div class="mt-3 max-h-[460px] overflow-auto">
+      ${rows.slice(0, 50).map(r => {
+        const a = r.answer || {};
+        const mode = SENSEI_MODE_LABEL[a.mode] || a.mode || '—';
+        return `<div class="border-t border-neutral-200 px-1 py-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[12.5px] font-semibold text-neutral-800">${esc(r.user)}</span>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 font-mono">${esc(a.code || '章不明')}</span>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">${esc(mode)}</span>
+            ${a.grounded === false ? '<span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">根拠なしと答えていた</span>' : ''}
+            <span class="text-[11px] text-neutral-400">${esc(String(r.at).slice(0, 16).replace('T', ' '))}</span>
+            ${r.done ? '<span class="text-[11px] text-emerald-600 font-semibold">対応済み</span>' : '<span class="text-[11px] text-rose-600 font-semibold">未対応</span>'}
+          </div>
+
+          <div class="mt-2">
+            <div class="text-[11px] font-semibold text-rose-700">どこが違うと言われたか</div>
+            <div class="text-[13px] text-neutral-800 mt-0.5 whitespace-pre-wrap">${esc(r.why) || '（理由は書かれていません）'}</div>
+          </div>
+
+          ${a.question ? `<div class="mt-2">
+            <div class="text-[11px] font-semibold text-neutral-500">新人の質問</div>
+            <div class="text-[12.5px] text-neutral-700 mt-0.5 whitespace-pre-wrap">${esc(a.question)}</div>
+          </div>` : ''}
+
+          <div class="mt-2">
+            <div class="text-[11px] font-semibold text-neutral-500">そのときAIが答えた内容</div>
+            <div class="text-[12.5px] text-neutral-700 mt-0.5 p-2 rounded bg-neutral-50 border border-neutral-200 whitespace-pre-wrap">${esc(a.answer) || '（記録が残っていません）'}</div>
+          </div>
+
+          <div class="mt-2 flex gap-2 flex-wrap items-center">
+            ${a.code ? `<button onclick="traOpenLesson('${esc(a.code)}')" class="px-3 py-1.5 rounded-lg border border-neutral-300 bg-white text-[12px] font-semibold text-neutral-700">この章を開く</button>` : ''}
+            ${r.done ? '' : `<button onclick="traResolveReport('${esc(r.at)}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[12px] font-semibold">対応済みにする</button>`}
+            <span class="text-[11px] text-neutral-400">${esc(a.model || '')}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div></div>`);
+}
+
+async function traResolveReport(at) {
+  try { await API.senseiResolve(at); loadSenseiReports(); } catch (e) { alert(e.message); }
+}
+/* 報告された章を、そのまま研修画面で開く（owner は段の制限を受けない）。 */
+function traOpenLesson(code) { nav('training'); setTimeout(() => trLesson(code), 400); }
+window.loadSenseiReports = loadSenseiReports; window.traResolveReport = traResolveReport; window.traOpenLesson = traOpenLesson;
 
 /* 自分が出した質問と、返ってきた答え。 */
 async function loadMyAsks() {

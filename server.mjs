@@ -802,7 +802,8 @@ const server = createServer(async (req, res) => {
         const l = lessons.one(String(url.searchParams.get('code') || ''));
         if (!l) return json(res, 404, { error: '教材が見つかりません' });
         let un = 1; try { un = training.unlockedStep(meL.username); } catch (e) {}
-        if (l.step > un) return json(res, 403, { error: `STEP${un}を通すと開きます` });
+        // ownerは段で止めない。誤り報告の調査と、教材そのものの確認に要る。
+        if (meL.role !== 'owner' && l.step > un) return json(res, 403, { error: `STEP${un}を通すと開きます` });
         // 参照資料は台帳から解決して返す（名前と更新日を画面に出すため）
         return json(res, 200, { ok: true, ...l, sources: sensei.sourcesOf(l.code) });
       }
