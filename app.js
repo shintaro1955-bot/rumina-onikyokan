@@ -72,7 +72,7 @@ function coachPanel() {
     </div>` : '';
   return section('鬼教官の講評', card(`
     <div class="flex items-center gap-3 px-5 pt-5">
-      <img src="/assets/rumina.png" alt="Dr.Rumina" class="w-12 h-12 rounded-full object-cover object-top border border-emerald-200 shadow-sm">
+      <img src="/assets/rumina.png" alt="Rumina 鬼教官" class="w-12 h-12 rounded-full object-cover object-top border border-emerald-200 shadow-sm">
       <div><div class="text-sm font-semibold text-neutral-900">Rumina 鬼教官</div><div class="text-xs text-neutral-500">甘やかさない。だが必ず勝たせる。</div></div>
     </div>
     <div class="p-5 space-y-5">${aiBlock}${blocks}</div>`));
@@ -563,11 +563,11 @@ function talkFidelitySection(a) {
         <div class="text-[11px] text-neutral-500 mt-2 pb-1">判定基準：${abList}</div>
       </div>
 
-      <!-- Dr.Rumina 総合所見 -->
+      <!-- Rumina 総合所見 -->
       ${w ? `<div class="mx-5 sm:mx-6 mb-5 mt-2 rounded-xl border border-emerald-100 p-4 flex gap-3 items-start" style="background:#f2f9f4">
-        <img src="/assets/rumina.png" alt="Dr.Rumina" class="w-11 h-11 rounded-full object-cover object-top border border-emerald-200 shrink-0" onerror="this.style.display='none'">
+        <img src="/assets/rumina.png" alt="Rumina 鬼教官" class="w-11 h-11 rounded-full object-cover object-top border border-emerald-200 shrink-0" onerror="this.style.display='none'">
         <div>
-          <div class="text-[12px] font-semibold text-emerald-800 mb-0.5">Dr.ルミナの総合所見</div>
+          <div class="text-[12px] font-semibold text-emerald-800 mb-0.5">Ruminaの総合所見</div>
           <div class="text-[13px] text-neutral-800 leading-relaxed">最も乖離が大きいのは <b class="text-rose-600">${w.key}</b>（あなた ${w.repRate}% / 成功モデル ${w.modelRate}%）。ここが総合判定 ${oj.g} の主因です。まずは「${w.tip}」を明日の全訪問で意識。1項目でも B 以上に上げれば、アポ率は必ず動きます。</div>
         </div>
       </div>` : ''}
@@ -1958,11 +1958,19 @@ function mockAnalyze() {
    ============================================================ */
 function viewLogin() {
   return `<div class="min-h-[72vh] flex items-center justify-center">
-    <div class="w-full max-w-sm">
-      <div class="text-center mb-6">
-        <img src="/assets/rumina.png" alt="Dr.Rumina" class="w-24 h-24 rounded-full object-cover object-top mx-auto mb-3 border border-emerald-200 shadow-sm">
-        <div class="text-lg font-semibold text-neutral-900">Rumina 鬼教官</div><div class="text-xs text-emerald-600">マイページにログイン</div></div>
-      ${card(`<div class="p-6 space-y-3">
+    <div class="w-full max-w-lg">
+      <!-- Hero。ピットから指示を出すレースエンジニアの姿。左の暗い余白に名前を載せる。
+           横長と縦長の2枚を用意し、画面の幅で切り替える（スマホで横長だと小さすぎる）。 -->
+      <div class="rumina-hero" role="img" aria-label="Rumina Field OS">
+        <div class="rumina-hero-txt">
+          <div class="rh-sub">FIT FOUNDER</div>
+          <div class="rh-ttl">Rumina<br>Field OS</div>
+          <div class="rh-lead">甘やかさない。だが必ず勝たせる。</div>
+        </div>
+      </div>
+      <div class="text-center mb-5 mt-5">
+        <div class="text-sm text-neutral-500">マイページにログイン</div></div>
+      <div class="mx-auto w-full max-w-sm">${card(`<div class="p-6 space-y-3">
         ${window.__lineReady ? `
         <a href="/api/line/login" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-md text-white text-sm font-semibold transition" style="background:#06C755">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.5 2 2 5.7 2 10.2c0 4 3.6 7.4 8.5 8 .3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.6 1.1-.5 6-3.5 8.2-6C21.6 13.9 22 12.1 22 10.2 22 5.7 17.5 2 12 2z"/></svg>
@@ -1988,7 +1996,7 @@ function viewLogin() {
         const esc2 = t => String(t).replace(/</g, '&lt;');
         return `<p class="text-[11px] text-rose-600 text-center mt-1">${why}${d ? `<br>LINEからの応答：${esc2(d)}` : ''}<br>続けて同じになるときは、この画面をそのまま知らせてください（区分：${esc2(e)}）。</p>`;
       })()}
-    </div></div>`;
+    </div></div></div>`;
 }
 async function doLogin() {
   const u = document.getElementById('loginUser').value, p = document.getElementById('loginPw').value;
