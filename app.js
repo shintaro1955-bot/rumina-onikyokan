@@ -2279,7 +2279,8 @@ async function boot() {
   const { user } = await API.me(); window.__user = user;
   try { const h = await API.health(); window.__lineReady = !!h.lineLoginReady; window.__audioPurge = !!h.audioPurge; window.__consentVersion = h.consentVersion || ''; window.__botReady = !!h.botApiReady;
     // AI先生がつながるか。未設定なら教材画面に「設定が必要」と出す（ダミー回答は出さない）。
-    window.__senseiReady = !!(h.sensei && h.sensei.ready && (h.sensei.grader || {}).ok !== false); }
+    window.__senseiReady = !!(h.sensei && h.sensei.ready && (h.sensei.grader || {}).ok !== false);
+    window.__senseiWhy = ((h.sensei || {}).grader || {}).why || ''; }
   catch { window.__lineReady = false; window.__audioPurge = false; window.__botReady = false; }
   try { window.__model = await API.getModel(); } catch { window.__model = null; }
   try { window.__consent = user ? await API.getConsent() : { ok: false }; } catch { window.__consent = { ok: false }; }
@@ -4443,7 +4444,7 @@ function lsSenseiBox() {
     <h3 id="senseiHead" style="font-size:14.5px;font-weight:700;color:var(--text);margin:0">AI先生に聞く</h3>
     <div class="muted" style="font-size:11.5px;margin-top:3px;line-height:1.7">この章と、根拠になっている資料の範囲で答えます。ここでのやり取りは練習です。試験の合否や営業解禁には影響しません。</div>
     ${off ? `<div role="status" style="margin-top:12px;padding:12px 13px;border:1px solid #fcd34d;border-radius:10px;background:#fffbeb;font-size:12.5px;line-height:1.8;color:#92400e">
-        <b>AI先生はまだ使えません。</b>　AIの接続が設定されていないためです（管理者が ANTHROPIC_API_KEY を設定すると使えます）。<br>
+        <b>AI先生はいま使えません。</b>　${lsEsc(window.__senseiWhy || 'AIの接続が設定されていません。')}<br>
         教材と確認問題はそのまま使えます。分からないところは「人に質問する」から送ってください。
       </div>`
       : `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px">
