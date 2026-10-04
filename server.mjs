@@ -885,6 +885,12 @@ const server = createServer(async (req, res) => {
         const b = await readJson(req) || {};
         return json(res, 200, training.gradeLessonQuiz(meQ.username, String(b.code || ''), Array.isArray(b.answers) ? b.answers : []));
       }
+      /* 確認問題を1問だけ答え合わせ（練習・その場で解説を返す） */
+      if (path === '/api/training/lesson/check' && req.method === 'POST') {
+        const meC = currentUser(req); if (!meC) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readJson(req) || {};
+        return json(res, 200, training.checkLessonAnswer(meC.username, String(b.code || ''), String(b.q || ''), String(b.choiceText || '')));
+      }
       /* 章を読み終えた印 */
       if (path === '/api/training/lesson/read' && req.method === 'POST') {
         const meQ = currentUser(req); if (!meQ) return json(res, 401, { error: 'ログインが必要です' });

@@ -2341,8 +2341,26 @@ function ring(pct, big) {
 const foGreet = () => { const h = new Date().getHours(); return h < 11 ? 'GOOD MORNING' : h < 17 ? 'こんにちは' : 'お疲れさまです'; };
 
 /* ---------- TODAY（中央フィード） ---------- */
+/* ---- Hero の帯（研修とTodayの最上部） ----
+   アプリの顔。ただし新人は「今日やること」の押しボタンに早く届く必要があるので、
+   高さは抑える。左の暗い余白に名前と一言を載せる。
+   画像の中では文字を焼かず、HTMLで重ねる（文言を直すのに画像を作り直さなくて済む）。 */
+function heroBand(sub) {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const u = window.__user || {};
+  const h = new Date().getHours();
+  const greet = h < 11 ? 'おはようございます' : h < 18 ? 'おつかれさまです' : 'おつかれさまでした';
+  return `<section class="rumina-band" aria-label="Rumina Field OS">
+    <div class="rb-txt">
+      <div class="rb-sub">RUMINA FIELD OS</div>
+      <div class="rb-ttl">${esc(u.name ? u.name + 'さん、' + greet : 'Rumina Field OS')}</div>
+      <div class="rb-lead">${esc(sub || '甘やかさない。だが必ず勝たせる。')}</div>
+    </div>
+  </section>`;
+}
+
 function viewToday() {
-  return `<div id="certBar"></div><div id="askRec"></div><div class="space-y-3.5" id="todayWrap"><div class="fo-card" style="padding:20px" class="muted">読み込み中…</div></div>`;
+  return `${heroBand('今日の数字と、みんなとの差を見る。')}<div id="certBar"></div><div id="askRec"></div><div class="space-y-3.5" id="todayWrap"><div class="fo-card" style="padding:20px" class="muted">読み込み中…</div></div>`;
 }
 
 /* トップ＝今日の数字と、みんなとの差。
@@ -2797,7 +2815,8 @@ const TR_STATUS = {
 let TR = { exam: null, idx: 0, answers: [], timer: null, left: 0, locked: false };
 
 function viewTraining() {
-  return `${h1('研修（営業解禁ゲート）', '合格するまで現場には出さない。ここを通ってから玄関に立つ。')}
+  return `${heroBand('合格するまで現場には出さない。ここを通ってから玄関に立つ。')}
+    ${h1('研修（営業解禁ゲート）', '')}
     <div id="trWrap"><div class="fo-card muted" style="padding:20px">読み込み中…</div></div>`;
 }
 
@@ -4515,86 +4534,190 @@ async function lsReport(id) {
 }
 
 /* ---- 確認問題（練習）----
-   本試験ではない。合否にも営業解禁にも効かない。 */
+   本試験ではない。合否にも営業解禁にも効かない。
+
+   **1問ごとにその場で答え合わせする**。
+   まとめて採点すると、結果を見るころには何を考えて選んだか忘れている。
+   選んだ直後に「合っていたか・なぜか・現場では何と言うか」を出すほうが残る。
+
+   続けて正解すると数が伸びる。Ruminaが一言返す。
+   甘やかさないが、できたところは認める。 */
+
+const RUMINA_OK = [
+  'いいです。それが言えれば玄関は通ります。',
+  'そこ、現場で一番外す人が多いところです。',
+  '正解。言葉で言えるまで繰り返してください。',
+  '合っています。次も落ち着いて。',
+  'そのとおり。覚えたではなく、言えるにしてください。',
+];
+const RUMINA_NG = [
+  'ここは落とせません。もう一度読んでください。',
+  '惜しくありません。玄関では一発で決まります。',
+  '違います。理由のほうを覚えてください。',
+  '覚え直し。言い回しごと持っていってください。',
+];
+const RUMINA_LAW_NG = 'ここは法令に関わります。1問も落とせないところです。';
+const pick = (a, i) => a[i % a.length];
+
+function lsQuizRender() {
+  const box = document.getElementById('lsQuiz'); if (!box || !LS.quiz) return;
+  const q = LS.quiz.questions[LS.idx];
+  const total = LS.quiz.questions.length;
+  const left = total - LS.idx;
+  box.innerHTML = `<section aria-label="確認問題" style="border:1px solid var(--primary);border-radius:14px;padding:16px;background:var(--surface)">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="font-size:12px;font-weight:700;color:var(--text)">確認問題　${LS.idx + 1} / ${total}</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${LS.streak >= 2 ? `<span style="font-size:10.5px;font-weight:700;color:#fff;background:var(--primary);border-radius:999px;padding:3px 9px">${LS.streak}問 連続正解</span>` : ''}
+        <span class="muted" style="font-size:10.5px;border:1px solid var(--border);border-radius:999px;padding:2px 8px">練習・成績に残りません</span>
+      </div>
+    </div>
+    <div class="fo-bar" style="height:5px;border-radius:3px;background:var(--surface-2);margin-top:8px;overflow:hidden">
+      <i style="background:var(--primary);width:${Math.round(LS.idx / total * 100)}%"></i></div>
+    <div style="font-size:15px;font-weight:600;color:var(--text);margin-top:14px;line-height:1.75">${lsEsc(q.question)}</div>
+    <div role="group" aria-label="選択肢" style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+      ${q.choices.map((ch, i) => `<button class="q-choice" onclick="lsAnswer(${i})"
+        style="text-align:left;padding:13px 15px;min-height:50px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;line-height:1.6">${lsEsc(ch)}</button>`).join('')}
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:10px">残り ${left}問</div>
+  </section>`;
+}
+
+/* 選んだ直後に答え合わせして、その場で見せる。 */
+async function lsAnswer(i) {
+  if (!LS.quiz || LS.checking) return;
+  LS.checking = true;
+  const q = LS.quiz.questions[LS.idx];
+  const chosen = q.choices[i];
+  // 押した選択肢に印をつける（正誤はまだ出さない。先に色を出すと答えが読めてしまう）
+  const btns = document.querySelectorAll('#lsQuiz .q-choice');
+  btns.forEach((b, n) => { b.disabled = true; if (n === i) b.classList.add('picked'); b.style.opacity = n === i ? '1' : '.5'; });
+
+  let r; try { r = await API.lessonCheck(LS.code, q.code, chosen); }
+  catch (e) { r = { ok: false, why: e.message }; }
+  LS.checking = false;
+  if (!r.ok) { lsQuizRender(); return; }
+
+  LS.answers.push({ code: q.code, choiceText: chosen });
+  LS.streak = r.correct ? (LS.streak || 0) + 1 : 0;
+  if (r.correct) LS.hit = (LS.hit || 0) + 1;
+  lsFeedback(q, chosen, r);
+}
+
+function lsFeedback(q, chosen, r) {
+  const box = document.getElementById('lsQuiz'); if (!box) return;
+  const total = LS.quiz.questions.length;
+  const last = LS.idx + 1 >= total;
+  const say = r.correct ? pick(RUMINA_OK, LS.idx) : (r.isLaw ? RUMINA_LAW_NG : pick(RUMINA_NG, LS.idx));
+  const col = r.correct ? 'var(--primary)' : '#e11d48';
+
+  box.innerHTML = `<section aria-label="答え合わせ" aria-live="polite" class="fo-result${r.correct ? '' : ' fail'}"
+      style="border:1px solid ${col};border-radius:14px;padding:16px;background:var(--surface)">
+    <div style="display:flex;align-items:center;gap:9px">
+      <span aria-hidden="true" style="flex:none;width:28px;height:28px;border-radius:50%;background:${col};color:#fff;
+        display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700">${r.correct ? '✓' : '✕'}</span>
+      <div style="font-size:17px;font-weight:700;color:${col}">${r.correct ? '正解' : '不正解'}</div>
+      ${LS.streak >= 2 ? `<span style="margin-left:auto;font-size:10.5px;font-weight:700;color:#fff;background:var(--primary);border-radius:999px;padding:3px 9px">${LS.streak}問 連続</span>` : ''}
+    </div>
+
+    <div style="margin-top:12px;padding:12px 13px;border-radius:10px;background:var(--surface-2)">
+      <div class="muted" style="font-size:11px;font-weight:700">あなたの答え</div>
+      <div style="font-size:13px;color:var(--text);margin-top:2px;line-height:1.7">${lsEsc(chosen)}</div>
+      ${r.correct ? '' : `<div class="muted" style="font-size:11px;font-weight:700;margin-top:9px">正しくは</div>
+        <div style="font-size:13.5px;color:var(--text);margin-top:2px;line-height:1.7;font-weight:700">${lsEsc(r.answer)}</div>`}
+    </div>
+
+    ${r.explanation ? `<div style="font-size:13px;line-height:1.95;color:var(--text);margin-top:11px">${lsEsc(r.explanation)}</div>` : ''}
+    ${r.talkExample ? `<div style="margin-top:11px;padding:11px 13px;border-left:3px solid var(--primary);background:var(--primary-soft);border-radius:0 10px 10px 0">
+      <div style="font-size:11px;font-weight:700;color:var(--primary)">現場ではこう言う</div>
+      <div style="font-size:13px;line-height:1.85;color:var(--text);margin-top:3px">${lsEsc(r.talkExample)}</div></div>` : ''}
+
+    <div style="display:flex;gap:9px;align-items:flex-start;margin-top:13px;padding-top:12px;border-top:1px solid var(--border)">
+      <img src="/assets/rumina.png" alt="" aria-hidden="true"
+        style="flex:none;width:34px;height:34px;border-radius:50%;object-fit:cover;object-position:top;border:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div class="muted" style="font-size:10.5px;font-weight:700">Rumina 鬼教官</div>
+        <div style="font-size:12.5px;color:var(--text);margin-top:2px;line-height:1.75">${lsEsc(say)}</div>
+      </div>
+    </div>
+
+    <button class="fo-btn" onclick="lsNext()" style="margin-top:14px;width:100%;min-height:48px;font-size:14.5px;font-weight:700">
+      ${last ? '結果を見る' : `次の問題へ（残り ${total - LS.idx - 1}問）`}</button>
+  </section>`;
+  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function lsNext() {
+  LS.idx++;
+  if (LS.idx < LS.quiz.questions.length) lsQuizRender();
+  else lsQuizFinish();
+}
+
 async function lsStartQuiz() {
   const box = document.getElementById('lsQuiz'); if (!box) return;
   box.innerHTML = `<div class="muted" style="padding:14px" role="status">用意しています…</div>`;
   let q; try { q = await API.lessonQuiz(LS.code); }
   catch (e) { box.innerHTML = `<div style="padding:14px;color:#e11d48" role="alert">${lsEsc(e.message)}</div>`; return; }
   if (!q.ok) { box.innerHTML = `<div class="muted" style="padding:14px">${lsEsc(q.why)}</div>`; return; }
-  LS.quiz = q; LS.idx = 0; LS.answers = [];
+  LS.quiz = q; LS.idx = 0; LS.answers = []; LS.streak = 0; LS.hit = 0; LS.checking = false;
   lsQuizRender();
   box.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function lsQuizRender() {
-  const box = document.getElementById('lsQuiz'); if (!box || !LS.quiz) return;
-  const q = LS.quiz.questions[LS.idx];
-  box.innerHTML = `<section aria-label="確認問題" style="border:1px solid var(--primary);border-radius:14px;padding:16px;background:var(--surface)">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-      <div style="font-size:12px;font-weight:700;color:var(--text)">確認問題　${LS.idx + 1} / ${LS.quiz.questions.length}</div>
-      <span class="muted" style="font-size:10.5px;border:1px solid var(--border);border-radius:999px;padding:2px 8px">練習・成績に残りません</span>
-    </div>
-    <div class="fo-bar" style="height:5px;border-radius:3px;background:var(--surface-2);margin-top:8px;overflow:hidden">
-      <i style="background:var(--primary);width:${Math.round(LS.idx / LS.quiz.questions.length * 100)}%"></i></div>
-    <div style="font-size:15px;font-weight:600;color:var(--text);margin-top:14px;line-height:1.75">${lsEsc(q.question)}</div>
-    <div role="group" aria-label="選択肢" style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
-      ${q.choices.map((ch, i) => `<button class="q-choice" onclick="lsAnswer(${i})"
-        style="text-align:left;padding:13px 15px;min-height:50px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;line-height:1.6">${lsEsc(ch)}</button>`).join('')}
-    </div>
-  </section>`;
-}
-
-function lsAnswer(i) {
-  if (!LS.quiz) return;
-  const q = LS.quiz.questions[LS.idx];
-  LS.answers.push({ code: q.code, choiceText: q.choices[i] });
-  LS.idx++;
-  if (LS.idx < LS.quiz.questions.length) lsQuizRender();
-  else lsQuizFinish();
-}
-
 async function lsQuizFinish() {
   const box = document.getElementById('lsQuiz'); if (!box) return;
-  box.innerHTML = `<div class="muted" style="padding:14px" role="status">答え合わせをしています…</div>`;
+  box.innerHTML = `<div class="muted" style="padding:14px" role="status">まとめています…</div>`;
   let r; try { r = await API.lessonQuizGrade(LS.code, LS.answers); }
   catch (e) { box.innerHTML = `<div style="padding:14px;color:#e11d48" role="alert">${lsEsc(e.message)}</div>`; return; }
   if (!r.ok) { box.innerHTML = `<div class="muted" style="padding:14px">${lsEsc(r.why)}</div>`; return; }
 
   const okList = (r.detail || []).filter(x => x.correct);
   const ngList = (r.detail || []).filter(x => !x.correct);
-  // 次の行動は1つだけ出す。選ばせると止まる。
   const next = r.allCorrect
     ? (r.nextIsExam
-        ? { label: `この段のテストを受ける`, fn: `nav('training')`, note: 'この段の教材は全部読み終わりました' }
+        ? { label: 'この段のテストを受ける', fn: `nav('training')`, note: 'この段の教材は全部読み終わりました' }
         : r.next ? { label: `第${r.next.no}章にすすむ・約${r.next.minutes}分`, fn: `trLesson('${r.next.code}')`, note: lsEsc(r.next.title) }
                  : { label: '研修トップへ', fn: `nav('training')`, note: '' })
     : { label: 'もう一度この章を確認する', fn: `lsStartQuiz()`, note: '間違えたところを読み直してから、もう一度' };
+  const say = r.allCorrect ? 'ここは大丈夫です。玄関で言えるかどうかは、また別です。'
+    : ngList.length === 1 ? 'あと1つ。そこだけ潰せば通ります。'
+    : `${ngList.length}つ残っています。読み直してからもう一度。`;
 
   box.innerHTML = `<section aria-label="確認問題の結果" style="border:1px solid ${r.allCorrect ? 'var(--primary)' : '#f59e0b'};border-radius:14px;padding:16px;background:var(--surface)">
     <div style="display:flex;align-items:center;gap:8px">
-      <span aria-hidden="true" style="flex:none;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;background:${r.allCorrect ? 'var(--primary)' : '#f59e0b'}">${r.allCorrect ? '✓' : '！'}</span>
+      <span aria-hidden="true" style="flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;background:${r.allCorrect ? 'var(--primary)' : '#f59e0b'}">${r.allCorrect ? '✓' : '！'}</span>
       <div style="font-size:16px;font-weight:700;color:var(--text)">${r.allCorrect ? 'この章は大丈夫です' : 'もう少しです'}</div>
-      <div style="margin-left:auto;font-size:13px;font-weight:700;color:var(--text)">${r.correct} / ${r.total}</div>
+      <div style="margin-left:auto;font-size:14px;font-weight:700;color:var(--text)">${r.correct} / ${r.total}</div>
     </div>
 
     <div style="margin-top:14px">
-      <div style="font-size:12px;font-weight:700;color:var(--primary)">できたこと　${okList.length}件</div>
-      ${okList.length ? okList.map(x => `<div style="font-size:12.5px;color:var(--text);margin-top:4px;line-height:1.7;padding-left:14px;text-indent:-14px">・${lsEsc(x.answer)}</div>`).join('')
-                      : '<div class="muted" style="font-size:12.5px;margin-top:4px">まだありません</div>'}
+      <div style="font-size:12px;font-weight:700;color:var(--primary)">できるようになったこと　${okList.length}件</div>
+      ${okList.length ? okList.map(x => `<div style="display:flex;gap:7px;margin-top:5px">
+          <span aria-hidden="true" style="flex:none;color:var(--primary);font-weight:700">✓</span>
+          <span style="font-size:12.5px;color:var(--text);line-height:1.7">${lsEsc(x.question || '')}</span></div>`).join('')
+        : '<div class="muted" style="font-size:12.5px;margin-top:4px">まだありません</div>'}
     </div>
 
     ${ngList.length ? `<div style="margin-top:14px">
-      <div style="font-size:12px;font-weight:700;color:#b45309">足りないこと　${ngList.length}件</div>
+      <div style="font-size:12px;font-weight:700;color:#b45309">まだ言えないこと　${ngList.length}件</div>
       ${ngList.map(x => `<div style="margin-top:8px;padding:11px 13px;border-left:3px solid #f59e0b;background:var(--surface-2);border-radius:0 10px 10px 0">
-        <div style="font-size:12.5px;color:var(--text)">あなたの答え：${lsEsc(x.chosen || '（無回答）')}</div>
-        <div style="font-size:13px;color:var(--text);margin-top:3px"><b>正しくは：</b>${lsEsc(x.answer)}</div>
+        ${x.question ? `<div style="font-size:12.5px;font-weight:700;color:var(--text);line-height:1.7">${lsEsc(x.question)}</div>` : ''}
+        <div style="font-size:13px;color:var(--text);margin-top:4px"><b>正しくは：</b>${lsEsc(x.answer)}</div>
         <div class="muted" style="font-size:12px;margin-top:4px;line-height:1.8">${lsEsc(x.explanation)}</div>
         ${x.talkExample ? `<div style="font-size:12px;color:var(--text);margin-top:4px">現場ではこう言う：${lsEsc(x.talkExample)}</div>` : ''}
       </div>`).join('')}
     </div>` : ''}
 
-    <div style="margin-top:16px;padding-top:13px;border-top:1px solid var(--border)">
+    <div style="display:flex;gap:9px;align-items:flex-start;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+      <img src="/assets/rumina.png" alt="" aria-hidden="true"
+        style="flex:none;width:34px;height:34px;border-radius:50%;object-fit:cover;object-position:top;border:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div class="muted" style="font-size:10.5px;font-weight:700">Rumina 鬼教官</div>
+        <div style="font-size:12.5px;color:var(--text);margin-top:2px;line-height:1.75">${lsEsc(say)}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--border)">
       <div style="font-size:12px;font-weight:700;color:var(--muted)">次の行動</div>
       ${next.note ? `<div class="muted" style="font-size:12px;margin-top:3px">${next.note}</div>` : ''}
       <button class="fo-btn" onclick="${next.fn}" style="margin-top:9px;width:100%;min-height:48px;font-size:14.5px;font-weight:700">${lsEsc(next.label)}</button>
@@ -4606,7 +4729,7 @@ async function lsQuizFinish() {
 }
 
 window.trLesson = trLesson; window.lsSensei = lsSensei; window.lsReport = lsReport;
-window.lsStartQuiz = lsStartQuiz; window.lsAnswer = lsAnswer;
+window.lsStartQuiz = lsStartQuiz; window.lsAnswer = lsAnswer; window.lsNext = lsNext;
 
 /* 章に動画を貼る（owner）。どれを貼るかは会社が決めること。こちらでは選ばない。 */
 async function loadLessonVideos() {

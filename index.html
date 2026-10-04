@@ -206,6 +206,25 @@
     .rh-ttl{font-size:30px}
   }
 
+  /* Hero の帯（研修・Todayの最上部）。高さを抑えて、下のボタンに早く届くようにする。 */
+  .rumina-band{position:relative;width:100%;aspect-ratio:1600/419;min-height:112px;max-height:190px;
+    border-radius:14px;overflow:hidden;margin-bottom:14px;
+    background:#07140f url('/assets/rumina-band.jpg') right center/cover no-repeat;
+    box-shadow:0 6px 18px rgba(0,0,0,.14)}
+  .rumina-band::after{content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg,rgba(4,16,12,.94) 0%,rgba(4,16,12,.78) 42%,rgba(4,16,12,.05) 72%)}
+  .rb-txt{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;justify-content:center;
+    padding:0 5.5%;color:#fff;max-width:72%}
+  .rb-sub{font-size:9.5px;font-weight:700;letter-spacing:.17em;color:#55FFB0;opacity:.95}
+  .rb-ttl{font-size:clamp(15px,3.4vw,21px);font-weight:800;line-height:1.35;margin-top:4px}
+  .rb-lead{font-size:clamp(10.5px,1.5vw,12.5px);margin-top:5px;color:rgba(255,255,255,.8);line-height:1.6}
+  @media(max-width:560px){
+    /* 横長のままだと高さが足りず、文字が折り返して窮屈になる。縦を取る。 */
+    .rumina-band{aspect-ratio:1600/700;min-height:150px;max-height:200px;background-position:78% center}
+    .rb-txt{max-width:64%;padding:0 6%}
+    .rb-ttl{font-size:17px}
+  }
+
   /* モバイル下部ナビ */
   #botnav{position:fixed;bottom:0;inset-inline:0;z-index:40;display:none;grid-auto-flow:column;grid-auto-columns:1fr;
     background:var(--surface);border-top:1px solid var(--border);padding:6px 0 max(6px,env(safe-area-inset-bottom))}
