@@ -4479,6 +4479,7 @@ async function lsSensei(mode) {
   catch (e) { r = { ok: false, why: 'AIにつながりませんでした。教材と確認問題はそのまま使えます。' }; }
   LS.busy = false;
   LS.sensei = r;
+  CK.picked = {};          // 前の回の選択を持ち越さない
   lsSenseiShow(r);
 }
 
@@ -4492,14 +4493,30 @@ function lsSenseiShow(r) {
   }
   const src = (r.sources || []).map(x =>
     `<div class="muted" style="font-size:11px;margin-top:2px">・${lsEsc(x.name)}（更新日：${x.updated ? lsEsc(x.updated) : '記載なし'}${x.updated ? '' : '　' + lsEsc(x.updatedNote || '')}）</div>`).join('');
-  const qs = (r.questions || []).map((q, i) => `
-    <div style="margin-top:9px;padding:11px 13px;border-radius:10px;background:var(--surface-2)">
-      <div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.7">${i + 1}　${lsEsc(q.q)}</div>
-      <details style="margin-top:5px">
-        <summary style="font-size:12px;color:var(--primary);font-weight:600;cursor:pointer;padding:5px 0;min-height:30px">答えを見る</summary>
-        <div style="font-size:12.5px;color:var(--text);margin-top:4px;line-height:1.8"><b>${lsEsc(q.answer)}</b><br>${lsEsc(q.why)}</div>
-      </details>
-    </div>`).join('');
+  // 理解チェックは解いて採点する（100点満点）。正解は画面に来ていない。
+  const qs = (r.questions || []).length ? `
+    <div id="ckBox" style="margin-top:12px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:700;color:var(--text)">理解チェック　${r.questions.length}問</span>
+        <span class="muted" style="font-size:10.5px;border:1px solid var(--border);border-radius:999px;padding:2px 8px">100点満点・練習</span>
+      </div>
+      ${r.questions.map((q, i) => `
+        <div class="ck-q" data-n="${i}" style="margin-top:11px;padding:12px 13px;border-radius:11px;background:var(--surface-2)">
+          <div style="display:flex;gap:7px;align-items:baseline">
+            <span style="flex:none;font-size:12px;font-weight:700;color:var(--primary)">${i + 1}</span>
+            <span style="flex:1;font-size:13.5px;font-weight:600;color:var(--text);line-height:1.75">${lsEsc(q.q)}</span>
+            <span class="muted" style="flex:none;font-size:10.5px">${q.point}点</span>
+          </div>
+          <div role="radiogroup" aria-label="選択肢" style="display:flex;flex-direction:column;gap:6px;margin-top:9px">
+            ${q.choices.map((c, j) => `<button type="button" class="ck-c" data-n="${i}" data-j="${j}" onclick="ckPick(${i},${j})"
+              style="text-align:left;padding:10px 12px;min-height:44px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:13px;line-height:1.6;cursor:pointer">${lsEsc(c)}</button>`).join('')}
+          </div>
+          <div class="ck-fb"></div>
+        </div>`).join('')}
+      <button class="fo-btn" id="ckGo" onclick="ckGrade('${lsEsc(r.checkId || '')}')"
+        style="margin-top:13px;width:100%;min-height:48px;font-size:14.5px;font-weight:700">採点する</button>
+      <div class="muted" style="font-size:11px;margin-top:7px;text-align:center">ここでの点は練習です。試験の合否には使われません。</div>
+    </div>` : '';
 
   out.innerHTML = `<div style="margin-top:12px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface)">
     <div style="display:flex;align-items:center;gap:7px">
@@ -4524,6 +4541,95 @@ function lsSenseiShow(r) {
     </div>
   </div>`;
 }
+
+/* ---- 理解チェック（100点満点）----
+   選ぶのは画面、採点はサーバ。正解は画面に来ていないので、見ても分からない。 */
+const CK = { picked: {} };
+
+function ckPick(n, j) {
+  CK.picked[n] = j;
+  document.querySelectorAll(`.ck-c[data-n="${n}"]`).forEach(b => {
+    const on = Number(b.dataset.j) === j;
+    b.style.borderColor = on ? 'var(--primary)' : 'var(--border)';
+    b.style.borderWidth = on ? '2px' : '1px';
+    b.style.background = on ? 'var(--primary-soft)' : 'var(--surface)';
+    b.style.fontWeight = on ? '700' : '400';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  const go = document.getElementById('ckGo');
+  const total = document.querySelectorAll('.ck-q').length;
+  const done = Object.keys(CK.picked).length;
+  if (go) go.textContent = done >= total ? '採点する' : `採点する（あと${total - done}問）`;
+}
+
+async function ckGrade(checkId) {
+  const box = document.getElementById('ckBox'); if (!box || !checkId) return;
+  const total = box.querySelectorAll('.ck-q').length;
+  const answers = Array.from({ length: total }, (_, i) => (i in CK.picked ? CK.picked[i] : -1));
+  const go = document.getElementById('ckGo');
+  if (go) { go.disabled = true; go.textContent = '採点しています…'; }
+
+  let r; try { r = await API.senseiCheckGrade(checkId, answers); }
+  catch (e) { r = { ok: false, why: e.message }; }
+  if (!r.ok) {
+    if (go) { go.disabled = false; go.textContent = '採点する'; }
+    box.insertAdjacentHTML('beforeend', `<div role="alert" style="margin-top:10px;font-size:12.5px;color:#e11d48">${lsEsc(r.why)}</div>`);
+    return;
+  }
+
+  // 問題ごとに正誤と理由を出す
+  r.items.forEach(it => {
+    const q = box.querySelector(`.ck-q[data-n="${it.n}"]`); if (!q) return;
+    q.querySelectorAll('.ck-c').forEach(b => {
+      b.disabled = true;
+      const isAns = b.textContent === it.answer;
+      const isMine = b.textContent === it.chosen;
+      if (isAns) { b.style.borderColor = 'var(--primary)'; b.style.borderWidth = '2px'; b.style.background = 'var(--primary-soft)'; b.style.fontWeight = '700'; }
+      else if (isMine) { b.style.borderColor = '#e11d48'; b.style.borderWidth = '2px'; b.style.background = '#fff1f2'; }
+      else { b.style.opacity = '.45'; }
+    });
+    const col = it.correct ? 'var(--primary)' : '#e11d48';
+    q.querySelector('.ck-fb').innerHTML = `
+      <div style="display:flex;align-items:center;gap:7px;margin-top:9px">
+        <span aria-hidden="true" style="flex:none;width:19px;height:19px;border-radius:50%;background:${col};color:#fff;
+          display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${it.correct ? '✓' : '✕'}</span>
+        <span style="font-size:12px;font-weight:700;color:${col}">${it.correct ? `正解　+${it.point}点` : (it.chosen ? '不正解　0点' : '無回答　0点')}</span>
+      </div>
+      ${it.why ? `<div class="muted" style="font-size:12px;margin-top:5px;line-height:1.8">${lsEsc(it.why)}</div>` : ''}`;
+  });
+
+  const col = r.score >= 80 ? 'var(--primary)' : r.score >= 60 ? '#f59e0b' : '#e11d48';
+  const say = r.score === 100 ? '満点。ここは分かっています。あとは玄関で言えるかどうかです。'
+    : r.score >= 80 ? '通る水準です。落とした1つを潰してください。'
+    : r.score >= 60 ? 'まだ穴があります。読み直してからもう一度。'
+    : '覚え直しです。章を読んでから受け直してください。';
+
+  box.insertAdjacentHTML('beforeend', `
+    <div aria-live="polite" class="fo-result${r.score >= 60 ? '' : ' fail'}"
+      style="margin-top:14px;padding:15px;border:1px solid ${col};border-radius:13px;background:var(--surface)">
+      <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
+        <span style="font-size:30px;font-weight:800;color:${col};line-height:1">${r.score}</span>
+        <span style="font-size:14px;font-weight:700;color:var(--muted)">/ 100点</span>
+        <span style="margin-left:auto;font-size:12px;font-weight:700;color:${col}">${lsEsc(r.band)}</span>
+      </div>
+      <div class="muted" style="font-size:11.5px;margin-top:5px">${r.hit} / ${r.total}問 正解${r.best > r.score ? `　・　これまでの最高 ${r.best}点` : ''}</div>
+      <div class="fo-bar" style="height:6px;border-radius:3px;background:var(--surface-2);margin-top:9px;overflow:hidden">
+        <i style="background:${col};width:${r.score}%"></i></div>
+      <div style="display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding-top:11px;border-top:1px solid var(--border)">
+        <img src="/assets/rumina.png" alt="" aria-hidden="true"
+          style="flex:none;width:32px;height:32px;border-radius:50%;object-fit:cover;object-position:top;border:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div class="muted" style="font-size:10.5px;font-weight:700">Rumina 鬼教官</div>
+          <div style="font-size:12.5px;color:var(--text);margin-top:2px;line-height:1.75">${lsEsc(say)}</div>
+        </div>
+      </div>
+      <button class="fo-btn ghost" onclick="lsSensei('check')" style="margin-top:12px;width:100%;min-height:44px;font-size:13px">別の問題でもう一度</button>
+    </div>`);
+  if (go) go.remove();
+  CK.picked = {};
+}
+
+window.ckPick = ckPick; window.ckGrade = ckGrade;
 
 async function lsReport(id) {
   if (!id) return;

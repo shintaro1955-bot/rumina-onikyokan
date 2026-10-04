@@ -915,6 +915,12 @@ const server = createServer(async (req, res) => {
           return json(res, 200, { ok: false, why: 'AIにつながりませんでした。教材と確認問題はそのまま使えます。' });
         }
       }
+      /* 理解チェックの採点（100点満点・練習）。正解はサーバにだけ置く。 */
+      if (path === '/api/training/sensei/check' && req.method === 'POST') {
+        const meK = currentUser(req); if (!meK) return json(res, 401, { error: 'ログインが必要です' });
+        const b = await readJson(req) || {};
+        return json(res, 200, sensei.gradeCheck(meK.username, String(b.checkId || ''), Array.isArray(b.answers) ? b.answers : []));
+      }
       /* AI先生の誤り報告。受け取るだけで返さない作りにしない（管理画面に出る）。 */
       if (path === '/api/training/sensei/report' && req.method === 'POST') {
         const meS = currentUser(req); if (!meS) return json(res, 401, { error: 'ログインが必要です' });
