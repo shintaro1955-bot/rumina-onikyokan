@@ -3690,14 +3690,22 @@ boot();
    送る前に必ず人が読む。ここで納得できない文面は送らない。
    ============================================================ */
 function viewDispatch() {
-  return `${h1('配信プレビュー', '毎日1回、研修が要る人へLINEで1通だけ送ります。送る前の下書きをそのまま出しています。')}
+  return `${h1('配信プレビュー', '毎日1回、cyzenの判定と研修の進みを見て、必要な人へLINEで1通だけ送ります。送る前の下書きをそのまま出しています。')}
     <div id="dpWrap"></div>`;
 }
 
+/* 送る理由と、人に回す理由。cyzenの判定記号そのままでは読めないので日本語にする。 */
 const DP_REASON = {
   training: ['研修が止まっている', '#0f7a45'],
-  talk: ['トークの質', '#b45309'],
-  record: ['報告の抜けの疑い', '#6b7280'],
+  visits:   ['A 訪問の数が足りない', '#b45309'],
+  talk:     ['B トークの質', '#b45309'],
+  close:    ['C 最後の詰め', '#b45309'],
+  record:   ['報告の抜けの疑い', '#6b7280'],
+  atrisk:   ['稼働が急に落ちている', '#be123c'],
+  low:      ['稼働そのものが無い', '#be123c'],
+  thin:     ['母数が小さく数字が振れる', '#6b7280'],
+  closer:   ['クローザー', '#6b7280'],
+  top:      ['トップ水準', '#6b7280'],
 };
 
 async function loadDispatch() {
@@ -3716,7 +3724,7 @@ async function loadDispatch() {
     <div style="font-size:13px;line-height:1.7">${state}<br>
       1人1日1通・週${c.weekCap}通まで・同じ内容は中${c.cooldownDays}日あける。他の連絡（入力リマインド・録音の催促・先週比）と重ならないよう、送った記録は1か所で共有しています。</div>
     <div style="font-size:12.5px;margin-top:10px;color:#57534e">
-      今日の対象 <b>${(s.training || 0) + (s.talk || 0)}人</b>（研修が止まっている ${s.training || 0}・トークの質 ${s.talk || 0}）
+      今日の対象 <b>${(s.training || 0) + (s.visits || 0) + (s.talk || 0) + (s.close || 0)}人</b>（研修 ${s.training || 0}・A 訪問の数 ${s.visits || 0}・B トークの質 ${s.talk || 0}・C 最後の詰め ${s.close || 0}）
       ・ うちLINEで届く <b>${s.reachable || 0}人</b>／未連携で届かない <b>${s.unreachable || 0}人</b>
       ・ 自動送信せず人が確認 <b>${s.review || 0}人</b>
       ・ 送りすぎになるので今日は見送り <b>${s.skipped || 0}人</b></div>
@@ -3740,11 +3748,27 @@ async function loadDispatch() {
     ? sec('LINEが繋がっていないため届かない人', '本人がポータルでLINEログインと氏名の選択を済ませると届くようになります。こちらでは解決できません。',
       (d.unreachable || []).map(r => msgCard(r, false)).join(''))
     : '';
-  const review = (d.review || []).length
-    ? sec('自動送信しない人（人が確認する）', '機械が判断してはいけない相手です。営業教育部の決めごとに沿って、ここは人が見ます。',
-      `<table style="width:100%;font-size:12.5px;border-collapse:collapse">${(d.review || []).map(r => `<tr style="border-top:1px dotted #E3DED2">
-        <td style="padding:7px 4px;width:120px;font-weight:600">${esc(r.name)}</td>
-        <td style="padding:7px 4px;color:#57534e">${esc(r.why)}</td></tr>`).join('')}</table>`)
+  /* 人に回す相手は数が出る（稼働が落ちた人・報告が無い人が多いほど増える）。
+     名前を全部並べても読めないので、まず理由ごとの数を出し、名簿は畳んでおく。 */
+  const rv = d.review || [];
+  const rvBy = {};
+  rv.forEach(r => { (rvBy[r.reason || 'other'] ||= []).push(r); });
+  const rvOrder = ['atrisk', 'low', 'record', 'thin'].filter(k => rvBy[k]).concat(Object.keys(rvBy).filter(k => !['atrisk', 'low', 'record', 'thin'].includes(k)));
+  const review = rv.length
+    ? sec(`自動送信しない人　${rv.length}人`, '機械が判断してはいけない相手です。数字が低いのではなく、そもそも測れていない、あるいは休職や離脱の可能性があります。営業教育部の決めごとに沿って、ここは人が見ます。',
+      rvOrder.map(k => {
+        const rows = rvBy[k];
+        const [label, col] = DP_REASON[k] || [k, '#6b7280'];
+        return `<div style="margin-top:10px">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span style="font-size:13px;font-weight:700;color:${col}">${esc(label)}</span>
+            <span style="font-size:13px;font-weight:700;color:#3f3f46">${rows.length}人</span>
+          </div>
+          <div style="font-size:12px;color:#57534e;margin-top:2px">${esc(rows[0].why)}</div>
+          <details style="margin-top:5px"><summary style="font-size:12px;color:#0f7a45;cursor:pointer;padding:4px 0">名前を見る</summary>
+            <div style="font-size:12.5px;color:#3f3f46;line-height:1.9;margin-top:4px">${rows.map(r => esc(r.name)).join('　')}</div>
+          </details></div>`;
+      }).join(''))
     : '';
   const skipped = (d.skipped || []).length
     ? sec('今日は送らない人', '送りすぎると読まれなくなります。理由を残しています。',
