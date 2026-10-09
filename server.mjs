@@ -39,6 +39,7 @@ import * as lessons from './lib/lessons.mjs';
 import * as oral from './lib/oral.mjs';
 import * as sensei from './lib/sensei.mjs';
 import * as dispatch from './lib/dispatch.mjs';
+import * as slackpush from './lib/slackpush.mjs';
 import * as fieldcheck from './lib/fieldcheck.mjs';
 import * as sendlog from './lib/sendlog.mjs';
 import { todayGap, topPerformer } from './lib/todaygap.mjs';
@@ -509,7 +510,7 @@ const server = createServer(async (req, res) => {
         }
       }
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, cyzenUserKeys: globalThis.__cyzenUserKeys || null, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET, trainingQuestions: (() => { try { return training.questionStats().total; } catch (e) { return null; } })(), oral: (() => { try { return training.oralStatus(); } catch (e) { return null; } })(), dispatch: (() => { try { return dispatch.config(); } catch (e) { return null; } })(), sensei: (() => { try { return { ready: sensei.ready(), grader: sensei.selfTestResult(), sources: sensei.sourceList().length, ...sensei.stats() }; } catch (e) { return null; } })(),
+      if (path === '/api/health') return json(res, 200, { ok: true, cyzenUserKeys: globalThis.__cyzenUserKeys || null, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET, trainingQuestions: (() => { try { return training.questionStats().total; } catch (e) { return null; } })(), oral: (() => { try { return training.oralStatus(); } catch (e) { return null; } })(), dispatch: (() => { try { return dispatch.config(); } catch (e) { return null; } })(), slackPush: (() => { try { return slackpush.config(); } catch (e) { return null; } })(), sensei: (() => { try { return { ready: sensei.ready(), grader: sensei.selfTestResult(), sources: sensei.sourceList().length, ...sensei.stats() }; } catch (e) { return null; } })(),
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
@@ -1069,6 +1070,16 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { ok: !out.error, config: dispatch.config(), recent: sendlog.recent(7), ...out });
       }
       /* 実行。live=1 でも DISPATCH_ENABLED と LINEトークンが揃っていなければ送らない。 */
+      /* Slack（ミオ）へ渡す。既定は下書きで、誰に届くかを返すだけ。
+         live=1 を付けたときだけ実際に送る（owner専用）。 */
+      if (path === '/api/dispatch/slack' && (req.method === 'POST' || req.method === 'GET')) {
+        const meS = currentUser(req); if (!meS || meS.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const live = /^(1|true|on)$/i.test(String(url.searchParams.get('live') || ''));
+        const p = await dispatch.plan().catch(e => ({ error: e.message }));
+        if (p.error) return json(res, 200, { ok: false, why: p.error });
+        const out = await slackpush.push(p.pick || [], { live });
+        return json(res, 200, { ok: !!out.ok, live, config: slackpush.config(), planned: (p.pick || []).length, ...out });
+      }
       if (path === '/api/dispatch/run' && (req.method === 'POST' || req.method === 'GET')) {
         const meD = currentUser(req);
         if (!meD || meD.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
