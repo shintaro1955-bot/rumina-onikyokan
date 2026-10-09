@@ -3690,12 +3690,13 @@ boot();
    送る前に必ず人が読む。ここで納得できない文面は送らない。
    ============================================================ */
 function viewDispatch() {
-  return `${h1('配信プレビュー', '毎日1回、cyzenの判定と研修の進みを見て、必要な人へLINEで1通だけ送ります。送る前の下書きをそのまま出しています。')}
+  return `${h1('配信プレビュー', '名簿の正本はcyzen。毎日1回、cyzenの判定と研修の進みを見て、必要な人へLINEで1通だけ送ります。送る前の下書きをそのまま出しています。')}
     <div id="dpWrap"></div>`;
 }
 
 /* 送る理由と、人に回す理由。cyzenの判定記号そのままでは読めないので日本語にする。 */
 const DP_REASON = {
+  register: ['アプリに未登録のまま訪問している', '#be123c'],
   training: ['研修が止まっている', '#0f7a45'],
   visits:   ['A 訪問の数が足りない', '#b45309'],
   talk:     ['B トークの質', '#b45309'],
@@ -3724,7 +3725,7 @@ async function loadDispatch() {
     <div style="font-size:13px;line-height:1.7">${state}<br>
       1人1日1通・週${c.weekCap}通まで・同じ内容は中${c.cooldownDays}日あける。他の連絡（入力リマインド・録音の催促・先週比）と重ならないよう、送った記録は1か所で共有しています。</div>
     <div style="font-size:12.5px;margin-top:10px;color:#57534e">
-      今日の対象 <b>${(s.training || 0) + (s.visits || 0) + (s.talk || 0) + (s.close || 0)}人</b>（研修 ${s.training || 0}・A 訪問の数 ${s.visits || 0}・B トークの質 ${s.talk || 0}・C 最後の詰め ${s.close || 0}）
+      今日の対象 <b>${(s.register || 0) + (s.training || 0) + (s.visits || 0) + (s.talk || 0) + (s.close || 0)}人</b>（未登録 ${s.register || 0}・研修 ${s.training || 0}・A 訪問の数 ${s.visits || 0}・B トークの質 ${s.talk || 0}・C 最後の詰め ${s.close || 0}）
       ・ うちLINEで届く <b>${s.reachable || 0}人</b>／未連携で届かない <b>${s.unreachable || 0}人</b>
       ・ 自動送信せず人が確認 <b>${s.review || 0}人</b>
       ・ 送りすぎになるので今日は見送り <b>${s.skipped || 0}人</b></div>
@@ -3733,7 +3734,7 @@ async function loadDispatch() {
   const msgCard = (r, reachable) => `<div style="border:1px solid #DDD8CC;border-radius:4px;padding:12px;margin-bottom:8px;background:#fff">
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px">
       <div style="font-weight:600">${esc(r.name)}</div>
-      <div style="font-size:11px;font-weight:700;color:${(DP_REASON[r.reason] || ['', '#666'])[1]}">${(DP_REASON[r.reason] || [r.reason])[0]}${reachable ? '' : ' ・ LINE未連携で届きません'}</div>
+      <div style="font-size:11px;font-weight:700;color:${(DP_REASON[r.reason] || ['', '#666'])[1]}">${(DP_REASON[r.reason] || [r.reason])[0]}${r.reason === 'register' && ['A', 'B', 'C'].includes(r.seg) ? `<span style="color:#78716c;font-weight:400">（判定${r.seg}でもあるが、まず登録から）</span>` : ''}${reachable ? '' : ' ・ LINE未連携で届きません'}</div>
     </div>
     <div style="font-size:12.5px;white-space:pre-wrap;line-height:1.75;color:#3f3f46;border-left:3px solid #E3DED2;padding-left:10px">${esc(r.message)}</div>
   </div>`;
