@@ -3690,7 +3690,7 @@ boot();
    送る前に必ず人が読む。ここで納得できない文面は送らない。
    ============================================================ */
 function viewDispatch() {
-  return `${h1('配信プレビュー', '名簿の正本はcyzen。毎日1回、cyzenの判定と研修の進みを見て、必要な人へLINEで1通だけ送ります。送る前の下書きをそのまま出しています。')}
+  return `${h1('配信プレビュー', '名簿の正本はcyzen。毎日1回、研修が止まっている人・未登録のまま訪問している人へ1通だけ送ります。送る前の下書きをそのまま出しています。')}
     <div id="dpWrap"></div>`;
 }
 
@@ -3723,9 +3723,12 @@ async function loadDispatch() {
   const card1 = `<div class="fo-card" style="padding:16px">
     <div style="font-weight:600;margin-bottom:6px">いまの状態</div>
     <div style="font-size:13px;line-height:1.7">${state}<br>
+      ${c.withPerformance
+        ? '送る内容：<b>研修</b>と<b>cyzenの判定（訪問の数・トークの質・最後の詰め）</b>。'
+        : '送る内容：<b>研修だけ</b>。cyzenの判定（訪問の数・トークの質・最後の詰め）は止めています。研修を通していない人に成績の話をしても、先にやることが違うためです。'}<br>
       1人1日1通・週${c.weekCap}通まで・同じ内容は中${c.cooldownDays}日あける。他の連絡（入力リマインド・録音の催促・先週比）と重ならないよう、送った記録は1か所で共有しています。</div>
     <div style="font-size:12.5px;margin-top:10px;color:#57534e">
-      今日の対象 <b>${(s.register || 0) + (s.training || 0) + (s.visits || 0) + (s.talk || 0) + (s.close || 0)}人</b>（未登録 ${s.register || 0}・研修 ${s.training || 0}・A 訪問の数 ${s.visits || 0}・B トークの質 ${s.talk || 0}・C 最後の詰め ${s.close || 0}）
+      今日の対象 <b>${(s.register || 0) + (s.training || 0) + (s.visits || 0) + (s.talk || 0) + (s.close || 0)}人</b>（未登録 ${s.register || 0}・研修 ${s.training || 0}${c.withPerformance ? `・A 訪問の数 ${s.visits || 0}・B トークの質 ${s.talk || 0}・C 最後の詰め ${s.close || 0}` : ''}）
       ・ うちLINEで届く <b>${s.reachable || 0}人</b>／未連携で届かない <b>${s.unreachable || 0}人</b>
       ・ 自動送信せず人が確認 <b>${s.review || 0}人</b>
       ・ 送りすぎになるので今日は見送り <b>${s.skipped || 0}人</b></div>
