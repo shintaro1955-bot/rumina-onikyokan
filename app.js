@@ -3723,9 +3723,10 @@ async function loadDispatch() {
   const card1 = `<div class="fo-card" style="padding:16px">
     <div style="font-weight:600;margin-bottom:6px">いまの状態</div>
     <div style="font-size:13px;line-height:1.7">${state}<br>
-      ${c.withPerformance
-        ? '送る内容：<b>研修</b>と<b>cyzenの判定（訪問の数・トークの質・最後の詰め）</b>。'
-        : '送る内容：<b>研修だけ</b>。cyzenの判定（訪問の数・トークの質・最後の詰め）は止めています。研修を通していない人に成績の話をしても、先にやることが違うためです。'}<br>
+      送る内容：<b>研修だけ</b>${c.withPerformance ? 'と<b>cyzenの判定（訪問の数・トークの質・最後の詰め）</b>' : ''}。<br>
+      対象：${c.target === 'weak'
+        ? '<b>成績が止まっている人だけ</b>（cyzenの判定 A 訪問の数／B トークの質／C 最後の詰め）。トップ水準の人と、稼働そのものが無い人・報告が上がっていない人には送りません。'
+        : '<b>訪問している人は全員</b>。'}<br>
       1人1日1通・週${c.weekCap}通まで・同じ内容は中${c.cooldownDays}日あける。他の連絡（入力リマインド・録音の催促・先週比）と重ならないよう、送った記録は1か所で共有しています。</div>
     <div style="font-size:12.5px;margin-top:10px;color:#57534e">
       今日の対象 <b>${(s.register || 0) + (s.training || 0) + (s.visits || 0) + (s.talk || 0) + (s.close || 0)}人</b>（未登録 ${s.register || 0}・研修 ${s.training || 0}${c.withPerformance ? `・A 訪問の数 ${s.visits || 0}・B トークの質 ${s.talk || 0}・C 最後の詰め ${s.close || 0}` : ''}）
@@ -3737,7 +3738,7 @@ async function loadDispatch() {
   const msgCard = (r, reachable) => `<div style="border:1px solid #DDD8CC;border-radius:4px;padding:12px;margin-bottom:8px;background:#fff">
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px">
       <div style="font-weight:600">${esc(r.name)}</div>
-      <div style="font-size:11px;font-weight:700;color:${(DP_REASON[r.reason] || ['', '#666'])[1]}">${(DP_REASON[r.reason] || [r.reason])[0]}${r.reason === 'register' && ['A', 'B', 'C'].includes(r.seg) ? `<span style="color:#78716c;font-weight:400">（判定${r.seg}でもあるが、まず登録から）</span>` : ''}${reachable ? '' : ' ・ LINE未連携で届きません'}</div>
+      <div style="font-size:11px;font-weight:700;color:${(DP_REASON[r.reason] || ['', '#666'])[1]}">${(DP_REASON[r.reason] || [r.reason])[0]}${r.reason === 'register' && ['A', 'B', 'C'].includes(r.seg) ? `<span style="color:#78716c;font-weight:400">（判定${r.seg}＝${{ A: '訪問の数', B: 'トークの質', C: '最後の詰め' }[r.seg]}で選ばれています）</span>` : ''}${reachable ? '' : ' ・ LINE未連携で届きません'}</div>
     </div>
     <div style="font-size:12.5px;white-space:pre-wrap;line-height:1.75;color:#3f3f46;border-left:3px solid #E3DED2;padding-left:10px">${esc(r.message)}</div>
   </div>`;
