@@ -2131,6 +2131,55 @@ function stageBox(d) {
    新人が「何を・どこまで・どれくらいで・何ができたら終わりか」を考えなくて済むようにする。
    主ボタンは1つ。文言は「第1章を始める・約3分」のように、押したら何が起きるかが分かる形。
    色だけで状態を示さない（文字とアイコンを必ず添える）。 */
+/* ---- はじめての人への案内 ----
+   招待リンクで入ってきた人は、これが何のアプリで、
+   全部でどれくらいかかって、終わると何が起きるのかを知らない。
+   1度も受けておらず、1章も読んでいない人にだけ、今日やることの上に出す。 */
+function welcomeCard(d) {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const u = window.__user || {};
+  if ((u.role || '') === 'owner') return '';
+  const attempts = Object.values(d.best || {}).reduce((n, b) => n + (b.attempts || 0), 0);
+  const read = Object.values(d.readProgress || {}).reduce((n, r) => n + (r.read || 0), 0);
+  if (attempts > 0 || read > 0) return '';                 // もう始めている人には出さない
+  if (localStorage.getItem('tr_welcome_done') === '1') return '';
+
+  const steps = [1, 2, 3, 4].map(n => (d.steps || {})[n] || {});
+  const mins = steps.reduce((n, m) => n + (m.studyMin || 0) + (m.examMin || 0), 0);
+  return `<section aria-labelledby="wcHead" style="margin-top:14px;padding:20px;border:1px solid var(--border);border-radius:14px;background:var(--surface)">
+    <div class="muted" style="font-size:11px;font-weight:700;letter-spacing:.14em">RUMINA 新人研修</div>
+    <h2 id="wcHead" style="font-size:19px;font-weight:800;color:var(--text);margin:7px 0 0;line-height:1.5">${esc(u.name || '')}さん、はじめまして。</h2>
+    <p style="font-size:13.5px;line-height:1.95;color:var(--text);margin-top:9px">
+      玄関先で言ってはいけないことを言わないために、そして言えるようになるために、4つの段を通ってもらいます。
+      ここを通るまでは、現場に出る前の段階です。</p>
+
+    <div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">
+      ${steps.map((m, i) => `<div style="display:flex;gap:11px;align-items:flex-start">
+        <span aria-hidden="true" style="flex:none;width:23px;height:23px;border-radius:50%;background:var(--surface-2);color:var(--muted);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">${i + 1}</span>
+        <span style="flex:1;min-width:0">
+          <span style="display:block;font-size:13.5px;font-weight:700;color:var(--text)">${esc(m.title || '')}</span>
+          <span style="display:block;font-size:12px;color:var(--muted);margin-top:1px;line-height:1.7">${esc(m.purpose || '')}</span>
+        </span></div>`).join('')}
+    </div>
+
+    <div style="margin-top:15px;padding:13px 14px;border-radius:11px;background:var(--surface-2);display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:12.5px;color:var(--text);line-height:1.8"><b>かかる時間</b>　全部で約${mins}分。1章3分なので、移動中に少しずつで構いません。</div>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.8"><b>終わると</b>　承認を受けて営業解禁になり、現場の画面が開きます。</div>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.8"><b>分からないとき</b>　教材の中からAIに聞けます。人に質問も送れます。</div>
+    </div>
+
+    <button class="fo-btn" onclick="trWelcomeDone()" style="margin-top:15px;width:100%;min-height:48px;font-size:14.5px;font-weight:700">はじめる</button>
+  </section>`;
+}
+function trWelcomeDone() {
+  try { localStorage.setItem('tr_welcome_done', '1'); } catch (e) {}
+  const el = document.querySelector('#trWrap section[aria-labelledby="wcHead"]');
+  if (el) el.remove();
+  const go = document.querySelector('#trWrap section button.fo-btn');
+  if (go) go.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+window.trWelcomeDone = trWelcomeDone;
+
 function todayCard(d) {
   const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
   const c = d.cert || {};
@@ -2241,9 +2290,15 @@ function applyStage() {
   const u = window.__user || {};
   const allowed = window.__allowedViews;          // null＝制限なし
   const owner = u.role === 'owner';
+  /* 管理者専用の画面は、鍵つきでも並べない。
+     新人に「研修管理」「配信プレビュー」が見えていると、
+     いつか自分が使うものだと誤解する。owner以外には最初から無いものにする。 */
+  const OWNER_ONLY = ['trainadmin', 'dispatch', 'admin', 'linkrep', 'reps', 'issues'];
   document.querySelectorAll('#leftbar .lb-item[data-nav]').forEach(el => {
     const v = el.getAttribute('data-nav');
     el.querySelectorAll('.lb-lock').forEach(x => x.remove());
+    if (!owner && OWNER_ONLY.includes(v)) { el.style.display = 'none'; return; }
+    el.style.display = '';
     const locked = !owner && Array.isArray(allowed) && !allowed.includes(v);
     el.classList.toggle('lb-locked', locked);
     if (locked) {
@@ -2816,8 +2871,10 @@ const TR_STATUS = {
 let TR = { exam: null, idx: 0, answers: [], timer: null, left: 0, locked: false };
 
 function viewTraining() {
+  // 管理側には「営業解禁ゲート」だが、受ける側には研修そのもの。名乗りを分ける。
+  const owner = (window.__user || {}).role === 'owner';
   return `${heroBand('合格するまで現場には出さない。ここを通ってから玄関に立つ。')}
-    ${h1('研修（営業解禁ゲート）', '')}
+    ${h1(owner ? '研修（営業解禁ゲート）' : 'Rumina 新人研修', '')}
     <div id="trWrap"><div class="fo-card muted" style="padding:20px">読み込み中…</div></div>`;
 }
 
@@ -2879,6 +2936,7 @@ async function loadTraining() {
   const daysLeft = expires ? Math.ceil((expires - Date.now()) / 86400000) : null;
 
   wrap.innerHTML = `
+    ${welcomeCard(d)}
     ${todayCard(d)}
     <div class="fo-card" style="padding:20px;margin-top:14px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
@@ -2903,7 +2961,7 @@ async function loadTraining() {
                 </div>
                 <div style="margin-top:10px"><button class="fo-btn" style="padding:8px 16px;font-size:13px" onclick="trAsk('面談を申し込む')">面談を申し込む</button></div>
               </div>`
-            : `<div style="font-size:13px;color:var(--text);margin-top:12px">残りのテストは あと ${Math.max(0, (d.oralReady ? 4 : 3) - d.unlocked + 1)} つ。${d.oralReady ? '' : '（口頭試問は準備中のため、STEP3まで合格したら面談で判断します）'}</div>`}
+            : `<div style="font-size:13px;color:var(--text);margin-top:12px">残りのテストは あと ${Math.max(0, (d.oralReady ? 4 : 3) - d.unlocked + 1)} つ。${d.oralReady ? '' : '（いま口頭試問を実施できないため、STEP3まで合格したら面談で判断します）'}</div>`}
       <div id="trMyAsks"></div>
       ${stageBox(d)}
       <div class="fo-stagger" style="margin-top:14px">${steps}</div>
