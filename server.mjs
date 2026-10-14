@@ -40,6 +40,7 @@ import * as oral from './lib/oral.mjs';
 import * as sensei from './lib/sensei.mjs';
 import * as dispatch from './lib/dispatch.mjs';
 import * as slackpush from './lib/slackpush.mjs';
+import * as invite from './lib/invite.mjs';
 import * as fieldcheck from './lib/fieldcheck.mjs';
 import * as sendlog from './lib/sendlog.mjs';
 import { todayGap, topPerformer } from './lib/todaygap.mjs';
@@ -510,7 +511,7 @@ const server = createServer(async (req, res) => {
         }
       }
       // 健康チェック（APIキーの有無を返す。UIが実接続可否を判定）
-      if (path === '/api/health') return json(res, 200, { ok: true, cyzenUserKeys: globalThis.__cyzenUserKeys || null, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET, trainingQuestions: (() => { try { return training.questionStats().total; } catch (e) { return null; } })(), oral: (() => { try { return training.oralStatus(); } catch (e) { return null; } })(), dispatch: (() => { try { return dispatch.config(); } catch (e) { return null; } })(), slackPush: (() => { try { return slackpush.config(); } catch (e) { return null; } })(), sensei: (() => { try { return { ready: sensei.ready(), grader: sensei.selfTestResult(), sources: sensei.sourceList().length, ...sensei.stats() }; } catch (e) { return null; } })(),
+      if (path === '/api/health') return json(res, 200, { ok: true, cyzenUserKeys: globalThis.__cyzenUserKeys || null, whisperReady: !!API_KEY, model: MODEL, lineLoginReady: LINE_READY, consentVersion: CONSENT_VERSION, audioPurge: PURGE_AUDIO, botApiReady: !!BOT_API_SECRET, cyzenReady: cyzen.ready(), cyzenApiReady: cyzenApi.ready(), walkReady: walk.ready() || walkIngest.ready(), walkSource: walkIngest.ready() ? 'api' : (walk.ready() ? 'csv' : 'none'), walkStat: walkStat(), walkLastRun: lastWalkRun, hotAreaStat: hotAreaStat(), ssoReady: !!SSO_SECRET, trainingQuestions: (() => { try { return training.questionStats().total; } catch (e) { return null; } })(), oral: (() => { try { return training.oralStatus(); } catch (e) { return null; } })(), dispatch: (() => { try { return dispatch.config(); } catch (e) { return null; } })(), slackPush: (() => { try { return slackpush.config(); } catch (e) { return null; } })(), invite: (() => { try { return invite.config(); } catch (e) { return null; } })(), sensei: (() => { try { return { ready: sensei.ready(), grader: sensei.selfTestResult(), sources: sensei.sourceList().length, ...sensei.stats() }; } catch (e) { return null; } })(),
         critiqueReady: critiqueReady(), ingestReady: !!INGEST_SECRET,
         cyzenSource: cyzen.currentSource(), cyzenLastIngest: lastIngest.at ? { at: lastIngest.at, ok: lastIngest.ok, note: lastIngest.note } : null,
         sttProvider: STT, deepgramReady: deepgram.ready(), diarizationReady: STT === 'deepgram' && deepgram.ready(), scoreReady: scoreReady(),
@@ -1070,6 +1071,22 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { ok: !out.error, config: dispatch.config(), recent: sendlog.recent(7), ...out });
       }
       /* 実行。live=1 でも DISPATCH_ENABLED と LINEトークンが揃っていなければ送らない。 */
+      /* 招待リンクの一覧（owner専用）。配信の対象ぶんをまとめて出す。
+         会社ごとに固まるので、そのままパートナー各社へ渡せる。 */
+      if (path === '/api/training/invites' && req.method === 'GET') {
+        const meI = currentUser(req); if (!meI || meI.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const cfg = invite.config();
+        if (!cfg.ready) return json(res, 200, { ok: false, config: cfg, why: '招待リンクを出せません。RUMINA_SSO_SECRET と PUBLIC_URL が要ります。' });
+        const p = await dispatch.plan().catch(e => ({ error: e.message }));
+        if (p.error) return json(res, 200, { ok: false, why: p.error });
+        const rows = invite.withLinks(p.pick || []);
+        if (/^(1|true|on)$/i.test(String(url.searchParams.get('record') || ''))) invite.record(meI.username, rows);
+        // 会社ごとにまとめる（cyzenが会社名を持っている）
+        const byCorp = {};
+        for (const r of rows) (byCorp[r.corp || '所属不明'] ||= []).push({ name: r.name, seg: r.seg || null, reason: r.reason, url: r.inviteUrl });
+        return json(res, 200, { ok: true, config: cfg, total: rows.length, byCorp, history: invite.history(30) });
+      }
+
       /* Slack（ミオ）へ渡す。既定は下書きで、誰に届くかを返すだけ。
          live=1 を付けたときだけ実際に送る（owner専用）。 */
       if (path === '/api/dispatch/slack' && (req.method === 'POST' || req.method === 'GET')) {
