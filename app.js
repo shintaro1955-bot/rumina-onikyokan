@@ -1761,7 +1761,7 @@ function nav(v) {
   if (v === 'league' || v === 'ranking') { loadRanking(); loadTrends(); }
   if (v === 'me') loadMePerf();
   if (v === 'training') loadTraining();
-  if (v === 'trainadmin') { loadAsks(); loadSenseiReports(); loadLessonVideos(); loadFieldCheck(); loadTrainingAdmin(); }
+  if (v === 'trainadmin') { loadInvite(); loadAsks(); loadSenseiReports(); loadLessonVideos(); loadFieldCheck(); loadTrainingAdmin(); }
   if (v === 'dispatch') loadDispatch();
   if (v === 'academy') loadAcademy();
   if (v === 'terakoya') loadTerakoya();
@@ -3287,6 +3287,7 @@ window.oralStart = oralStart; window.orMic = orMic; window.orNext = orNext; wind
 /* ---------- 研修管理（owner専用） ---------- */
 function viewTrainingAdmin() {
   return `${h1('研修管理', '誰がどこまで進んでいるか、どの問題をまだ確認していないかを見る。')}
+    <div id="traInvite" class="mb-4"></div>
     <div id="traAsks" class="mb-4"></div>
     <div id="traSensei" class="mb-4"></div>
     <div id="traVideo" class="mb-4"></div>
@@ -4031,6 +4032,81 @@ async function traAnswerAsk(id) {
   if (a == null || !a.trim()) return;
   try { await API.trainingAnswerAsk(id, a); loadAsks(); } catch (e) { alert(e.message); }
 }
+
+/* 新人を招待する（owner）。研修運用の起点。
+   cyzenに訪問実績が出るまで待てないので、名前を入れたらその場でリンクが出る。
+   出したあと「来ているか」まで同じ画面で見えないと、送りっぱなしになる。 */
+async function loadInvite() {
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  const box = document.getElementById('traInvite'); if (!box) return;
+  let d; try { d = await API.invitedList(); } catch (e) { box.innerHTML = ''; return; }
+  const cfg = d.config || {};
+  const rows = d.rows || [];
+  const notYet = rows.filter(r => !r.entered);
+  const idle = rows.filter(r => r.entered && r.attempts === 0 && r.read === 0);
+  const going = rows.filter(r => r.entered && (r.attempts > 0 || r.read > 0));
+
+  const table = (list, empty) => list.length
+    ? `<table style="width:100%;font-size:12.5px;border-collapse:collapse">${list.map(r => `<tr style="border-top:1px dotted #E3DED2">
+        <td style="padding:7px 4px;width:140px;font-weight:600">${esc(r.name)}</td>
+        <td style="padding:7px 4px;width:110px;color:#78716c">${esc(r.corp || '—')}</td>
+        <td style="padding:7px 4px;width:92px;color:#78716c">${r.days === 0 ? '今日' : r.days + '日前'}</td>
+        <td style="padding:7px 4px;color:#3f3f46">${esc(r.state)}</td></tr>`).join('')}</table>`
+    : `<div class="muted" style="font-size:12.5px">${empty}</div>`;
+
+  box.innerHTML = card(`<div class="p-4">
+    <div class="font-semibold text-neutral-800">新人を招待する</div>
+    <div class="text-[12px] text-neutral-500 mt-0.5">
+      氏名を入れるとリンクが出ます。受け取った人はそれを開くだけで研修が始まります。登録もログインも要りません。
+      ${cfg.ready ? `リンクは${cfg.days}日で切れます。` : '<span class="text-rose-600">いまリンクを出せません（RUMINA_SSO_SECRET と PUBLIC_URL が要ります）。</span>'}
+    </div>
+    <div class="flex gap-2 mt-3 flex-wrap">
+      <input id="invName" placeholder="氏名（例：田中 翔）" class="flex-1 min-w-[180px] border border-neutral-300 rounded-lg px-3 py-2 text-[13px]">
+      <input id="invCorp" placeholder="会社・エリア（任意）" class="w-[180px] border border-neutral-300 rounded-lg px-3 py-2 text-[13px]">
+      <button onclick="traInvite()" class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-[13px] font-semibold">リンクを出す</button>
+    </div>
+    <div id="invOut" class="mt-3"></div>
+
+    <div class="mt-5 border-t border-neutral-200 pt-3">
+      <div class="text-[12.5px] font-semibold text-rose-700">まだ開いていない　${notYet.length}人</div>
+      <div class="text-[11.5px] text-neutral-500 mt-0.5 mb-1.5">リンクは渡っているが、一度も入っていません。渡し方か、相手に届いているかを見てください。</div>
+      ${table(notYet, 'ありません。')}
+    </div>
+    <div class="mt-4">
+      <div class="text-[12.5px] font-semibold text-amber-700">開いたが、まだ始めていない　${idle.length}人</div>
+      ${table(idle, 'ありません。')}
+    </div>
+    <div class="mt-4">
+      <div class="text-[12.5px] font-semibold text-emerald-700">進んでいる　${going.length}人</div>
+      ${table(going, 'まだいません。')}
+    </div>
+  </div>`);
+}
+
+async function traInvite() {
+  const name = (document.getElementById('invName') || {}).value || '';
+  const corp = (document.getElementById('invCorp') || {}).value || '';
+  const out = document.getElementById('invOut');
+  if (!String(name).trim()) { if (out) out.innerHTML = '<div class="text-[12.5px] text-rose-600">氏名を入れてください。</div>'; return; }
+  if (out) out.innerHTML = '<div class="text-[12.5px] text-neutral-500">出しています…</div>';
+  let r; try { r = await API.inviteOne(name, corp); } catch (e) { r = { ok: false, why: e.message }; }
+  if (!r.ok) { if (out) out.innerHTML = `<div class="text-[12.5px] text-rose-600">${String(r.why || '出せませんでした').replace(/</g, '&lt;')}</div>`; return; }
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  if (out) out.innerHTML = `<div class="p-3 rounded-lg border border-emerald-300 bg-emerald-50">
+    <div class="text-[12.5px] font-semibold text-emerald-900">${esc(r.name)}さんのリンク（${r.days}日有効）</div>
+    <div class="text-[11.5px] text-neutral-700 mt-1.5 break-all font-mono">${esc(r.url)}</div>
+    <div class="flex gap-2 mt-2">
+      <button onclick="traCopyInvite(this)" data-url="${esc(r.url)}" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[12px] font-semibold">コピーする</button>
+      <span class="text-[11.5px] text-neutral-500 self-center">Slackでも、口頭でも、紙でも渡せます。</span>
+    </div></div>`;
+  const n = document.getElementById('invName'); if (n) n.value = '';
+  loadInvite();
+}
+async function traCopyInvite(btn) {
+  try { await navigator.clipboard.writeText(btn.dataset.url); btn.textContent = 'コピーしました'; setTimeout(() => (btn.textContent = 'コピーする'), 1800); }
+  catch (e) { btn.textContent = 'コピーできません'; }
+}
+window.loadInvite = loadInvite; window.traInvite = traInvite; window.traCopyInvite = traCopyInvite;
 
 /* AI先生の誤り報告（owner）。
    報告を受け取るだけで返さない作りにしない。何が違うと言われたのかと、

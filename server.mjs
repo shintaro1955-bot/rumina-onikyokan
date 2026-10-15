@@ -1071,6 +1071,28 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { ok: !out.error, config: dispatch.config(), recent: sendlog.recent(7), ...out });
       }
       /* 実行。live=1 でも DISPATCH_ENABLED と LINEトークンが揃っていなければ送らない。 */
+      /* 新人を1人ずつ招待する（owner専用）。
+         cyzenに訪問実績が出るまで待てないので、名前を入れたらその場でリンクを出す。
+         入ったばかりの新人を研修に乗せる導線はここだけ。 */
+      if (path === '/api/training/invite' && req.method === 'POST') {
+        const meN = currentUser(req); if (!meN || meN.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        const b = await readJson(req) || {};
+        const name = String(b.name || '').trim();
+        if (!name) return json(res, 400, { error: '氏名が必要です' });
+        const cfg = invite.config();
+        if (!cfg.ready) return json(res, 200, { ok: false, why: '招待リンクを出せません。RUMINA_SSO_SECRET と PUBLIC_URL が要ります。' });
+        const corp = String(b.corp || '').trim() || null;
+        const url2 = invite.issue({ name, corp });
+        invite.record(meN.username, [{ name, corp }]);
+        training.audit(meN.username, null, 'invite', { name, corp });
+        return json(res, 200, { ok: true, name, corp, url: url2, days: cfg.days });
+      }
+      /* 招待した人のその後（owner専用）。送ったのに来ない人を拾う。 */
+      if (path === '/api/training/invited' && req.method === 'GET') {
+        const meN = currentUser(req); if (!meN || meN.role !== 'owner') return json(res, 401, { error: '管理者のみ利用できます' });
+        return json(res, 200, { ok: true, rows: invite.followUp(training), config: invite.config() });
+      }
+
       /* 招待リンクの一覧（owner専用）。配信の対象ぶんをまとめて出す。
          会社ごとに固まるので、そのままパートナー各社へ渡せる。 */
       if (path === '/api/training/invites' && req.method === 'GET') {
