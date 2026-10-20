@@ -2203,6 +2203,13 @@ function todayCard(d) {
     items = `再受験まで約${m}分`; mins = m;
     done = '教材を読み直したら、もう一度受けられる';
     btn = { label: '教材を読み直す', fn: `trStudy(${n})` };
+  } else if (n >= 5) {
+    // 全部通したあと。ここで章を勧めると、すぐ下の「あとは面談だけです」と食い違う。
+    kind = '面談待ち'; goal = '全部通りました。あとは面談で承認を受けるだけです';
+    items = '研修運営から日時の連絡を待つ'; mins = 0;
+    done = '承認されると、この画面が「営業解禁」に変わり、現場の画面がすべて開きます';
+    btn = { label: '面談を申し込む', fn: `trAsk('面談を申し込む')` };
+    sub = '教材はいつでも読み返せます';
   } else if (n === 4) {
     kind = '口頭試問'; goal = '覚えたことを自分の口で言えるようにする';
     items = M.contents || '玄関先の5場面'; mins = M.examMin || 20;
@@ -2235,7 +2242,7 @@ function todayCard(d) {
     </div>
     <h2 id="todayHead" style="font-size:17px;font-weight:700;color:var(--text);margin:9px 0 0;line-height:1.55">${esc(goal)}</h2>
     ${row('目', '学習項目', esc(items))}
-    ${row('時', '所要時間', `約${mins}分`)}
+    ${row('時', '所要時間', mins ? `約${mins}分` : '')}
     ${row('了', '完了条件', esc(done))}
     <button class="fo-btn" onclick="${btn.fn}" aria-label="${esc(btn.label)}"
       style="margin-top:15px;width:100%;min-height:50px;font-size:15px;font-weight:700">${esc(btn.label)}</button>
