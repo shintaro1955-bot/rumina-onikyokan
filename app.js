@@ -4579,7 +4579,7 @@ function lsRender() {
 
     <div id="lsQuiz" style="margin-top:22px"></div>
 
-    <div style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap">
+    <div id="lsFoot" style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="fo-btn" style="padding:11px 20px;min-height:46px;font-size:14px" onclick="lsStartQuiz()">確認問題にすすむ・${(d.quiz || []).length}問</button>
       <button onclick="trAsk('教材が分からない')" style="padding:11px 18px;min-height:46px;font-size:13.5px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);cursor:pointer">人に質問する</button>
     </div>
@@ -4930,6 +4930,7 @@ async function lsStartQuiz() {
   catch (e) { box.innerHTML = `<div style="padding:14px;color:#e11d48" role="alert">${lsEsc(e.message)}</div>`; return; }
   if (!q.ok) { box.innerHTML = `<div class="muted" style="padding:14px">${lsEsc(q.why)}</div>`; return; }
   LS.quiz = q; LS.idx = 0; LS.answers = []; LS.streak = 0; LS.hit = 0; LS.checking = false;
+  const foot = document.getElementById('lsFoot'); if (foot) foot.style.display = 'none';
   lsQuizRender();
   box.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
