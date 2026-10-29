@@ -1092,13 +1092,44 @@ const RANK_DEF = {
   shodan: { label: '商談数', unit: '件', get: r => r.shodan ?? 0, sub: r => `提案中＋新規商談`, only: r => (r.shodan ?? 0) > 0 },
   haisen: { label: '敗戦数', unit: '件', get: r => r.haisen ?? 0, sub: r => `成約${r.seiyaku ?? 0} / 敗戦${r.haisen ?? 0}`, only: r => (r.seiyaku ?? 0) + (r.haisen ?? 0) > 0 },
   days: { label: '稼働日数', unit: '日', get: r => r.days, sub: r => `総訪問${r.visits}件` },
+  // 歩行（GPS打刻から算出）。報告書と違い自動記録なので取りこぼしが少ない。
+  walkKm: { walk: true, label: '歩行距離', unit: 'km', get: r => r.walkKm, sub: r => `1日${r.walkPerDay}km ・ ${r.days}日 ・ 歩行比${r.walkRatio}%` },
+  walkPerDay: { walk: true, label: '歩行/日', unit: 'km/日', get: r => r.walkPerDay, sub: r => `総${r.walkKm}km ・ 車移動${r.rideKm}km` },
+  visitsPerKm: { walk: true, label: '歩行効率', unit: '件/km', get: r => r.visitsPerKm || 0, sub: r => `訪問${r.visits ?? '—'}件 ÷ 歩行${r.walkKm}km` },
 };
 function setRankSort(k) { RANK_SORT = k; loadRanking(); }
 window.setRankSort = setRankSort;
 
+/* セクション見出しのビジュアル帯。暗い画像の上に白文字を重ねるので、
+   左側に必ず暗がりを作って可読性を担保する（画像側も左を空けて生成してある）。 */
+/* データ待ちの空状態。文字だけだと「壊れている」と見えるので、待っている絵を出す。 */
+function emptyArt(title, lead, btnLabel, btnAction) {
+  return `<section class="relative overflow-hidden rounded-lg border border-[#DDD8CC]">
+    <img src="/assets/rumina-empty.jpg" alt="" aria-hidden="true" class="w-full h-[200px] sm:h-[260px] object-cover block">
+    <div class="absolute inset-0" style="background:linear-gradient(90deg,rgba(6,16,26,.35) 0%,rgba(6,16,26,.72) 46%,rgba(6,16,26,.92) 100%)"></div>
+    <div class="absolute inset-0 flex flex-col justify-center items-end text-right px-5 sm:px-8">
+      <div class="text-white font-bold text-[16px] sm:text-[19px] leading-tight">${title}</div>
+      <div class="text-emerald-100/85 text-[12px] leading-snug mt-2 max-w-[60%]">${lead}</div>
+      ${btnLabel ? `<button onclick="${btnAction}" class="mt-4 px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-[13px] font-semibold">${btnLabel}</button>` : ''}
+    </div>
+  </section>`;
+}
+
+function artBand(src, title, lead) {
+  return `<section class="relative overflow-hidden rounded-lg border border-[#DDD8CC] mb-4" aria-label="${title}">
+    <img src="${src}" alt="" aria-hidden="true" class="w-full h-[128px] sm:h-[164px] object-cover object-center block">
+    <div class="absolute inset-0" style="background:linear-gradient(90deg,rgba(6,16,26,.92) 0%,rgba(6,16,26,.78) 42%,rgba(6,16,26,.08) 78%,rgba(6,16,26,0) 100%)"></div>
+    <div class="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 max-w-[72%]">
+      <div class="text-white font-bold text-[17px] sm:text-[21px] leading-tight drop-shadow">${title}</div>
+      ${lead ? `<div class="text-emerald-100/85 text-[11px] sm:text-[12.5px] leading-snug mt-1.5">${lead}</div>` : ''}
+    </div>
+  </section>`;
+}
+
 function viewRanking() {
   return `
-  ${h1('行動量ランキング', 'cyzenの行動データから、営業マン一人ひとりの「動いた量」を順位で可視化する。量が足りているかは、質を語る前の前提。')}
+  ${artBand('/assets/rank-band.jpg', '行動量ランキング',
+    'cyzenの行動データから、営業マン一人ひとりの「動いた量」を順位で可視化する。量が足りているかは、質を語る前の前提。')}
   <div id="trendWrap" class="mb-4"></div>
   <div id="rankWrap" class="text-sm text-neutral-500">読み込み中…</div>`;
 }
@@ -1124,12 +1155,21 @@ async function loadTrends() {
 }
 
 async function loadRanking() {
+  /* 見ている指標で帯の絵を変える（訪問＝ピットウォール／歩行＝GPSトレイル）。
+     タブ切替は必ずここを通るので、描画順に依存せず確実に切り替わる。 */
+  const bandImg = document.querySelector('[aria-label="行動量ランキング"] img');
+  if (bandImg) {
+    const want = (RANK_DEF[RANK_SORT] || {}).walk ? '/assets/walk-band.jpg' : '/assets/rank-band.jpg';
+    if (!bandImg.src.endsWith(want)) bandImg.src = want;
+  }
   const wrap = document.getElementById('rankWrap'); if (!wrap) return;
   let data;
   try { data = await API.cyzenRoster(); }
   catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
   if (!data.ready) { wrap.innerHTML = card(`<div class="p-8 text-center text-sm text-neutral-500">データがありません。</div>`); return; }
   const def = RANK_DEF[RANK_SORT];
+  // 歩行はデータ源（GPS）も指標も違うので専用描画へ回す
+  if (def.walk) return renderWalkRanking(wrap, def);
   const bench = (data.bench || {}).visitsPerDay || 31;
   // 記録が無い人（判定E）は順位に含めない＝「動いていない」ではなく「測れていない」ため
   // 指標ごとの母集団条件(only)も適用（例：アポ率は訪問20件以上・成約率はクローザーのみ）
@@ -1181,8 +1221,9 @@ async function renderWalkRanking(wrap, def) {
   try { w = await API.cyzenWalk(30); }
   catch (e) { wrap.innerHTML = `<div class="text-sm text-rose-600">${e.message}</div>`; return; }
   if (!w.ready || !(w.rows || []).length) {
-    wrap.innerHTML = card(`<div class="p-8 text-center text-sm text-neutral-700">GPSの行動履歴が取り込まれていません。
-      <div class="mt-3"><button onclick="nav('cyzen')" class="px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-sm font-semibold">cyzenを取り込む</button></div></div>`);
+    wrap.innerHTML = emptyArt('GPSの行動履歴がまだありません',
+      'cyzenの行動履歴を取り込むと、一人ひとりが歩いた距離とルートの効率が出せます。',
+      'cyzenを取り込む', "nav('cyzen')");
     return;
   }
   const rows = [...w.rows].sort((a, z) => def.get(z) - def.get(a));
