@@ -2176,10 +2176,10 @@ server.listen(PORT, () => {
         .then((r) => { firstWalk = false; return r; })
         .then(r => {
           lastWalkRun = { at: new Date().toISOString(), ok: !!r.ok,
-                          note: r.ok ? `打刻${r.histories}件 / ${r.days}人日 / ${r.users}名 / ${r.span || '-'}` : r.error,
+                          note: r.ok ? `打刻${r.histories}件 / 軌跡${r.trackings || 0}件（${r.trackDays || 0}人日）/ ${r.days}人日 / ${r.users}名 / ${r.span || '-'}${r.trackError ? ' / 軌跡の取得に失敗: ' + r.trackError : ''}` : r.error,
                           miss: r.miss || null, keys: r.keys || null, shape: r.shape || null };
           console.log(r.ok
-            ? `✓ 歩行距離を取り込み：打刻${r.histories}件 / ${r.days}人日`
+            ? `✓ 歩行距離を取り込み：打刻${r.histories}件 / 軌跡${r.trackings || 0}件 / ${r.days}人日${r.trackError ? '（軌跡の取得に失敗: ' + r.trackError + '）' : ''}`
             : `⚠ 歩行距離の取り込み見送り：${r.error}`);
         })
         .catch(e => { lastWalkRun = { at: new Date().toISOString(), ok: false, note: String(e.message || e).slice(0, 120) };
